@@ -6,9 +6,11 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.score import router as score_router
 from app.db import get_session
 
 app = FastAPI(title="Civo API", version="0.1.0")
+app.include_router(score_router)
 
 
 @app.get("/health")
