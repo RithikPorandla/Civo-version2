@@ -1,0 +1,195 @@
+# Civo Validation Benchmark
+# ==========================
+# Ground-truth MA parcels with expected suitability scores and known outcomes.
+# Every scoring engine change MUST re-run this benchmark.
+# Target: Pearson r > 0.7 between computed scores and expected_score field.
+#
+# Expected scores were seeded from manual analysis of the 2024 Climate Act
+# 7-criteria methodology. Update as real-world permitting outcomes become available.
+
+version: "1.0"
+methodology: "MA EEA Site Suitability, 225 CMR 29.00"
+last_updated: "2026-04-13"
+
+parcels:
+  # ---- URBAN / GRID-ALIGNED / LOW HABITAT RISK ----
+
+  - id: "acton-nagog-park-50"
+    address: "50 Nagog Park, Acton, MA 01720"
+    project_type: "industrial_warehouse"
+    expected_score: 65
+    expected_bucket: "CONDITIONALLY SUITABLE"
+    primary_constraint: "biodiversity"
+    notes: >
+      Previously developed 11-acre industrial parcel. Near planned Eversource
+      #29 New North Acton Substation (ISD ~2033). Primary constraint is Nagog
+      Brook BioMap Core Habitat corridor within 500m buffer. Not in flood zone.
+      Not EJ community. Nagog Park Innovative Overlay District (approved 2025).
+    sources:
+      - "Eversource ESMP DPU 24-10 Sec 6.6.1.3"
+      - "Acton Town Planning Nagog Park Overlay"
+
+  - id: "boston-east-eagle-sub"
+    address: "East Eagle St, East Boston, MA 02128"
+    project_type: "substation"
+    expected_score: 72
+    expected_bucket: "SUITABLE"
+    primary_constraint: "social_burden"
+    notes: >
+      Planned Eversource #5 East Eagle Substation site. Urban industrial
+      footprint, already in EFSB Tentative Decision (late 2022). Chelsea and
+      East Boston are EJ communities — Cumulative Impact Analysis required for
+      large projects. No habitat overlap. Grid alignment is extremely high
+      (project IS the substation).
+    sources:
+      - "Eversource ESMP Sec 6.5.1.2"
+      - "EFSB 22-01"
+
+  - id: "cambridge-kendall-8025"
+    address: "Kendall Square, Cambridge, MA 02142"
+    project_type: "underground_substation"
+    expected_score: 78
+    expected_bucket: "SUITABLE"
+    primary_constraint: "none"
+    notes: >
+      Planned Eversource #18 New Cambridge #8025 Substation. Underground, fully
+      within existing Boston Properties redevelopment. Zero habitat overlap,
+      not in flood zone, not EJ. Grid alignment maximal. This should score
+      very well — if it does not, the scoring engine has a bug.
+    sources:
+      - "Eversource ESMP Sec 6.5.1.2"
+      - "Greater Cambridge Energy Project"
+
+  # ---- SUBURBAN / MIXED RISK ----
+
+  - id: "burlington-winn-st"
+    address: "Winn St, Burlington, MA 01803"
+    project_type: "substation_plus_transmission"
+    expected_score: 52
+    expected_bucket: "CONDITIONALLY SUITABLE"
+    primary_constraint: "biodiversity"
+    notes: >
+      Planned Eversource #19 New Burlington Substation + 2.5 mi new overhead
+      transmission through Wilmington into Woburn. Rural-suburban edge with
+      BioMap CNL in the ROW corridor. Transmission linear infrastructure faces
+      different scoring than point facilities. Burlington-Woburn Supply
+      Initiative already in permitting as of 2024.
+    sources:
+      - "Eversource ESMP Sec 6.6.1.2"
+      - "Burlington-to-Woburn Supply Initiative"
+
+  - id: "natick-saxonville-sub"
+    address: "Saxonville Rd area, Natick, MA 01760"
+    project_type: "substation"
+    expected_score: 48
+    expected_bucket: "CONSTRAINED"
+    primary_constraint: "biodiversity"
+    notes: >
+      Planned Eversource #25 New Saxonville/Natick Substation. Location near
+      transmission ROW between Saxonville #278 and Framingham Ring #240. Rural
+      area with known BioMap Core Habitat and NHESP Priority Habitat in the
+      corridor. Expected to hit habitat constraints.
+    sources:
+      - "Eversource ESMP Sec 6.6.1.3"
+
+  # ---- COASTAL / HIGH HABITAT + FLOOD RISK ----
+
+  - id: "falmouth-tap-substation"
+    address: "Falmouth Tap area, Falmouth, MA 02540"
+    project_type: "substation_rebuild"
+    expected_score: 42
+    expected_bucket: "CONSTRAINED"
+    primary_constraint: "biodiversity_and_flood"
+    notes: >
+      Planned Eversource #7 New Falmouth Tap Substation. Rebuild of existing
+      #924 switching station. Coastal Cape Cod location with significant BioMap
+      and NHESP coverage, potential FEMA flood zone exposure, and sensitive
+      coastal habitat. Already in design & permitting (ISD 2026).
+    sources:
+      - "Eversource ESMP Sec 6.7.1.2"
+
+  - id: "east-freetown-cip"
+    address: "East Freetown, MA 02717"
+    project_type: "new_substation_cip"
+    expected_score: 35
+    expected_bucket: "CONSTRAINED"
+    primary_constraint: "biodiversity_and_wetlands"
+    notes: >
+      Planned Eversource East Freetown Group CIP (replaces never-filed
+      New Bedford Group CIP). New substation #690 for north New Bedford, East
+      Freetown, Dartmouth. Area is surrounded by wetlands and conservation
+      land. DER-driven; 69 MW existing DER transfer from Industrial Park #636.
+      This should score low on biodiversity and wetlands. New Bedford proper
+      is an EJ community — burden score matters.
+    sources:
+      - "Eversource ESMP Sec 6.7.1.2"
+
+  # ---- RURAL / HIGH CARBON + HABITAT ----
+
+  - id: "worthington-new-sub"
+    address: "Worthington, MA 01098"
+    project_type: "new_substation"
+    expected_score: 38
+    expected_bucket: "CONSTRAINED"
+    primary_constraint: "biodiversity_and_carbon"
+    notes: >
+      Planned Eversource #23 New Worthington Substation. Rural WMA, feeders
+      currently ~200 miles in length. Dense forest cover, likely top-20%
+      carbon forest zones, BioMap Core Habitat. Low grid alignment because
+      the existing substations are far. A rural greenfield substation should
+      score low here.
+    sources:
+      - "Eversource ESMP Sec 6.8.1.3"
+
+  - id: "whately-deerfield-cip"
+    address: "Whately, MA 01093"
+    project_type: "new_substation_cip"
+    expected_score: 40
+    expected_bucket: "CONSTRAINED"
+    primary_constraint: "agriculture_and_biodiversity"
+    notes: >
+      Planned Eversource Whately-Deerfield Group CIP. Agricultural-commercial
+      area with significant prime farmland soils. DER-driven growth (~189 MVA
+      beyond existing Group Study). Should hit agricultural production
+      constraint hard — Whately and Deerfield have Chapter 61A land.
+    sources:
+      - "Eversource ESMP Sec 6.8.1.3"
+
+  # ---- CONTROL CASE: should score very high ----
+
+  - id: "boston-seaport-brownfield"
+    address: "Seaport District, Boston, MA 02210"
+    project_type: "substation_expansion"
+    expected_score: 82
+    expected_bucket: "SUITABLE"
+    primary_constraint: "flood_risk_only"
+    notes: >
+      Planned Eversource #28 Seafood Way Substation Transformer Addition.
+      Existing station, existing transformer addition, fully in built environment,
+      zero habitat overlap, not on farmland, Seaport has moderate EJ status.
+      Only risk is Seaport is partly in FEMA flood zones so climate resilience
+      criterion will deduct. Should still score high.
+    sources:
+      - "Eversource ESMP Sec 6.5.1.3"
+
+# ------------------------------------------------------------------------------
+# Benchmark test contract
+# ------------------------------------------------------------------------------
+# Usage:
+#   pytest tests/test_benchmark.py
+#
+# The test should:
+#   1. Load this YAML
+#   2. Run the scoring engine on each parcel (using the address)
+#   3. Compute Pearson r between computed scores and expected_score
+#   4. Fail if r < 0.7
+#   5. Print a per-parcel diff table showing computed vs expected for debugging
+#
+# As real permitting outcomes become known, update expected_score with the
+# observed permitting timeline and outcome, and add a real_outcome field:
+#
+#   real_outcome:
+#     decision: "approved_with_conditions"
+#     timeline_months: 14
+#     key_conditions: ["wetland mitigation plan", "NHESP habitat buffer"]
+#     source: "EFSB docket 22-01"
