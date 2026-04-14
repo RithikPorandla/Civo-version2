@@ -175,6 +175,24 @@ class Article97(Base):
     geom = _polygon_column()
 
 
+class LandUse(Base):
+    """MassGIS 2016 Land Cover / Land Use polygons."""
+
+    __tablename__ = "land_use"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    town_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    covercode: Mapped[int | None] = mapped_column(Integer, index=True)
+    covername: Mapped[str | None] = mapped_column(String)
+    usegencode: Mapped[int | None] = mapped_column(Integer, index=True)
+    usegenname: Mapped[str | None] = mapped_column(String)
+    use_code: Mapped[str | None] = mapped_column(String)
+    poly_type: Mapped[str | None] = mapped_column(String)
+    fy: Mapped[int | None] = mapped_column(Integer)
+    shape_area: Mapped[float | None] = mapped_column(Float)
+    attrs: Mapped[dict | None] = mapped_column(JSONB)
+    geom = _polygon_column()
+
+
 class MassEnviroScreen(Base):
     """MassEnviroScreen cumulative burden at block-group level."""
 

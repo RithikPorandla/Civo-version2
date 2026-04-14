@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"GEOID": "250171234001", "EJ": "Yes - Income, Minority", "MassEnviroScore": 82.5, "PollutionBurden": 74.0, "hhburden": 61.2, "COSUB": "ACTON"}, "geometry": {"type": "Polygon", "coordinates": [[[220000,910000],[220100,910000],[220100,910100],[220000,910100],[220000,910000]]]}},
+    {"type": "Feature", "properties": {"GEOID": "250171234002", "EJ": "No", "MassEnviroScore": 35.1, "PollutionBurden": 21.0, "hhburden": 28.0}, "geometry": {"type": "Polygon", "coordinates": [[[221000,911000],[221100,911000],[221100,911100],[221000,911100],[221000,911000]]]}},
+    {"type": "Feature", "properties": {"GEOID": null}, "geometry": {"type": "Polygon", "coordinates": [[[222000,912000],[222100,912000],[222100,912100],[222000,912100],[222000,912000]]]}}
+  ]
+}

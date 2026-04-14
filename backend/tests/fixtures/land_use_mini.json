@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"TOWN_ID": 2, "COVERCODE": 3, "COVERNAME": "Impervious", "USEGENCODE": 11, "USEGENNAME": "Commercial", "USE_CODE": "325", "POLY_TYPE": "FEE", "FY": 2016, "Shape__Area": 4200.0}, "geometry": {"type": "Polygon", "coordinates": [[[232000,922000],[232100,922000],[232100,922100],[232000,922100],[232000,922000]]]}},
+    {"type": "Feature", "properties": {"TOWN_ID": 2, "COVERCODE": 1, "COVERNAME": "Forest", "USEGENCODE": 31, "USEGENNAME": "Forest", "USE_CODE": "601"}, "geometry": {"type": "Polygon", "coordinates": [[[233000,923000],[233100,923000],[233100,923100],[233000,923100],[233000,923000]]]}},
+    {"type": "Feature", "properties": {"TOWN_ID": 2}, "geometry": null}
+  ]
+}

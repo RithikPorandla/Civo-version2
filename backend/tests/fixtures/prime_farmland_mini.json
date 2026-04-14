@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"FARMLNDCL": "Prime farmland if drained", "MUSYM": "35C", "MUNAME": "Hinckley loamy sand"}, "geometry": {"type": "Polygon", "coordinates": [[[230000,920000],[230100,920000],[230100,920100],[230000,920100],[230000,920000]]]}},
+    {"type": "Feature", "properties": {"FARMLNDCL": "All areas are prime farmland", "MUSYM": "72A"}, "geometry": {"type": "Polygon", "coordinates": [[[231000,921000],[231100,921000],[231100,921100],[231000,921100],[231000,921000]]]}},
+    {"type": "Feature", "properties": {"FARMLNDCL": "Not prime farmland"}, "geometry": null}
+  ]
+}

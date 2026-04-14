@@ -10,7 +10,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ingest import biomap, fema_flood, l3_parcels, nhesp, wetlands
+from ingest import (
+    biomap,
+    fema_flood,
+    l3_parcels,
+    land_use,
+    massenviroscreen,
+    nhesp,
+    prime_farmland,
+    wetlands,
+)
 from ingest.esmp_projects import (
     classify_confidence,
     normalize_place_query,
@@ -89,6 +98,52 @@ def test_fema_flood_transform():
     assert good[0]["fld_zone"] == "AE"
     assert good[0]["static_bfe"] == 9.5
     assert good[0]["sfha_tf"] == "T"
+
+
+# ---------------------------------------------------------------------------
+# DEP wetlands
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# MassEnviroScreen
+# ---------------------------------------------------------------------------
+def test_massenviroscreen_transform_skips_missing_geoid_via_caller():
+    feats = _load("massenviroscreen_mini.json")["features"]
+    # feature_to_row doesn't enforce geoid presence; the caller does (see the
+    # ingest_town loop). Here we verify the transform shape and the caller's
+    # filter behavior separately.
+    rows = [massenviroscreen.feature_to_row(f) for f in feats]
+    good = [r for r in rows if r]
+    assert len(good) == 3
+    assert good[0]["cumulative_score"] == 82.5
+    assert good[0]["ej_designation"] == "Yes - Income, Minority"
+    # Simulate the caller's geoid filter:
+    stored = [r for r in good if r["geoid"]]
+    assert len(stored) == 2
+
+
+# ---------------------------------------------------------------------------
+# Prime farmland
+# ---------------------------------------------------------------------------
+def test_prime_farmland_transform():
+    feats = _load("prime_farmland_mini.json")["features"]
+    rows = [prime_farmland.feature_to_row(f) for f in feats]
+    good = [r for r in rows if r]
+    assert len(good) == 2
+    assert good[0]["farmland_class"] == "Prime farmland if drained"
+    assert good[0]["musym"] == "35C"
+
+
+# ---------------------------------------------------------------------------
+# Land use
+# ---------------------------------------------------------------------------
+def test_land_use_transform_captures_cover_and_use():
+    feats = _load("land_use_mini.json")["features"]
+    rows = [land_use.feature_to_row(f) for f in feats]
+    good = [r for r in rows if r]
+    assert len(good) == 2
+    assert good[0]["covername"] == "Impervious"
+    assert good[0]["usegenname"] == "Commercial"
+    assert good[1]["usegenname"] == "Forest"
 
 
 # ---------------------------------------------------------------------------
