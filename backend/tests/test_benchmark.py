@@ -22,15 +22,7 @@ from app.scoring.resolver import ResolveError, resolve_parcel
 BENCHMARK_PATH = (
     Path(__file__).resolve().parents[2] / "docs" / "benchmark.yaml"
 )
-# Phase 3 target is ±20 per parcel, but 3 rural greenfield parcels
-# (Burlington, Worthington, Natick) are +22..+27 because their ESMP
-# project coordinates in the seed data are town-centroid approximations
-# rather than the real planned project sites, and the benchmark expects
-# us to score a transmission-corridor context we don't have ingested.
-# The engine itself scores those *locations* defensibly; the delta lives
-# in the source data. Tightening this back to 20 requires hand-curated
-# coordinates for pending_siting projects or a transmission-ROW ingest.
-PER_PARCEL_TOLERANCE = 27.0
+PER_PARCEL_TOLERANCE = 20.0
 MIN_PEARSON = 0.7
 
 

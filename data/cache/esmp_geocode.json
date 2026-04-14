@@ -96,15 +96,15 @@
     ]
   },
   "19": {
-    "formatted_address": "Burlington, MA, USA",
-    "lat": 42.5047161,
-    "lon": -71.1956205,
-    "place_id": "ChIJP_ntUvj244kRDamBW6w0GO4",
-    "query": "Burlington, MA",
+    "formatted_address": "Winn St, Massachusetts, USA",
+    "lat": 42.4944102,
+    "lon": -71.1769824,
+    "place_id": "ChIJ1f6Q6HF144kRHifAx8NpJdQ",
+    "query": "Winn Street, Burlington, MA",
+    "refined_from_query": "Burlington, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   },
   "2": {
@@ -144,15 +144,15 @@
     ]
   },
   "23": {
-    "formatted_address": "Worthington, MA, USA",
-    "lat": 42.3973092,
-    "lon": -72.9356536,
-    "place_id": "ChIJb9_sAeEw54kRKra2-WX8134",
-    "query": "Worthington, MA",
+    "formatted_address": "Huntington Rd, Massachusetts, USA",
+    "lat": 42.3480266,
+    "lon": -72.8990594,
+    "place_id": "ChIJ00faPgAw54kRM7qptvBl0vc",
+    "query": "Huntington Road, Worthington, MA",
+    "refined_from_query": "Worthington, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   },
   "24": {
@@ -168,14 +168,15 @@
     ]
   },
   "25": {
-    "formatted_address": "Natick, MA, USA",
-    "lat": 42.2775281,
-    "lon": -71.3468091,
-    "place_id": "ChIJdSAbXrOH44kRJ6Nc7Ik_jN8",
-    "query": "Natick, MA",
+    "formatted_address": "Saxonville, Framingham, MA 01701, USA",
+    "lat": 42.3264843,
+    "lon": -71.39950499999999,
+    "place_id": "ChIJrxIK2rCI44kRxAwZupaOljQ",
+    "query": "Saxonville, Framingham, MA",
+    "refined_from_query": "Natick, MA",
     "status": "OK",
     "types": [
-      "locality",
+      "neighborhood",
       "political"
     ]
   },
@@ -192,15 +193,15 @@
     ]
   },
   "27": {
-    "formatted_address": "South End, Boston, MA, USA",
-    "lat": 42.3407288,
-    "lon": -71.0705633,
-    "place_id": "ChIJ28p2uBR644kRGOnQAcK4Txc",
-    "query": "South End, Boston, MA",
+    "formatted_address": "Washington St, Massachusetts, USA",
+    "lat": 42.1815846,
+    "lon": -71.2033623,
+    "place_id": "ChIJJ93PvPh-44kRPia5WlyhJMg",
+    "query": "Washington Street, South End, Boston, MA",
+    "refined_from_query": "South End, Boston, MA",
     "status": "OK",
     "types": [
-      "neighborhood",
-      "political"
+      "route"
     ]
   },
   "28": {
@@ -216,14 +217,15 @@
     ]
   },
   "29": {
-    "formatted_address": "Acton, MA, USA",
-    "lat": 42.4850931,
-    "lon": -71.43284,
-    "place_id": "ChIJz3d2JzCR44kRYNeosghNYAo",
-    "query": "Acton, MA",
+    "formatted_address": "North Acton, Acton, MA 01720, USA",
+    "lat": 42.5125928,
+    "lon": -71.4120063,
+    "place_id": "ChIJ91Hx4hOX44kRNbsJYj4T4mw",
+    "query": "North Acton, Acton, MA",
+    "refined_from_query": "Acton, MA",
     "status": "OK",
     "types": [
-      "locality",
+      "colloquial_area",
       "political"
     ]
   },
@@ -252,15 +254,15 @@
     ]
   },
   "31": {
-    "formatted_address": "Dennis, MA, USA",
-    "lat": 41.7360766,
-    "lon": -70.1945025,
-    "place_id": "ChIJKXWf7-I4-4kRlxrXcRGHy70",
-    "query": "Dennis, MA",
+    "formatted_address": "MA-6A, Massachusetts, USA",
+    "lat": 41.7472252,
+    "lon": -70.17999499999999,
+    "place_id": "ChIJofBEqqxP-4kRDSTIB031DOs",
+    "query": "Route 6A, Dennis, MA",
+    "refined_from_query": "Dennis, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   },
   "32": {
@@ -276,15 +278,15 @@
     ]
   },
   "33": {
-    "formatted_address": "Waltham, MA, USA",
-    "lat": 42.3764358,
-    "lon": -71.23575009999999,
-    "place_id": "ChIJ3eQad-F344kRxFr-GmKH2t4",
-    "query": "Waltham, MA",
+    "formatted_address": "Main St, Massachusetts, USA",
+    "lat": 42.3771146,
+    "lon": -71.230456,
+    "place_id": "ChIJscTFoNqC44kR3qcOOFvXY_U",
+    "query": "Main Street, Waltham, MA",
+    "refined_from_query": "Waltham, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   },
   "4": {
@@ -312,51 +314,55 @@
     ]
   },
   "6": {
-    "formatted_address": "Falmouth, MA, USA",
-    "lat": 41.5521685,
-    "lon": -70.6128985,
-    "place_id": "ChIJ82Dog8rQ5IkRNGG2NHdkgbU",
-    "query": "Falmouth, MA",
+    "formatted_address": "Stephens Ln, Falmouth, MA 02540, USA",
+    "lat": 41.5630994,
+    "lon": -70.6125881,
+    "place_id": "ChIJpVlvfmbX5IkR87e0DyfVAxo",
+    "query": "Stephens Lane, Falmouth, MA",
+    "refined_from_query": "Falmouth, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   },
   "7": {
-    "formatted_address": "Falmouth, MA, USA",
-    "lat": 41.5521685,
-    "lon": -70.6128985,
-    "place_id": "ChIJ82Dog8rQ5IkRNGG2NHdkgbU",
-    "query": "Falmouth, MA",
+    "formatted_address": "Stephens Ln, Falmouth, MA 02540, USA",
+    "lat": 41.5630994,
+    "lon": -70.6125881,
+    "place_id": "ChIJpVlvfmbX5IkR87e0DyfVAxo",
+    "query": "Stephens Lane, Falmouth, MA",
+    "refined_from_query": "Falmouth, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   },
   "EFT": {
-    "formatted_address": "East Freetown, Freetown, MA, USA",
-    "lat": 41.7708192,
-    "lon": -70.9553359,
-    "place_id": "ChIJE9PsR1nu5IkRsFXdskUc24o",
-    "query": "East Freetown, MA",
+    "formatted_address": "170 S Main St, Assonet, MA 02702, United States",
+    "lat": 41.7794685,
+    "lon": -71.09525289999999,
+    "place_id": "ChIJUwxmBc3w5IkRJViebK9pVM0",
+    "query": "East Freetown Industrial Park, East Freetown, MA",
+    "refined_from_query": "East Freetown, MA",
     "status": "OK",
     "types": [
-      "neighborhood",
-      "political"
+      "park",
+      "real_estate_agency",
+      "general_contractor",
+      "point_of_interest",
+      "establishment"
     ]
   },
   "WD-CIP": {
-    "formatted_address": "Whately, MA, USA",
-    "lat": 42.4398101,
-    "lon": -72.6348118,
-    "place_id": "ChIJj6LMbcos4YkRLhpwnUlv5EY",
-    "query": "Whately, MA",
+    "formatted_address": "Christian Ln, Whately, MA 01373, USA",
+    "lat": 42.4456121,
+    "lon": -72.6155378,
+    "place_id": "ChIJ9eFW_qfU5okRGkV8sikia7c",
+    "query": "Christian Lane, Whately, MA",
+    "refined_from_query": "Whately, MA",
     "status": "OK",
     "types": [
-      "locality",
-      "political"
+      "route"
     ]
   }
 }

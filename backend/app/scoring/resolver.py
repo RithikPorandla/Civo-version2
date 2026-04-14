@@ -87,7 +87,7 @@ def resolve_parcel(
     session: Session,
     address: str,
     fallback_radius_m: float = 2000.0,
-    esmp_anchor_radius_m: float = 5000.0,
+    esmp_anchor_radius_m: float = 8000.0,
 ) -> tuple[str, str]:
     """Return ``(loc_id, resolution_mode)`` for an address.
 

@@ -207,11 +207,11 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
         text(
             """
             SELECT COALESCE(SUM(
-                     ST_Area(ST_Intersection(CAST(:buf AS geometry), f.geom))
+                     ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
                    ), 0) AS overlap_sqm,
                    STRING_AGG(DISTINCT f.fld_zone, ',') AS zones
             FROM flood_zones f
-            WHERE f.fld_zone = ANY(:zones) AND ST_Intersects(CAST(:buf AS geometry), f.geom)
+            WHERE f.fld_zone = ANY(:zones) AND ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(f.geom))
             """
         ),
         {"buf": ctx["buffer_ewkt"], "zones": list(zones)},
@@ -260,11 +260,11 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
         text(
             """
             SELECT COALESCE(SUM(
-                     ST_Area(ST_Intersection(CAST(:buf AS geometry), l.geom))
+                     ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(l.geom)))
                    ), 0) AS overlap_sqm
             FROM land_use l
             WHERE l.covercode = ANY(:codes)
-              AND ST_Intersects(CAST(:buf AS geometry), l.geom)
+              AND ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(l.geom))
             """
         ),
         {"buf": ctx["buffer_ewkt"], "codes": list(forested)},
@@ -319,7 +319,7 @@ def _score_biodiversity(
             text(
                 f"""
                 SELECT COALESCE(SUM(
-                         ST_Area(ST_Intersection(CAST(:buf AS geometry), h.geom))
+                         ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(h.geom)))
                        ), 0) AS overlap_sqm,
                        COUNT(h.id) AS n_rows,
                        STRING_AGG(DISTINCT COALESCE(h.attrs->>'COMMNAME',
@@ -328,7 +328,7 @@ def _score_biodiversity(
                                                     h.attrs->>'ESTHAB_ID'),
                                   ', ') AS labels
                 FROM {table} h
-                WHERE ST_Intersects(CAST(:buf AS geometry), h.geom)
+                WHERE ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(h.geom))
                 """
             ),
             {"buf": ctx["buffer_ewkt"]},
@@ -536,13 +536,13 @@ def _score_agriculture(session: Session, ctx: dict, cfg: dict) -> CriterionScore
             """
             SELECT
               COALESCE(SUM(CASE WHEN f.farmland_class ~ :prime_re
-                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), f.geom))
+                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
                                 ELSE 0 END), 0) AS prime_sqm,
               COALESCE(SUM(CASE WHEN f.farmland_class ~ :statewide_re
-                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), f.geom))
+                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
                                 ELSE 0 END), 0) AS statewide_sqm
             FROM prime_farmland f
-            WHERE ST_Intersects(CAST(:buf AS geometry), f.geom)
+            WHERE ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(f.geom))
             """
         ),
         {"buf": ctx["buffer_ewkt"], "prime_re": prime_re, "statewide_re": statewide_re},

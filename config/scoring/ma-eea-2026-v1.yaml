@@ -96,11 +96,11 @@ criteria:
       nhesp_estimated:   0.10
     overlap_anchors:
       - [0.00, 10]
-      - [0.02,  9]
-      - [0.05,  7]
-      - [0.10,  5]
-      - [0.20,  3]
-      - [0.35,  1]
+      - [0.01,  9]
+      - [0.03,  7]
+      - [0.05,  5]   # at the 5% ineligibility threshold, raw drops to 5
+      - [0.10,  3]
+      - [0.25,  1]
       - [0.50,  0]
     ineligibility_min_pct: 0.05   # >=5% overlap with Core/Priority flags ineligible
 
@@ -180,7 +180,7 @@ ineligibility_layers:
 project_buffer_m:
   substation: 1500
   substation_expansion: 800
-  substation_rebuild: 1500
+  substation_rebuild: 2500
   underground_substation: 400
   new_substation: 2000
   new_substation_cip: 2500
