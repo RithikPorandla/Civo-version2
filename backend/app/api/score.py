@@ -18,10 +18,12 @@ serving other requests. The batch endpoint fans out up to N calls with
 from __future__ import annotations
 
 import asyncio
+import json
+import time
 from statistics import median
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -230,7 +232,6 @@ def get_parcel_geojson(
     ).mappings().first()
     if not row:
         raise HTTPException(404, f"parcel {parcel_id!r} not found")
-    import json
 
     return {
         "type": "Feature",
@@ -244,3 +245,221 @@ def get_parcel_geojson(
             "lot_size": row["lot_size"],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /parcel/{parcel_id}/overlays
+# ---------------------------------------------------------------------------
+OVERLAY_MAX_FEATURES = 500
+OVERLAY_CACHE_TTL_S = 3600
+_overlay_cache: dict[tuple[str, int], tuple[float, dict]] = {}
+
+
+def _overlay_cache_get(key: tuple[str, int]) -> dict | None:
+    hit = _overlay_cache.get(key)
+    if not hit:
+        return None
+    ts, payload = hit
+    if time.time() - ts > OVERLAY_CACHE_TTL_S:
+        _overlay_cache.pop(key, None)
+        return None
+    return payload
+
+
+def _overlay_cache_put(key: tuple[str, int], payload: dict) -> None:
+    _overlay_cache[key] = (time.time(), payload)
+
+
+# (layer_name, table, select_props_sql_expression). The SQL expression
+# projects the raw row to a JSONB blob the frontend can drop straight into
+# feature.properties without a second lookup.
+_OVERLAY_SPECS: list[tuple[str, str, str]] = [
+    (
+        "esmp",
+        "esmp_projects",
+        (
+            "jsonb_build_object("
+            "'project_id', attrs->>'project_id', "
+            "'name', project_name, "
+            "'mw_added', mw, "
+            "'target_isd', isd, "
+            "'coordinate_confidence', coordinate_confidence, "
+            "'siting_status', siting_status, "
+            "'municipality', municipality)"
+        ),
+    ),
+    (
+        "biomap_core",
+        "habitat_biomap_core",
+        (
+            "jsonb_build_object("
+            "'BM_ID', COALESCE(attrs->>'COMPNAME', core_id, id::text), "
+            "'TOWN', attrs->>'TOWN', "
+            "'core_type', core_type)"
+        ),
+    ),
+    (
+        "biomap_cnl",
+        "habitat_biomap_cnl",
+        (
+            "jsonb_build_object("
+            "'BM_ID', COALESCE(attrs->>'COMPNAME', cnl_id, id::text), "
+            "'TOWN', attrs->>'TOWN', "
+            "'cnl_type', cnl_type)"
+        ),
+    ),
+    (
+        "nhesp_priority",
+        "habitat_nhesp_priority",
+        (
+            "jsonb_build_object("
+            "'PRIHAB_ID', COALESCE(priority_id, attrs->>'PRIHAB_ID', id::text), "
+            "'HAB_DATE', attrs->>'HAB_DATE')"
+        ),
+    ),
+    (
+        "nhesp_estimated",
+        "habitat_nhesp_estimated",
+        (
+            "jsonb_build_object("
+            "'ESTHAB_ID', COALESCE(estimated_id, attrs->>'ESTHAB_ID', id::text), "
+            "'HAB_DATE', attrs->>'HAB_DATE')"
+        ),
+    ),
+    (
+        "fema_flood",
+        "flood_zones",
+        (
+            "jsonb_build_object("
+            "'FLD_ZONE', fld_zone, "
+            "'ZONE_SUBTY', zone_subty, "
+            "'STATIC_BFE', static_bfe, "
+            "'DFIRM_ID', dfirm_id)"
+        ),
+    ),
+    (
+        "wetlands",
+        "wetlands",
+        (
+            "jsonb_build_object("
+            "'WETCODE', COALESCE(attrs->>'WETCODE', iw_class), "
+            "'iw_type', iw_type, "
+            "'source', source)"
+        ),
+    ),
+    (
+        "article97",
+        "article97",
+        (
+            "jsonb_build_object("
+            "'site_name', site_name, "
+            "'owner_type', owner_type, "
+            "'owner_name', owner_name)"
+        ),
+    ),
+]
+
+
+@router.get("/parcel/{parcel_id}/overlays")
+def get_parcel_overlays(
+    parcel_id: str,
+    radius_m: int = Query(2000, ge=500, le=10000, description="Buffer radius in meters (500-10000)"),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Return every overlay feature that intersects the parcel + buffer.
+
+    One FeatureCollection, WGS84, with a ``layer`` property on every
+    feature so the frontend can style/filter without a second call.
+    Truncated at :data:`OVERLAY_MAX_FEATURES` total features; truncation
+    is surfaced in ``properties.truncated = true`` so the UI can tell
+    the user to zoom in.
+    """
+    cache_key = (parcel_id, radius_m)
+    cached = _overlay_cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    parcel = session.execute(
+        text(
+            """
+            SELECT loc_id, site_addr, town_name, city, total_val, lot_size,
+                   ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geom_4326,
+                   ST_AsEWKT(geom) AS geom_ewkt,
+                   ST_AsEWKT(ST_Buffer(geom, :r)) AS buffer_ewkt
+            FROM parcels
+            WHERE loc_id = :pid
+            """
+        ),
+        {"pid": parcel_id, "r": radius_m},
+    ).mappings().first()
+    if not parcel:
+        raise HTTPException(404, f"parcel {parcel_id!r} not found")
+
+    features: list[dict] = []
+    counts: dict[str, int] = {"parcel": 1}
+    truncated = False
+    remaining_budget = OVERLAY_MAX_FEATURES - 1  # reserve one slot for parcel
+
+    # Parcel itself first for frontend convenience.
+    features.append(
+        {
+            "type": "Feature",
+            "geometry": json.loads(parcel["geom_4326"]),
+            "properties": {
+                "layer": "parcel",
+                "loc_id": parcel["loc_id"],
+                "site_addr": parcel["site_addr"],
+                "town_name": parcel["town_name"],
+                "city": parcel["city"],
+                "total_val": parcel["total_val"],
+                "lot_size": parcel["lot_size"],
+            },
+        }
+    )
+
+    for layer, table, props_expr in _OVERLAY_SPECS:
+        if remaining_budget <= 0:
+            truncated = True
+            counts[layer] = 0
+            continue
+        rows = session.execute(
+            text(
+                f"""
+                SELECT
+                  ST_AsGeoJSON(ST_Transform(ST_MakeValid(geom), 4326)) AS geom,
+                  {props_expr} AS props
+                FROM {table}
+                WHERE ST_Intersects(ST_MakeValid(geom), CAST(:buf AS geometry))
+                LIMIT :lim
+                """
+            ),
+            {"buf": parcel["buffer_ewkt"], "lim": remaining_budget + 1},
+        ).mappings().all()
+        added = 0
+        for row in rows:
+            if remaining_budget <= 0:
+                truncated = True
+                break
+            geom = json.loads(row["geom"])
+            props = dict(row["props"] or {})
+            props["layer"] = layer
+            features.append({"type": "Feature", "geometry": geom, "properties": props})
+            remaining_budget -= 1
+            added += 1
+        counts[layer] = added
+        if len(rows) > added:
+            truncated = True
+
+    payload = {
+        "type": "FeatureCollection",
+        "features": features,
+        "properties": {
+            "parcel_id": parcel_id,
+            "radius_m": radius_m,
+            "truncated": truncated,
+            "counts": counts,
+            "feature_cap": OVERLAY_MAX_FEATURES,
+        },
+    }
+    _overlay_cache_put(cache_key, payload)
+    return payload

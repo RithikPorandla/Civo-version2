@@ -283,6 +283,27 @@ class Precedent(Base):
 # ---------------------------------------------------------------------------
 # Score history (append-only audit of every /score call)
 # ---------------------------------------------------------------------------
+class Portfolio(Base):
+    """A saved, shareable batch-scoring run.
+
+    Items are denormalized — scores stay fixed until the user explicitly
+    re-runs the portfolio, even if the underlying parcel is re-scored.
+    ``config_version`` lets us reproduce the exact methodology used.
+    """
+
+    __tablename__ = "portfolios"
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # e.g. 'port_abc123xyz'
+    state: Mapped[str] = mapped_column(String, nullable=False, default="MA")
+    name: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    items: Mapped[list[dict]] = mapped_column(JSONB, nullable=False)
+    project_type: Mapped[str | None] = mapped_column(String)
+    config_version: Mapped[str] = mapped_column(String, nullable=False)
+    scored_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class ScoreHistory(Base):
     __tablename__ = "score_history"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
