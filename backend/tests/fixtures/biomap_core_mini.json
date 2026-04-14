@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"OBJECTID": 11, "COMPNAME": "Test Community A"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[230000, 920000], [230100, 920000], [230100, 920100], [230000, 920100], [230000, 920000]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"OBJECTID": 12, "COMPNAME": "Test Community B"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[231000, 921000], [231200, 921000], [231200, 921200], [231000, 921200], [231000, 921000]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"OBJECTID": 13, "COMPNAME": "Test C (no geom)"},
+      "geometry": null
+    }
+  ]
+}

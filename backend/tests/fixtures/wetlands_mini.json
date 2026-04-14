@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"IT_VALDESC": "Shallow Marsh Meadow", "IT_VALC": "SMM", "SRC": "1:12000 aerial"}, "geometry": {"type": "Polygon", "coordinates": [[[225000,908000],[225100,908000],[225100,908100],[225000,908100],[225000,908000]]]}},
+    {"type": "Feature", "properties": {"IT_VALDESC": "Wooded Swamp, Deciduous", "IT_VALC": "WSD"}, "geometry": {"type": "Polygon", "coordinates": [[[226000,909000],[226100,909000],[226100,909100],[226000,909100],[226000,909000]]]}},
+    {"type": "Feature", "properties": {"IT_VALDESC": "Open Water"}, "geometry": null}
+  ]
+}

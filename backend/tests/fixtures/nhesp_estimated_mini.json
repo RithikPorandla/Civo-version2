@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"ESTHAB_ID": "EH-1", "HAB_DATE": "2024-08-01", "OBJECTID": 1}, "geometry": {"type": "Polygon", "coordinates": [[[245000,915000],[245100,915000],[245100,915100],[245000,915100],[245000,915000]]]}},
+    {"type": "Feature", "properties": {"ESTHAB_ID": "EH-2", "OBJECTID": 2}, "geometry": {"type": "Polygon", "coordinates": [[[246000,916000],[246100,916000],[246100,916100],[246000,916100],[246000,916000]]]}}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"PRIHAB_ID": "PH-1", "HAB_DATE": "2024-08-01", "OBJECTID": 1}, "geometry": {"type": "Polygon", "coordinates": [[[240000,910000],[240100,910000],[240100,910100],[240000,910100],[240000,910000]]]}},
+    {"type": "Feature", "properties": {"PRIHAB_ID": "PH-2", "HAB_DATE": "2024-08-01", "OBJECTID": 2}, "geometry": {"type": "Polygon", "coordinates": [[[241000,911000],[241100,911000],[241100,911100],[241000,911100],[241000,911000]]]}},
+    {"type": "Feature", "properties": {"OBJECTID": 3}, "geometry": null}
+  ]
+}

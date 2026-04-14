@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"LOC_ID": "A1", "MAP_PAR_ID": "1-1", "PROP_ID": "ABC-001", "TOWN_ID": 2, "CITY": "ACTON", "SITE_ADDR": "1 MAIN ST", "LOT_SIZE": 1.2, "TOTAL_VAL": 500000, "Shape__Area": 4800.0}, "geometry": {"type": "Polygon", "coordinates": [[[230000,920000],[230050,920000],[230050,920040],[230000,920040],[230000,920000]]]}},
+    {"type": "Feature", "properties": {"LOC_ID": "A2", "MAP_PAR_ID": "1-2", "PROP_ID": "ABC-002", "TOWN_ID": 2, "CITY": "ACTON", "SITE_ADDR": "3 MAIN ST", "LOT_SIZE": 0.5, "TOTAL_VAL": 325000, "Shape__Area": 2000.0}, "geometry": {"type": "Polygon", "coordinates": [[[230100,920000],[230150,920000],[230150,920040],[230100,920040],[230100,920000]]]}},
+    {"type": "Feature", "properties": {"LOC_ID": null}, "geometry": null}
+  ]
+}

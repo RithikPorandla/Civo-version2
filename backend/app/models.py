@@ -201,8 +201,11 @@ class ESMPProject(Base):
     mw: Mapped[float | None] = mapped_column(Numeric(10, 2))
     project_type: Mapped[str | None] = mapped_column(String)
     status: Mapped[str | None] = mapped_column(String)
+    siting_status: Mapped[str | None] = mapped_column(String, index=True)
+    coordinate_confidence: Mapped[str | None] = mapped_column(String)
     in_service_date: Mapped[date | None] = mapped_column(Date)
-    source_docket: Mapped[str | None] = mapped_column(String, default="DPU 24-10")
+    municipality: Mapped[str | None] = mapped_column(String, index=True)
+    source_filing: Mapped[str] = mapped_column(String, nullable=False, default="DPU 24-10")
     attrs: Mapped[dict | None] = mapped_column(JSONB)
     geom = mapped_column(
         Geometry(geometry_type="POINT", srid=SRID, spatial_index=True), nullable=False

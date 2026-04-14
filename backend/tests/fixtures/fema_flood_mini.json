@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"FLD_ZONE": "AE", "ZONE_SUBTY": "FLOODWAY", "SFHA_TF": "T", "STATIC_BFE": 9.5, "DFIRM_ID": "25017C"}, "geometry": {"type": "Polygon", "coordinates": [[[220000,905000],[220100,905000],[220100,905100],[220000,905100],[220000,905000]]]}},
+    {"type": "Feature", "properties": {"FLD_ZONE": "X", "SFHA_TF": "F"}, "geometry": {"type": "Polygon", "coordinates": [[[221000,906000],[221100,906000],[221100,906100],[221000,906100],[221000,906000]]]}},
+    {"type": "Feature", "properties": {"FLD_ZONE": "VE", "STATIC_BFE": 12.0}, "geometry": null}
+  ]
+}

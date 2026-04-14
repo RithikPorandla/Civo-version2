@@ -33,10 +33,7 @@ FEATURE_URL = (
 )
 PAGE_SIZE = 2000
 
-# MassGIS TOWN_ID lookup. Expand as more towns are onboarded.
-TOWN_IDS: dict[str, int] = {
-    "Acton": 3,
-}
+from ingest._common import TARGET_TOWNS, _request_with_retry, resolve_town_id  # noqa: E402
 
 
 def fetch_page(client: httpx.Client, town_id: int, offset: int) -> dict:
@@ -49,8 +46,7 @@ def fetch_page(client: httpx.Client, town_id: int, offset: int) -> dict:
         "resultRecordCount": PAGE_SIZE,
         "returnGeometry": "true",
     }
-    r = client.get(FEATURE_URL, params=params, timeout=120)
-    r.raise_for_status()
+    r = _request_with_retry(client, "GET", FEATURE_URL, params=params, timeout=120)
     return r.json()
 
 
@@ -116,12 +112,7 @@ def feature_to_row(feat: dict, town_name: str) -> dict | None:
 
 
 def ingest_town(town: str) -> int:
-    if town not in TOWN_IDS:
-        raise SystemExit(
-            f"Unknown town '{town}'. Known: {sorted(TOWN_IDS)}. "
-            "Add it to TOWN_IDS in ingest/l3_parcels.py."
-        )
-    town_id = TOWN_IDS[town]
+    town_id = resolve_town_id(town)
     total = 0
     offset = 0
     with httpx.Client() as client, engine.begin() as conn:
@@ -143,11 +134,19 @@ def ingest_town(town: str) -> int:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Ingest MassGIS L3 parcels for one town.")
-    ap.add_argument("--town", required=True, help="Town name, e.g. Acton")
+    ap = argparse.ArgumentParser(description="Ingest MassGIS L3 parcels for MA towns.")
+    ap.add_argument(
+        "--town",
+        action="append",
+        help="Town name (repeatable). Default: 10 target towns.",
+    )
     args = ap.parse_args()
-    n = ingest_town(args.town)
-    print(f"Done. Upserted {n} parcels for {args.town}.")
+    towns = args.town or TARGET_TOWNS
+    grand = 0
+    for t in towns:
+        n = ingest_town(t)
+        grand += n
+    print(f"Done. Upserted {grand} parcels across {len(towns)} town(s).")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,362 @@
+{
+  "1": {
+    "formatted_address": "Somerville, MA, USA",
+    "lat": 42.3875968,
+    "lon": -71.0994968,
+    "place_id": "ChIJZeH1eyl344kRA3v52Jl3kHo",
+    "query": "Somerville, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "10": {
+    "formatted_address": "Agawam, MA, USA",
+    "lat": 42.0894684,
+    "lon": -72.6270607,
+    "place_id": "ChIJYZuYV9rj5okRmkpu-nqAcAw",
+    "query": "Agawam, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "11": {
+    "formatted_address": "Plainfield, MA, USA",
+    "lat": 42.5153633,
+    "lon": -72.9162075,
+    "place_id": "ChIJqX_e8XnN4IkRc5fZvF3qFfM",
+    "query": "Plainfield, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "12": {
+    "formatted_address": "Ludlow, MA, USA",
+    "lat": 42.1600936,
+    "lon": -72.47591899999999,
+    "place_id": "ChIJbW83y1vC5okRybGeLNOzd_8",
+    "query": "Ludlow, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "13": {
+    "formatted_address": "North Cambridge, Cambridge, MA, USA",
+    "lat": 42.3933869,
+    "lon": -71.1308572,
+    "place_id": "ChIJY1CUjA9344kRX9zunMYZf34",
+    "query": "North Cambridge, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "16": {
+    "formatted_address": "Dalton, MA 01226, USA",
+    "lat": 42.4736959,
+    "lon": -73.1662138,
+    "place_id": "ChIJ8z_g99tL54kRm9PtZf2G3ec",
+    "query": "Dalton, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "17": {
+    "formatted_address": "Maynard, MA, USA",
+    "lat": 42.4303138,
+    "lon": -71.460433,
+    "place_id": "ChIJ30mId-eR44kRv8gddl1U42M",
+    "query": "Maynard, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "18": {
+    "formatted_address": "Kendall Square, Cambridge, MA, USA",
+    "lat": 42.3656686,
+    "lon": -71.0823956,
+    "place_id": "ChIJF3-Ltq5w44kRmtQs_tBFM-I",
+    "query": "Kendall Square, Cambridge, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "19": {
+    "formatted_address": "Burlington, MA, USA",
+    "lat": 42.5047161,
+    "lon": -71.1956205,
+    "place_id": "ChIJP_ntUvj244kRDamBW6w0GO4",
+    "query": "Burlington, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "2": {
+    "formatted_address": "Springfield, MA, USA",
+    "lat": 42.1013104,
+    "lon": -72.58927419999999,
+    "place_id": "ChIJH7jkCCzm5okRvaq5QdoIGB0",
+    "query": "Springfield, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "22": {
+    "formatted_address": "Hyde Park, Boston, MA, USA",
+    "lat": 42.2556619,
+    "lon": -71.1255855,
+    "place_id": "ChIJKaX9WPN-44kRuBkSMPi0ovg",
+    "query": "Hyde Park, Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "22-47": {
+    "formatted_address": "Marion, MA, USA",
+    "lat": 41.7024461,
+    "lon": -70.7657499,
+    "place_id": "ChIJr8jPJzzD5IkRGqqPP8YZQ1I",
+    "query": "Marion, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "23": {
+    "formatted_address": "Worthington, MA, USA",
+    "lat": 42.3973092,
+    "lon": -72.9356536,
+    "place_id": "ChIJb9_sAeEw54kRKra2-WX8134",
+    "query": "Worthington, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "24": {
+    "formatted_address": "Brighton, Boston, MA, USA",
+    "lat": 42.3489143,
+    "lon": -71.1604919,
+    "place_id": "ChIJxTFcO0h444kRGCt654rYf_0",
+    "query": "Brighton, Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "25": {
+    "formatted_address": "Natick, MA, USA",
+    "lat": 42.2775281,
+    "lon": -71.3468091,
+    "place_id": "ChIJdSAbXrOH44kRJ6Nc7Ik_jN8",
+    "query": "Natick, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "26": {
+    "formatted_address": "Charlestown, Boston, MA, USA",
+    "lat": 42.37865559999999,
+    "lon": -71.0615977,
+    "place_id": "ChIJGwVKWe5w44kRcr4b9E25-Go",
+    "query": "Charlestown, Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "27": {
+    "formatted_address": "South End, Boston, MA, USA",
+    "lat": 42.3407288,
+    "lon": -71.0705633,
+    "place_id": "ChIJ28p2uBR644kRGOnQAcK4Txc",
+    "query": "South End, Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "28": {
+    "formatted_address": "South Boston Waterfront, Boston, MA, USA",
+    "lat": 42.3462519,
+    "lon": -71.04214429999999,
+    "place_id": "ChIJxfhlGIN644kR2ZJoS-Cwfq0",
+    "query": "Seaport, Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "29": {
+    "formatted_address": "Acton, MA, USA",
+    "lat": 42.4850931,
+    "lon": -71.43284,
+    "place_id": "ChIJz3d2JzCR44kRYNeosghNYAo",
+    "query": "Acton, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "3": {
+    "formatted_address": "Springfield, MA, USA",
+    "lat": 42.1013104,
+    "lon": -72.58927419999999,
+    "place_id": "ChIJH7jkCCzm5okRvaq5QdoIGB0",
+    "query": "Springfield, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "30": {
+    "formatted_address": "Brookline, MA, USA",
+    "lat": 42.33176419999999,
+    "lon": -71.1211635,
+    "place_id": "ChIJhZirQQB544kRB9LbXEfedZQ",
+    "query": "Brookline, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "31": {
+    "formatted_address": "Dennis, MA, USA",
+    "lat": 41.7360766,
+    "lon": -70.1945025,
+    "place_id": "ChIJKXWf7-I4-4kRlxrXcRGHy70",
+    "query": "Dennis, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "32": {
+    "formatted_address": "Downtown, Boston, MA, USA",
+    "lat": 42.35552750000001,
+    "lon": -71.0565313,
+    "place_id": "ChIJW60DJYNw44kRmL2Ehm4t0Bg",
+    "query": "Downtown Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "33": {
+    "formatted_address": "Waltham, MA, USA",
+    "lat": 42.3764358,
+    "lon": -71.23575009999999,
+    "place_id": "ChIJ3eQad-F344kRxFr-GmKH2t4",
+    "query": "Waltham, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "4": {
+    "formatted_address": "Medway, MA 02053, USA",
+    "lat": 42.1417641,
+    "lon": -71.3967256,
+    "place_id": "ChIJD7Zl_fxw5IkRZWFSlDlzM3o",
+    "query": "Medway, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "5": {
+    "formatted_address": "East Boston, Boston, MA, USA",
+    "lat": 42.3800079,
+    "lon": -71.0254241,
+    "place_id": "ChIJw8RbIFtw44kR5riss54MeeI",
+    "query": "East Boston, Boston, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "6": {
+    "formatted_address": "Falmouth, MA, USA",
+    "lat": 41.5521685,
+    "lon": -70.6128985,
+    "place_id": "ChIJ82Dog8rQ5IkRNGG2NHdkgbU",
+    "query": "Falmouth, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "7": {
+    "formatted_address": "Falmouth, MA, USA",
+    "lat": 41.5521685,
+    "lon": -70.6128985,
+    "place_id": "ChIJ82Dog8rQ5IkRNGG2NHdkgbU",
+    "query": "Falmouth, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  },
+  "EFT": {
+    "formatted_address": "East Freetown, Freetown, MA, USA",
+    "lat": 41.7708192,
+    "lon": -70.9553359,
+    "place_id": "ChIJE9PsR1nu5IkRsFXdskUc24o",
+    "query": "East Freetown, MA",
+    "status": "OK",
+    "types": [
+      "neighborhood",
+      "political"
+    ]
+  },
+  "WD-CIP": {
+    "formatted_address": "Whately, MA, USA",
+    "lat": 42.4398101,
+    "lon": -72.6348118,
+    "place_id": "ChIJj6LMbcos4YkRLhpwnUlv5EY",
+    "query": "Whately, MA",
+    "status": "OK",
+    "types": [
+      "locality",
+      "political"
+    ]
+  }
+}

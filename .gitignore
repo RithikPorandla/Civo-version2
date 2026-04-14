@@ -2,7 +2,11 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/
+data/*
+!data/esmp_projects.csv
+!data/cache/
+data/cache/*
+!data/cache/esmp_geocode.json
 node_modules/
 .venv/
 *.egg-info/
