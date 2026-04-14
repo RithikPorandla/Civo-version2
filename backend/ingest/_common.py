@@ -47,6 +47,7 @@ TOWN_IDS: dict[str, int] = {
 
 TARGET_TOWNS: list[str] = [
     "Acton",
+    "Boston",  # benchmark has two Boston parcels; East Boston + Seaport
     "Burlington",
     "Falmouth",
     "Natick",

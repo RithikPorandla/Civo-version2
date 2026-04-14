@@ -1,0 +1,203 @@
+# MA EEA Site Suitability scoring config.
+# Version: ma-eea-2026-v1
+# Methodology: 225 CMR 29.00 (2024 Climate Act, G.L. c.21A §30)
+# When thresholds or weights change, bump the version string and keep the
+# old file so historical reports can re-run under the config they were
+# originally scored against.
+
+version: "ma-eea-2026-v1"
+methodology: "MA EEA Site Suitability, 225 CMR 29.00"
+effective_date: "2024-01-01"
+last_reviewed: "2026-04-14"
+
+# Bucket thresholds on the weighted 0-100 total score.
+buckets:
+  suitable_min: 70          # >=70 -> SUITABLE
+  conditional_min: 50       # 50..69 -> CONDITIONALLY SUITABLE
+  # <50 -> CONSTRAINED
+
+# Soft ineligibility cap: when a biomap_core or nhesp_priority flag is
+# set (overlap >= criteria.biodiversity.ineligibility_min_pct), the
+# total score is capped at this ceiling, because 225 CMR 29.06 prohibits
+# generation/storage siting in those zones without a waiver.
+ineligibility_total_cap: 55
+
+criteria:
+
+  grid_alignment:
+    weight: 0.20
+    # Distance in meters from parcel centroid to nearest ESMP project or
+    # existing substation. Linear interpolation between anchors.
+    # Closer = better grid alignment = higher score.
+    distance_anchors_m:
+      - [0,     10]
+      - [500,   10]
+      - [2000,   8]
+      - [5000,   5]
+      - [10000,  2]
+      - [15000,  0]
+    # A planned-but-unbuilt ESMP project isn't actual grid. Cap proximity
+    # credit based on siting_status so rural greenfields stop scoring 10/10
+    # just because Eversource drew them on a future-pipeline slide.
+    siting_status_caps:
+      pending_siting: 4
+      planned: 5
+      in_permitting: 8
+      approved: 10
+      under_construction: 10
+      in_service: 10
+    pending_siting_cap: 4     # legacy; superseded by siting_status_caps but kept for tests
+    existing_substation_bonus: 0.5  # +0.5 if within 2km of an existing sub (currently unused)
+
+  climate_resilience:
+    weight: 0.15
+    # Percent of parcel area in FEMA Special Flood Hazard Area (zones A, AE, AO, AH, V, VE).
+    # More flood exposure = lower score.
+    sfha_zones: ["A", "AE", "AO", "AH", "V", "VE"]
+    sfha_anchors_pct:
+      - [0.0,  10]
+      - [0.05,  8]
+      - [0.15,  5]
+      - [0.30,  2]
+      - [0.60,  0]
+
+  carbon_storage:
+    weight: 0.15
+    # Percent of parcel area in forested cover (MassGIS LandCover 2016
+    # cover codes: 9 Deciduous Forest, 10 Evergreen Forest, 13 Palustrine
+    # Forested Wetland). Until the real BioMap / DCR carbon stock layer
+    # ships, this is a proxy: more forest = more carbon loss risk = lower
+    # siting suitability.
+    forested_cover_codes: [9, 10, 13]
+    forest_anchors_pct:
+      - [0.0,  10]
+      - [0.10,  9]
+      - [0.30,  7]
+      - [0.60,  3]
+      - [0.90,  0]
+    proxy_note: >-
+      Carbon storage is approximated by forested cover fraction; full
+      DCR biomass/soil carbon layer (Top-20% carbon forests) is a v2
+      dependency and is surfaced as a limitation citation on every report.
+
+  biodiversity:
+    weight: 0.20
+    # Weighted overlap across four layers. Weights inside the criterion
+    # MUST sum to 1.0. Weighted overlap is fed through anchor points
+    # (not 10*(1-w)) so even small overlap with high-weight layers
+    # produces a meaningful deduction — a parcel with 5% BioMap Core
+    # overlap has a real biodiversity risk, not a ~9.8/10 score.
+    # BioMap Core and NHESP Priority also trigger ineligible_flags when
+    # overlap >= ineligibility_min_pct.
+    layer_weights:
+      biomap_core:       0.50
+      nhesp_priority:    0.25
+      biomap_cnl:        0.15
+      nhesp_estimated:   0.10
+    overlap_anchors:
+      - [0.00, 10]
+      - [0.02,  9]
+      - [0.05,  7]
+      - [0.10,  5]
+      - [0.20,  3]
+      - [0.35,  1]
+      - [0.50,  0]
+    ineligibility_min_pct: 0.05   # >=5% overlap with Core/Priority flags ineligible
+
+  burdens:
+    weight: 0.10
+    # MassEnviroScreen cumulative burden at the block group containing the
+    # parcel centroid. Higher burden = lower siting score (siting generation
+    # in an already-burdened community adds further burden).
+    mes_anchors:
+      - [0,    10]
+      - [20,    9]
+      - [40,    6]
+      - [60,    4]
+      - [75,    2]    # 75+ percentile = "Burdened Area" threshold in MassEnviroScreen
+      - [90,    1]
+      - [100,   0]
+    ej_flag_values: ["Yes", "Yes - Income", "Yes - Minority", "Yes - English Isolation",
+                     "Yes - Income, Minority", "Yes - Income, English Isolation",
+                     "Yes - Minority, English Isolation",
+                     "Yes - Income, Minority, English Isolation"]
+
+  benefits:
+    weight: 0.10
+    # Percent of parcel in MassGIS built-environment cover codes
+    # (Impervious = 2, Developed Open Space = 5). Siting on already-
+    # developed land is a benefit (brownfield/built-environment bonus).
+    built_env_cover_codes: [2, 5]
+    built_env_anchors_pct:
+      - [0.0,   0]
+      - [0.25,  3]
+      - [0.50,  6]
+      - [0.75,  9]
+      - [1.0,  10]
+
+  agriculture:
+    weight: 0.10
+    # Percent of parcel on NRCS Prime Farmland soils. Siting on prime
+    # farmland deducts. FARMLNDCL values treated as "prime":
+    #   "All areas are prime farmland"
+    #   "Prime farmland if drained"
+    #   "Prime farmland if irrigated"
+    #   "Prime farmland if protected from flooding..."
+    # Statewide-importance class ("Farmland of statewide importance") adds
+    # a half-weight penalty.
+    prime_farmland_regex: "^(All areas are prime farmland|Prime farmland)"
+    statewide_farmland_regex: "^Farmland of statewide importance"
+    prime_anchors_pct:
+      - [0.0,  10]
+      - [0.10,  9]
+      - [0.30,  6]
+      - [0.50,  2]
+      - [0.80,  0]
+    statewide_weight: 0.5      # half-counts statewide-importance soils
+
+# Ineligible-area overlay (225 CMR 29.00 Section 29.06).
+# When a project_type is 'generation' or 'storage', any of these flagged
+# layers produces an ineligible_flag in the report. Infrastructure projects
+# can pursue a waiver so we still surface the flag for them but do not
+# treat it as a hard block.
+ineligibility_layers:
+  - biomap_core
+  - nhesp_priority
+  - article97         # not yet ingested; report will emit data_unavailable
+  - carbon_top20      # not yet ingested; report will emit data_unavailable
+  - wetland_resource  # approximated via DEP wetlands overlap; over-inclusive
+  - state_register    # not yet ingested; report will emit data_unavailable
+
+# Project footprint buffers used for sensitivity criteria
+# (biodiversity, flood, carbon, agriculture). Burdens + benefits stay
+# at parcel-only geometry because they're parcel-scoped questions
+# ("is this block group EJ?", "is this lot already built?").
+#
+# Rationale: a new substation + associated switchgear + transmission
+# tap typically occupies more than a single assessor's parcel, and the
+# scoring methodology asks about habitat etc. *in the vicinity* of the
+# site, not only within the parcel boundary.
+project_buffer_m:
+  substation: 1500
+  substation_expansion: 800
+  substation_rebuild: 1500
+  underground_substation: 400
+  new_substation: 2000
+  new_substation_cip: 2500
+  substation_plus_transmission: 3000
+  industrial_warehouse: 300
+  generic: 500
+  default: 500
+
+generation_storage_project_types:
+  - generation
+  - storage
+  - new_substation
+  - new_substation_cip
+  - substation
+  - underground_substation
+  - substation_expansion
+  - substation_rebuild
+  - substation_plus_transmission
+  - solar
+  - battery_storage
