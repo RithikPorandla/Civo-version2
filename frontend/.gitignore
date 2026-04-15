@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env.local
+# Compiled JS from TS sources — only the .tsx/.ts should be tracked
+src/**/*.js
