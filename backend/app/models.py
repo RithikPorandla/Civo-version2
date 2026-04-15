@@ -246,6 +246,7 @@ class Municipality(Base):
     zoning_board: Mapped[dict | None] = mapped_column(JSONB)
     building_department: Mapped[dict | None] = mapped_column(JSONB)
     bylaws: Mapped[dict | None] = mapped_column(JSONB)
+    project_type_bylaws: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     moratoriums: Mapped[dict | None] = mapped_column(JSONB)
     political_signals: Mapped[dict | None] = mapped_column(JSONB)
     last_refreshed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
