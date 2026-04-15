@@ -218,9 +218,7 @@ def run() -> None:
             geo = cache.get(pid)
             if geo is None:
                 if not api_key:
-                    raise SystemExit(
-                        f"project {pid} not cached and GOOGLE_PLACES_API_KEY is unset"
-                    )
+                    raise SystemExit(f"project {pid} not cached and GOOGLE_PLACES_API_KEY is unset")
                 geo = places_lookup(query, api_key)
                 cache[pid] = geo
                 save_cache(cache)  # persist incrementally
@@ -239,9 +237,7 @@ def run() -> None:
                 town_only = muni_raw.split("(")[0].split("/")[0].strip() + ", MA"
                 fb = places_lookup(town_only, api_key) if api_key else {}
                 if fb.get("status") != "OK":
-                    raise SystemExit(
-                        f"cannot resolve any coordinate for {pid} (query={query})"
-                    )
+                    raise SystemExit(f"cannot resolve any coordinate for {pid} (query={query})")
                 lat, lon = fb["lat"], fb["lon"]
                 geo["fallback"] = fb
                 cache[pid] = geo

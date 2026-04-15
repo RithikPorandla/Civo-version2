@@ -34,9 +34,7 @@ def health(session: Session = Depends(get_session)) -> dict:
         out["pgvector"] = session.execute(
             text("SELECT extversion FROM pg_extension WHERE extname='vector'")
         ).scalar()
-        out["parcels_loaded"] = session.execute(
-            text("SELECT COUNT(*) FROM parcels")
-        ).scalar()
+        out["parcels_loaded"] = session.execute(text("SELECT COUNT(*) FROM parcels")).scalar()
         out["esmp_projects_loaded"] = session.execute(
             text("SELECT COUNT(*) FROM esmp_projects")
         ).scalar()
@@ -44,9 +42,7 @@ def health(session: Session = Depends(get_session)) -> dict:
             text("SELECT COUNT(*) FROM municipalities")
         ).scalar()
         out["status"] = (
-            "ok"
-            if out["database"] and out["postgis"] and out["pgvector"]
-            else "degraded"
+            "ok" if out["database"] and out["postgis"] and out["pgvector"] else "degraded"
         )
     except Exception as e:  # pragma: no cover
         out["status"] = "error"

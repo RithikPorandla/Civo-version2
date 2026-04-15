@@ -1,0 +1,183 @@
+{
+  "id": "east-freetown-cip",
+  "address": "East Freetown, MA 02717",
+  "resolution_mode": "contains",
+  "parcel_loc_id": "M_244303_833872",
+  "report": {
+    "parcel_id": "M_244303_833872",
+    "address": "103 BRALEY RD",
+    "project_type": "new_substation_cip",
+    "config_version": "ma-eea-2026-v1",
+    "methodology": "MA EEA Site Suitability, 225 CMR 29.00",
+    "computed_at": "2026-04-15T01:05:21.927483Z",
+    "total_score": 35.38,
+    "bucket": "CONSTRAINED",
+    "primary_constraint": "grid_alignment",
+    "ineligible_flags": [
+      "biomap_core",
+      "nhesp_priority",
+      "article97:data_unavailable",
+      "carbon_top20:data_unavailable",
+      "state_register:data_unavailable"
+    ],
+    "criteria": [
+      {
+        "key": "grid_alignment",
+        "name": "Development Potential / Grid Alignment",
+        "weight": 0.2,
+        "raw_score": 1.6236608007691873,
+        "weighted_contribution": 3.247321601538375,
+        "status": "ok",
+        "finding": "Nearest Eversource ESMP project is East Freetown Group CIP (replaces New Bedford Group CIP) (East Freetown), 10941 m away \u2014 siting status planned, coordinate confidence approximate. Closer proximity to planned grid investment strengthens this criterion.",
+        "citations": [
+          {
+            "dataset": "Eversource ESMP pipeline (DPU 24-10)",
+            "row_id": "East Freetown Group CIP (replaces New Bedford Group CIP)",
+            "url": "https://www.mass.gov/doc/dpu-24-10-electric-sector-modernization-plan/download",
+            "detail": "10941 m from parcel centroid"
+          }
+        ]
+      },
+      {
+        "key": "climate_resilience",
+        "name": "Climate Resilience",
+        "weight": 0.15,
+        "raw_score": 2.3213842660789723,
+        "weighted_contribution": 3.4820763991184585,
+        "status": "ok",
+        "finding": "28.4% of the parcel area is in a FEMA Special Flood Hazard Area (zones A,AE). Construction in SFHA triggers elevated BFE, insurance, and resilience-design requirements under ResilientMass standards.",
+        "citations": [
+          {
+            "dataset": "FEMA National Flood Hazard Layer (MassGIS)",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-fema-national-flood-hazard-layer",
+            "detail": "28.39% SFHA overlap"
+          }
+        ]
+      },
+      {
+        "key": "carbon_storage",
+        "name": "Carbon Storage",
+        "weight": 0.15,
+        "raw_score": 2.44408588734323,
+        "weighted_contribution": 3.666128831014845,
+        "status": "flagged",
+        "finding": "65.6% of the project footprint (parcel + 2500 m buffer) is forested cover (MassGIS 2016: Deciduous/Evergreen Forest + Palustrine Forested Wetland). This is a proxy for carbon storage. Carbon storage is approximated by forested cover fraction; full DCR biomass/soil carbon layer (Top-20% carbon forests) is a v2 dependency and is surfaced as a limitation citation on every report.",
+        "citations": [
+          {
+            "dataset": "MassGIS Land Cover / Land Use 2016",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use",
+            "detail": "65.56% forested cover"
+          },
+          {
+            "dataset": "Methodology limitation",
+            "row_id": null,
+            "url": null,
+            "detail": "DCR Top-20% carbon forest layer is a v2 dependency; forested-cover fraction is the v1 proxy."
+          }
+        ]
+      },
+      {
+        "key": "biodiversity",
+        "name": "Biodiversity",
+        "weight": 0.2,
+        "raw_score": 1.6735638940873734,
+        "weighted_contribution": 3.3471277881747468,
+        "status": "ineligible",
+        "finding": "BioMap Core 24.5% / CNL 34.6% / NHESP Priority 7.2% / NHESP Estimated 7.2% overlap with the parcel. Overlap with BioMap Core or NHESP Priority triggers ineligibility under 225 CMR 29.06 for generation / storage projects.",
+        "citations": [
+          {
+            "dataset": "BioMap Core Habitat Components (MassGIS)",
+            "row_id": null,
+            "url": "https://gis.data.mass.gov/maps/f78bb54093d743189779d0f9c833001b",
+            "detail": "24.49% overlap"
+          },
+          {
+            "dataset": "BioMap Critical Natural Landscape (MassGIS)",
+            "row_id": null,
+            "url": "https://www.arcgis.com/home/item.html?id=7d0e5b65e884473da40f7e4cd67c53c6",
+            "detail": "34.60% overlap"
+          },
+          {
+            "dataset": "NHESP Priority Habitats of Rare Species (MassGIS)",
+            "row_id": null,
+            "url": "https://www.arcgis.com/home/item.html?id=a953ef7fe0744ef2b2a8fb49118c51c7",
+            "detail": "7.19% overlap \u2014 PH 399, PH 402, PH 404, PH 410, PH 414, PH 423, PH 424, PH 453, PH 478"
+          },
+          {
+            "dataset": "NHESP Estimated Habitats of Rare Wildlife (MassGIS)",
+            "row_id": null,
+            "url": "https://www.arcgis.com/home/item.html?id=e99c0aae177247ae85636102db6ede5f",
+            "detail": "7.17% overlap"
+          }
+        ]
+      },
+      {
+        "key": "burdens",
+        "name": "Social & Environmental Burdens",
+        "weight": 0.1,
+        "raw_score": 7.087976539589444,
+        "weighted_contribution": 7.0879765395894445,
+        "status": "ok",
+        "finding": "MassEnviroScreen cumulative burden at the parcel's block group (250056171021) is 32.7/100 \u2014 not EJ-designated. Higher burden indicates existing environmental/health stress; siting additional burdening infrastructure here requires a Cumulative Impact Analysis under the 2024 Climate Act.",
+        "citations": [
+          {
+            "dataset": "MassEnviroScreen cumulative burden (OEJE)",
+            "row_id": "250056171021",
+            "url": "https://mass-eoeea.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4be63e892a3d42d69334615a64095a39",
+            "detail": "score 32.7; EJ=No"
+          }
+        ]
+      },
+      {
+        "key": "benefits",
+        "name": "Social & Environmental Benefits",
+        "weight": 0.1,
+        "raw_score": 7.371050006708688,
+        "weighted_contribution": 7.371050006708688,
+        "status": "ok",
+        "finding": "61.4% of the parcel is already in built-environment cover (Impervious or Developed Open Space). Siting on previously-developed land earns the brownfield / built-environment bonus.",
+        "citations": [
+          {
+            "dataset": "MassGIS Land Cover / Land Use 2016",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use",
+            "detail": "61.43% built-environment cover"
+          }
+        ]
+      },
+      {
+        "key": "agriculture",
+        "name": "Agricultural Production",
+        "weight": 0.1,
+        "raw_score": 7.174202327042308,
+        "weighted_contribution": 7.174202327042308,
+        "status": "flagged",
+        "finding": "5.2% of the parcel is NRCS Prime Farmland (+33.9% statewide-importance soils counted at 50%). Effective ag-land fraction for scoring: 22.2%.",
+        "citations": [
+          {
+            "dataset": "USDA NRCS Prime Farmland Soils (MassGIS)",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-noaa-soils",
+            "detail": "prime 5.22%, statewide 33.91%"
+          }
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "dataset": "225 CMR 29.00 Site Suitability Criteria (MA EEA)",
+        "row_id": null,
+        "url": "https://www.mass.gov/regulations/225-CMR-29-site-suitability-criteria-for-clean-energy-infrastructure",
+        "detail": "ma-eea-2026-v1"
+      },
+      {
+        "dataset": "MassGIS L3 Property Tax Parcels",
+        "row_id": "M_244303_833872",
+        "url": "https://www.mass.gov/info-details/massgis-data-property-tax-parcels",
+        "detail": "town=East Freetown"
+      }
+    ]
+  }
+}

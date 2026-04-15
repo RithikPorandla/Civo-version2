@@ -43,8 +43,8 @@ load_dotenv()
 
 MODEL = "claude-sonnet-4-6"
 DEFAULT_MAX_TURNS = 40
-FETCH_BODY_CAP = 6_000          # chars of plain-text body returned to Claude
-FETCH_LINK_CAP = 60             # top N hyperlinks surfaced per page
+FETCH_BODY_CAP = 6_000  # chars of plain-text body returned to Claude
+FETCH_LINK_CAP = 60  # top N hyperlinks surfaced per page
 FETCH_PDF_BYTE_CAP = 8 * 1024 * 1024  # 8 MB hard limit on PDFs
 
 
@@ -189,7 +189,7 @@ def tool_write_municipality_field(
 
     if head in _SCALAR_COLS and not tail:
         session.execute(
-            text(f'UPDATE municipalities SET {head} = :v WHERE town_id = :tid'),
+            text(f"UPDATE municipalities SET {head} = :v WHERE town_id = :tid"),
             {"v": value, "tid": town_id},
         )
     elif head in _JSONB_COLS:
@@ -227,8 +227,7 @@ def tool_write_municipality_field(
     cits["_citations"] = cits_inner
     session.execute(
         text(
-            "UPDATE municipalities SET political_signals = CAST(:v AS jsonb) "
-            "WHERE town_id = :tid"
+            "UPDATE municipalities SET political_signals = CAST(:v AS jsonb) WHERE town_id = :tid"
         ),
         {"v": json.dumps(cits), "tid": town_id},
     )
@@ -364,17 +363,28 @@ TOOLS: list[dict] = [
                 "project_type": {
                     "type": "string",
                     "enum": [
-                        "solar", "battery_storage", "substation", "transmission",
-                        "commercial", "residential", "mixed_use", "data_center",
-                        "industrial", "other",
+                        "solar",
+                        "battery_storage",
+                        "substation",
+                        "transmission",
+                        "commercial",
+                        "residential",
+                        "mixed_use",
+                        "data_center",
+                        "industrial",
+                        "other",
                     ],
                 },
                 "applicant": {"type": "string"},
                 "decision": {
                     "type": "string",
                     "enum": [
-                        "approved", "approved_with_conditions", "denied",
-                        "withdrawn", "pending", "continued",
+                        "approved",
+                        "approved_with_conditions",
+                        "denied",
+                        "withdrawn",
+                        "pending",
+                        "continued",
                     ],
                 },
                 "conditions": {"type": "array", "items": {"type": "string"}},
@@ -383,8 +393,14 @@ TOOLS: list[dict] = [
                 "meeting_body": {
                     "type": "string",
                     "enum": [
-                        "ConCom", "PlanningBoard", "ZBA", "SpecialTownMeeting",
-                        "TownMeeting", "EFSB", "SelectBoard", "BuildingDept",
+                        "ConCom",
+                        "PlanningBoard",
+                        "ZBA",
+                        "SpecialTownMeeting",
+                        "TownMeeting",
+                        "EFSB",
+                        "SelectBoard",
+                        "BuildingDept",
                     ],
                 },
                 "source_url": {"type": "string"},
@@ -507,9 +523,7 @@ class ResearchAgent:
                 except RateLimitError as e:
                     retry_after = None
                     try:
-                        retry_after = float(
-                            e.response.headers.get("retry-after") or 0
-                        )
+                        retry_after = float(e.response.headers.get("retry-after") or 0)
                     except Exception:
                         pass
                     wait = retry_after if retry_after and retry_after > 0 else delay
@@ -525,9 +539,7 @@ class ResearchAgent:
                 self.usage["output_tokens"] += getattr(u, "output_tokens", 0) or 0
                 stu = getattr(u, "server_tool_use", None)
                 if stu:
-                    self.usage["server_tool_use"] += (
-                        getattr(stu, "web_search_requests", 0) or 0
-                    )
+                    self.usage["server_tool_use"] += getattr(stu, "web_search_requests", 0) or 0
 
             # Echo the assistant turn.
             content_out = [block.model_dump() for block in resp.content]
@@ -547,11 +559,7 @@ class ResearchAgent:
                 # fetch_pdf: return a compact ack via tool_result AND attach the
                 # PDF as a document content block so Claude can vision it.
                 # Cap at 1 PDF per turn to keep context manageable.
-                if (
-                    tb.name == "fetch_pdf"
-                    and result.get("ok")
-                    and not attached_documents
-                ):
+                if tb.name == "fetch_pdf" and result.get("ok") and not attached_documents:
                     ack = {
                         "ok": True,
                         "url": result["url"],
@@ -584,9 +592,7 @@ class ResearchAgent:
                             "content": json.dumps(
                                 {
                                     "ok": False,
-                                    "error": (
-                                        "one PDF per turn; call fetch_pdf again next turn"
-                                    ),
+                                    "error": ("one PDF per turn; call fetch_pdf again next turn"),
                                     "url": result["url"],
                                 }
                             ),

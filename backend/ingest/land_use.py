@@ -75,10 +75,7 @@ def feature_to_row(feat: dict) -> dict | None:
 
 def _fetch_page(client: httpx.Client, town_id: int, offset: int) -> dict:
     covers = ",".join(str(c) for c in SCORING_COVERCODES)
-    where = (
-        f"TOWN_ID={town_id} AND COVERCODE IN ({covers}) "
-        f"AND Shape__Area >= {MIN_AREA_SQM}"
-    )
+    where = f"TOWN_ID={town_id} AND COVERCODE IN ({covers}) AND Shape__Area >= {MIN_AREA_SQM}"
     params = {
         "where": where,
         "outFields": "*",
@@ -102,10 +99,13 @@ def ingest_town(town: str) -> int:
     total = 0
     with httpx.Client() as client:
         with engine.begin() as conn:
-            n_del = conn.execute(
-                text("DELETE FROM land_use WHERE town_id = :t"),
-                {"t": town_id},
-            ).rowcount or 0
+            n_del = (
+                conn.execute(
+                    text("DELETE FROM land_use WHERE town_id = :t"),
+                    {"t": town_id},
+                ).rowcount
+                or 0
+            )
             if n_del:
                 print(f"  [{town}/land_use] deleted {n_del}")
         offset = 0

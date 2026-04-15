@@ -1,0 +1,181 @@
+{
+  "id": "cambridge-kendall-8025",
+  "address": "Kendall Square, Cambridge, MA 02142",
+  "resolution_mode": "esmp_anchored",
+  "parcel_loc_id": "F_769136_2958414",
+  "report": {
+    "parcel_id": "F_769136_2958414",
+    "address": "300 THIRD ST",
+    "project_type": "underground_substation",
+    "config_version": "ma-eea-2026-v1",
+    "methodology": "MA EEA Site Suitability, 225 CMR 29.00",
+    "computed_at": "2026-04-15T01:03:59.003100Z",
+    "total_score": 92.5,
+    "bucket": "SUITABLE",
+    "primary_constraint": "burdens",
+    "ineligible_flags": [
+      "article97:data_unavailable",
+      "carbon_top20:data_unavailable",
+      "state_register:data_unavailable"
+    ],
+    "criteria": [
+      {
+        "key": "grid_alignment",
+        "name": "Development Potential / Grid Alignment",
+        "weight": 0.2,
+        "raw_score": 10.0,
+        "weighted_contribution": 20.0,
+        "status": "ok",
+        "finding": "Nearest Eversource ESMP project is New Cambridge #8025 Substation (Cambridge (Kendall Sq)), 15 m away \u2014 siting status under_construction, coordinate confidence exact. Closer proximity to planned grid investment strengthens this criterion.",
+        "citations": [
+          {
+            "dataset": "Eversource ESMP pipeline (DPU 24-10)",
+            "row_id": "New Cambridge #8025 Substation",
+            "url": "https://www.mass.gov/doc/dpu-24-10-electric-sector-modernization-plan/download",
+            "detail": "15 m from parcel centroid"
+          }
+        ]
+      },
+      {
+        "key": "climate_resilience",
+        "name": "Climate Resilience",
+        "weight": 0.15,
+        "raw_score": 9.108255962089762,
+        "weighted_contribution": 13.662383943134644,
+        "status": "ok",
+        "finding": "2.2% of the parcel area is in a FEMA Special Flood Hazard Area (zones AE). Construction in SFHA triggers elevated BFE, insurance, and resilience-design requirements under ResilientMass standards.",
+        "citations": [
+          {
+            "dataset": "FEMA National Flood Hazard Layer (MassGIS)",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-fema-national-flood-hazard-layer",
+            "detail": "2.23% SFHA overlap"
+          }
+        ]
+      },
+      {
+        "key": "carbon_storage",
+        "name": "Carbon Storage",
+        "weight": 0.15,
+        "raw_score": 9.767042798402352,
+        "weighted_contribution": 14.65056419760353,
+        "status": "ok",
+        "finding": "2.3% of the project footprint (parcel + 400 m buffer) is forested cover (MassGIS 2016: Deciduous/Evergreen Forest + Palustrine Forested Wetland). This is a proxy for carbon storage. Carbon storage is approximated by forested cover fraction; full DCR biomass/soil carbon layer (Top-20% carbon forests) is a v2 dependency and is surfaced as a limitation citation on every report.",
+        "citations": [
+          {
+            "dataset": "MassGIS Land Cover / Land Use 2016",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use",
+            "detail": "2.33% forested cover"
+          },
+          {
+            "dataset": "Methodology limitation",
+            "row_id": null,
+            "url": null,
+            "detail": "DCR Top-20% carbon forest layer is a v2 dependency; forested-cover fraction is the v1 proxy."
+          }
+        ]
+      },
+      {
+        "key": "biodiversity",
+        "name": "Biodiversity",
+        "weight": 0.2,
+        "raw_score": 9.709073566742045,
+        "weighted_contribution": 19.41814713348409,
+        "status": "ok",
+        "finding": "BioMap Core 0.6% / CNL 0.1% / NHESP Priority 0.0% / NHESP Estimated 0.0% overlap with the parcel.",
+        "citations": [
+          {
+            "dataset": "BioMap Core Habitat Components (MassGIS)",
+            "row_id": null,
+            "url": "https://gis.data.mass.gov/maps/f78bb54093d743189779d0f9c833001b",
+            "detail": "0.56% overlap"
+          },
+          {
+            "dataset": "BioMap Critical Natural Landscape (MassGIS)",
+            "row_id": null,
+            "url": "https://www.arcgis.com/home/item.html?id=7d0e5b65e884473da40f7e4cd67c53c6",
+            "detail": "0.06% overlap"
+          },
+          {
+            "dataset": "NHESP Priority Habitats of Rare Species (MassGIS)",
+            "row_id": null,
+            "url": "https://www.arcgis.com/home/item.html?id=a953ef7fe0744ef2b2a8fb49118c51c7",
+            "detail": "0.00% overlap"
+          },
+          {
+            "dataset": "NHESP Estimated Habitats of Rare Wildlife (MassGIS)",
+            "row_id": null,
+            "url": "https://www.arcgis.com/home/item.html?id=e99c0aae177247ae85636102db6ede5f",
+            "detail": "0.00% overlap"
+          }
+        ]
+      },
+      {
+        "key": "burdens",
+        "name": "Social & Environmental Burdens",
+        "weight": 0.1,
+        "raw_score": 4.772238514173997,
+        "weighted_contribution": 4.772238514173997,
+        "status": "flagged",
+        "finding": "MassEnviroScreen cumulative burden at the parcel's block group (250173523003) is 52.3/100 \u2014 EJ-designated. Higher burden indicates existing environmental/health stress; siting additional burdening infrastructure here requires a Cumulative Impact Analysis under the 2024 Climate Act.",
+        "citations": [
+          {
+            "dataset": "MassEnviroScreen cumulative burden (OEJE)",
+            "row_id": "250173523003",
+            "url": "https://mass-eoeea.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4be63e892a3d42d69334615a64095a39",
+            "detail": "score 52.3; EJ=Yes"
+          }
+        ]
+      },
+      {
+        "key": "benefits",
+        "name": "Social & Environmental Benefits",
+        "weight": 0.1,
+        "raw_score": 9.999999999999758,
+        "weighted_contribution": 9.999999999999758,
+        "status": "ok",
+        "finding": "100.0% of the parcel is already in built-environment cover (Impervious or Developed Open Space). Siting on previously-developed land earns the brownfield / built-environment bonus.",
+        "citations": [
+          {
+            "dataset": "MassGIS Land Cover / Land Use 2016",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use",
+            "detail": "100.00% built-environment cover"
+          }
+        ]
+      },
+      {
+        "key": "agriculture",
+        "name": "Agricultural Production",
+        "weight": 0.1,
+        "raw_score": 10.0,
+        "weighted_contribution": 10.0,
+        "status": "ok",
+        "finding": "0.0% of the parcel is NRCS Prime Farmland (+0.0% statewide-importance soils counted at 50%). Effective ag-land fraction for scoring: 0.0%.",
+        "citations": [
+          {
+            "dataset": "USDA NRCS Prime Farmland Soils (MassGIS)",
+            "row_id": null,
+            "url": "https://www.mass.gov/info-details/massgis-data-noaa-soils",
+            "detail": "prime 0.00%, statewide 0.00%"
+          }
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "dataset": "225 CMR 29.00 Site Suitability Criteria (MA EEA)",
+        "row_id": null,
+        "url": "https://www.mass.gov/regulations/225-CMR-29-site-suitability-criteria-for-clean-energy-infrastructure",
+        "detail": "ma-eea-2026-v1"
+      },
+      {
+        "dataset": "MassGIS L3 Property Tax Parcels",
+        "row_id": "F_769136_2958414",
+        "url": "https://www.mass.gov/info-details/massgis-data-property-tax-parcels",
+        "detail": "town=Cambridge"
+      }
+    ]
+  }
+}

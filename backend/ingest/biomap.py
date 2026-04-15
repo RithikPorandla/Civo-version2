@@ -93,10 +93,7 @@ def feature_to_row(feat: dict, layer_label: str, kind: str) -> dict | None:
 def _delete_existing(conn, kind: str, town_poly_wkt: str) -> int:
     table = "habitat_biomap_core" if kind == "core" else "habitat_biomap_cnl"
     res = conn.execute(
-        text(
-            f"DELETE FROM {table} "
-            f"WHERE ST_Intersects(geom, ST_GeomFromText(:wkt, 26986))"
-        ),
+        text(f"DELETE FROM {table} WHERE ST_Intersects(geom, ST_GeomFromText(:wkt, 26986))"),
         {"wkt": town_poly_wkt},
     )
     return res.rowcount or 0

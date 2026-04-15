@@ -128,9 +128,7 @@ def ingest(town: str, kind: str) -> int:
 def main() -> None:
     ap = argparse.ArgumentParser(description="Ingest NHESP habitats for MA towns.")
     ap.add_argument("--town", action="append")
-    ap.add_argument(
-        "--kind", choices=("priority", "estimated", "both"), default="both"
-    )
+    ap.add_argument("--kind", choices=("priority", "estimated", "both"), default="both")
     args = ap.parse_args()
     towns = args.town or TARGET_TOWNS
     kinds = ["priority", "estimated"] if args.kind == "both" else [args.kind]

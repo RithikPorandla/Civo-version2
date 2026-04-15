@@ -18,8 +18,6 @@ Design notes
 
 from __future__ import annotations
 
-import math
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,6 +29,7 @@ from sqlalchemy.orm import Session
 from app.scoring.models import (
     Bucket,
     CriterionScore,
+    CriterionStatus,
     SourceCitation,
     SuitabilityReport,
 )
@@ -97,9 +96,7 @@ def _interp(anchors: list[list[float]], x: float) -> float:
 # ---------------------------------------------------------------------------
 # Parcel context
 # ---------------------------------------------------------------------------
-def _parcel_context(
-    session: Session, parcel_id: str, buffer_m: float
-) -> dict[str, Any]:
+def _parcel_context(session: Session, parcel_id: str, buffer_m: float) -> dict[str, Any]:
     """Fetch the parcel's geometry, area, and a buffered analysis geometry.
 
     ``buffer_m`` comes from the scoring config, keyed on project_type.
@@ -107,9 +104,10 @@ def _parcel_context(
     sensitivity criteria can do ``ST_Intersection(parcel_buffer, habitat)``
     against the analysis zone rather than the raw parcel polygon.
     """
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT loc_id, site_addr, town_name, city,
                    ST_Area(geom) AS area_sqm,
                    ST_AsText(ST_Centroid(geom)) AS centroid_wkt,
@@ -119,9 +117,12 @@ def _parcel_context(
             FROM parcels
             WHERE loc_id = :pid
             """
-        ),
-        {"pid": parcel_id, "buf": buffer_m},
-    ).mappings().first()
+            ),
+            {"pid": parcel_id, "buf": buffer_m},
+        )
+        .mappings()
+        .first()
+    )
     if not row:
         raise ScoringError(f"parcel {parcel_id!r} not found")
     out = dict(row)
@@ -134,9 +135,10 @@ def _parcel_context(
 # ---------------------------------------------------------------------------
 def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["grid_alignment"]
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT e.project_name, e.municipality, e.coordinate_confidence,
                    e.siting_status, ST_Distance(p.geom, e.geom) AS dist_m
             FROM parcels p, esmp_projects e
@@ -144,9 +146,12 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             ORDER BY p.geom <-> e.geom
             LIMIT 1
             """
-        ),
-        {"pid": ctx["loc_id"]},
-    ).mappings().first()
+            ),
+            {"pid": ctx["loc_id"]},
+        )
+        .mappings()
+        .first()
+    )
     if not row:
         return CriterionScore(
             key="grid_alignment",
@@ -156,7 +161,9 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             weighted_contribution=0.0,
             status="data_unavailable",
             finding="No ESMP projects loaded; grid alignment cannot be evaluated.",
-            citations=[SourceCitation(dataset="Eversource ESMP pipeline", url=_MASSGIS_URLS["esmp"])],
+            citations=[
+                SourceCitation(dataset="Eversource ESMP pipeline", url=_MASSGIS_URLS["esmp"])
+            ],
         )
 
     dist_m = float(row["dist_m"])
@@ -203,9 +210,10 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
 def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["climate_resilience"]
     zones = tuple(c["sfha_zones"])
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT COALESCE(SUM(
                      ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
                    ), 0) AS overlap_sqm,
@@ -213,9 +221,13 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
             FROM flood_zones f
             WHERE f.fld_zone = ANY(:zones) AND ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(f.geom))
             """
-        ),
-        {"buf": ctx["buffer_ewkt"], "zones": list(zones)},
-    ).mappings().first()
+            ),
+            {"buf": ctx["buffer_ewkt"], "zones": list(zones)},
+        )
+        .mappings()
+        .first()
+    )
+    assert row is not None  # aggregate query always returns a row
     overlap = float(row["overlap_sqm"] or 0)
     pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
     pct = max(0.0, min(1.0, pct))
@@ -228,7 +240,7 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
         )
     else:
         finding = (
-            f"{pct*100:.1f}% of the parcel area is in a FEMA Special Flood "
+            f"{pct * 100:.1f}% of the parcel area is in a FEMA Special Flood "
             f"Hazard Area (zones {detected_zones}). Construction in SFHA "
             f"triggers elevated BFE, insurance, and resilience-design "
             f"requirements under ResilientMass standards."
@@ -244,7 +256,7 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
             SourceCitation(
                 dataset="FEMA National Flood Hazard Layer (MassGIS)",
                 url=_MASSGIS_URLS["fema_flood"],
-                detail=f"{pct*100:.2f}% SFHA overlap",
+                detail=f"{pct * 100:.2f}% SFHA overlap",
             )
         ],
     )
@@ -256,9 +268,10 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
 def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["carbon_storage"]
     forested = c["forested_cover_codes"]
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT COALESCE(SUM(
                      ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(l.geom)))
                    ), 0) AS overlap_sqm
@@ -266,15 +279,19 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             WHERE l.covercode = ANY(:codes)
               AND ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(l.geom))
             """
-        ),
-        {"buf": ctx["buffer_ewkt"], "codes": list(forested)},
-    ).mappings().first()
+            ),
+            {"buf": ctx["buffer_ewkt"], "codes": list(forested)},
+        )
+        .mappings()
+        .first()
+    )
+    assert row is not None  # aggregate query always returns a row
     overlap = float(row["overlap_sqm"] or 0)
     pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
     pct = max(0.0, min(1.0, pct))
     raw = _interp(c["forest_anchors_pct"], pct)
     finding = (
-        f"{pct*100:.1f}% of the project footprint (parcel + {ctx['buffer_m']:.0f} m buffer) "
+        f"{pct * 100:.1f}% of the project footprint (parcel + {ctx['buffer_m']:.0f} m buffer) "
         f"is forested cover (MassGIS 2016: "
         f"Deciduous/Evergreen Forest + Palustrine Forested Wetland). This is "
         f"a proxy for carbon storage. {c['proxy_note'].strip()}"
@@ -291,7 +308,7 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             SourceCitation(
                 dataset="MassGIS Land Cover / Land Use 2016",
                 url=_MASSGIS_URLS["land_use"],
-                detail=f"{pct*100:.2f}% forested cover",
+                detail=f"{pct * 100:.2f}% forested cover",
             ),
             SourceCitation(
                 dataset="Methodology limitation",
@@ -307,17 +324,16 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
 # ---------------------------------------------------------------------------
 # Criterion 4: Biodiversity
 # ---------------------------------------------------------------------------
-def _score_biodiversity(
-    session: Session, ctx: dict, cfg: dict
-) -> tuple[CriterionScore, list[str]]:
+def _score_biodiversity(session: Session, ctx: dict, cfg: dict) -> tuple[CriterionScore, list[str]]:
     c = cfg["criteria"]["biodiversity"]
     weights = c["layer_weights"]
     min_ineligible = c["ineligibility_min_pct"]
 
     def _overlap(table: str) -> tuple[float, list[str]]:
-        row = session.execute(
-            text(
-                f"""
+        row = (
+            session.execute(
+                text(
+                    f"""
                 SELECT COALESCE(SUM(
                          ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(h.geom)))
                        ), 0) AS overlap_sqm,
@@ -330,9 +346,13 @@ def _score_biodiversity(
                 FROM {table} h
                 WHERE ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(h.geom))
                 """
-            ),
-            {"buf": ctx["buffer_ewkt"]},
-        ).mappings().first()
+                ),
+                {"buf": ctx["buffer_ewkt"]},
+            )
+            .mappings()
+            .first()
+        )
+        assert row is not None  # aggregate query always returns a row
         overlap = float(row["overlap_sqm"] or 0)
         pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
         label = row["labels"] or ""
@@ -361,10 +381,12 @@ def _score_biodiversity(
     if pri_pct >= min_ineligible:
         ineligible.append("nhesp_priority")
 
-    status = "ineligible" if ineligible else ("flagged" if weighted_overlap > 0.1 else "ok")
+    status: CriterionStatus = (
+        "ineligible" if ineligible else ("flagged" if weighted_overlap > 0.1 else "ok")
+    )
     finding = (
-        f"BioMap Core {core_pct*100:.1f}% / CNL {cnl_pct*100:.1f}% / NHESP "
-        f"Priority {pri_pct*100:.1f}% / NHESP Estimated {est_pct*100:.1f}% "
+        f"BioMap Core {core_pct * 100:.1f}% / CNL {cnl_pct * 100:.1f}% / NHESP "
+        f"Priority {pri_pct * 100:.1f}% / NHESP Estimated {est_pct * 100:.1f}% "
         f"overlap with the parcel."
     )
     if ineligible:
@@ -377,24 +399,24 @@ def _score_biodiversity(
         SourceCitation(
             dataset="BioMap Core Habitat Components (MassGIS)",
             url=_MASSGIS_URLS["biomap_core"],
-            detail=f"{core_pct*100:.2f}% overlap"
+            detail=f"{core_pct * 100:.2f}% overlap"
             + (f" — {core_labels[0]}" if core_labels and core_labels[0] else ""),
         ),
         SourceCitation(
             dataset="BioMap Critical Natural Landscape (MassGIS)",
             url=_MASSGIS_URLS["biomap_cnl"],
-            detail=f"{cnl_pct*100:.2f}% overlap",
+            detail=f"{cnl_pct * 100:.2f}% overlap",
         ),
         SourceCitation(
             dataset="NHESP Priority Habitats of Rare Species (MassGIS)",
             url=_MASSGIS_URLS["nhesp_priority"],
-            detail=f"{pri_pct*100:.2f}% overlap"
+            detail=f"{pri_pct * 100:.2f}% overlap"
             + (f" — {pri_labels[0]}" if pri_labels and pri_labels[0] else ""),
         ),
         SourceCitation(
             dataset="NHESP Estimated Habitats of Rare Wildlife (MassGIS)",
             url=_MASSGIS_URLS["nhesp_estimated"],
-            detail=f"{est_pct*100:.2f}% overlap",
+            detail=f"{est_pct * 100:.2f}% overlap",
         ),
     ]
     return (
@@ -417,18 +439,22 @@ def _score_biodiversity(
 # ---------------------------------------------------------------------------
 def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["burdens"]
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT m.geoid, m.ej_designation, m.cumulative_score
             FROM parcels p
             JOIN massenviroscreen m ON ST_Contains(m.geom, ST_Centroid(p.geom))
             WHERE p.loc_id = :pid
             LIMIT 1
             """
-        ),
-        {"pid": ctx["loc_id"]},
-    ).mappings().first()
+            ),
+            {"pid": ctx["loc_id"]},
+        )
+        .mappings()
+        .first()
+    )
     if not row:
         return CriterionScore(
             key="burdens",
@@ -484,9 +510,10 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
 # ---------------------------------------------------------------------------
 def _score_benefits(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["benefits"]
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT COALESCE(SUM(
                      ST_Area(ST_Intersection(p.geom, l.geom))
                    ), 0) AS overlap_sqm
@@ -495,15 +522,19 @@ def _score_benefits(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
               ON l.covercode = ANY(:codes) AND ST_Intersects(p.geom, l.geom)
             WHERE p.loc_id = :pid
             """
-        ),
-        {"pid": ctx["loc_id"], "codes": list(c["built_env_cover_codes"])},
-    ).mappings().first()
+            ),
+            {"pid": ctx["loc_id"], "codes": list(c["built_env_cover_codes"])},
+        )
+        .mappings()
+        .first()
+    )
+    assert row is not None  # aggregate query always returns a row
     overlap = float(row["overlap_sqm"] or 0)
     pct = overlap / ctx["area_sqm"] if ctx["area_sqm"] else 0.0
     pct = max(0.0, min(1.0, pct))
     raw = _interp(c["built_env_anchors_pct"], pct)
     finding = (
-        f"{pct*100:.1f}% of the parcel is already in built-environment cover "
+        f"{pct * 100:.1f}% of the parcel is already in built-environment cover "
         f"(Impervious or Developed Open Space). Siting on previously-developed "
         f"land earns the brownfield / built-environment bonus."
     )
@@ -518,7 +549,7 @@ def _score_benefits(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
             SourceCitation(
                 dataset="MassGIS Land Cover / Land Use 2016",
                 url=_MASSGIS_URLS["land_use"],
-                detail=f"{pct*100:.2f}% built-environment cover",
+                detail=f"{pct * 100:.2f}% built-environment cover",
             )
         ],
     )
@@ -531,9 +562,10 @@ def _score_agriculture(session: Session, ctx: dict, cfg: dict) -> CriterionScore
     c = cfg["criteria"]["agriculture"]
     prime_re = c["prime_farmland_regex"]
     statewide_re = c["statewide_farmland_regex"]
-    row = session.execute(
-        text(
-            """
+    row = (
+        session.execute(
+            text(
+                """
             SELECT
               COALESCE(SUM(CASE WHEN f.farmland_class ~ :prime_re
                                 THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
@@ -544,19 +576,23 @@ def _score_agriculture(session: Session, ctx: dict, cfg: dict) -> CriterionScore
             FROM prime_farmland f
             WHERE ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(f.geom))
             """
-        ),
-        {"buf": ctx["buffer_ewkt"], "prime_re": prime_re, "statewide_re": statewide_re},
-    ).mappings().first()
+            ),
+            {"buf": ctx["buffer_ewkt"], "prime_re": prime_re, "statewide_re": statewide_re},
+        )
+        .mappings()
+        .first()
+    )
+    assert row is not None  # aggregate query always returns a row
     denom = ctx["buffer_area_sqm"] or 1
     prime_pct = float(row["prime_sqm"] or 0) / denom
     state_pct = float(row["statewide_sqm"] or 0) / denom
     effective_pct = max(0.0, min(1.0, prime_pct + c["statewide_weight"] * state_pct))
     raw = _interp(c["prime_anchors_pct"], effective_pct)
     finding = (
-        f"{prime_pct*100:.1f}% of the parcel is NRCS Prime Farmland "
-        f"(+{state_pct*100:.1f}% statewide-importance soils counted at "
+        f"{prime_pct * 100:.1f}% of the parcel is NRCS Prime Farmland "
+        f"(+{state_pct * 100:.1f}% statewide-importance soils counted at "
         f"{c['statewide_weight']:.0%}). Effective ag-land fraction for "
-        f"scoring: {effective_pct*100:.1f}%."
+        f"scoring: {effective_pct * 100:.1f}%."
     )
     return CriterionScore(
         key="agriculture",
@@ -570,9 +606,7 @@ def _score_agriculture(session: Session, ctx: dict, cfg: dict) -> CriterionScore
             SourceCitation(
                 dataset="USDA NRCS Prime Farmland Soils (MassGIS)",
                 url=_MASSGIS_URLS["prime_farmland"],
-                detail=(
-                    f"prime {prime_pct*100:.2f}%, statewide {state_pct*100:.2f}%"
-                ),
+                detail=(f"prime {prime_pct * 100:.2f}%, statewide {state_pct * 100:.2f}%"),
             )
         ],
     )
@@ -608,8 +642,7 @@ def score_site(
     active = [c for c in criteria if c.status != "data_unavailable"]
     active_weight = sum(c.weight for c in active) or 1.0
     total = sum(
-        (c.weighted_contribution / c.weight if c.weight else 0.0)
-        * (c.weight / active_weight)
+        (c.weighted_contribution / c.weight if c.weight else 0.0) * (c.weight / active_weight)
         for c in active
     )
     total = max(0.0, min(100.0, total))

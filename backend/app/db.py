@@ -10,9 +10,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+psycopg2://civo:civo@localhost:5432/civo"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://civo:civo@localhost:5432/civo")
 
 # Normalize bare postgresql:// URLs to the psycopg2 driver.
 if DATABASE_URL.startswith("postgresql://"):

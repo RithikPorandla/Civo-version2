@@ -17,7 +17,6 @@ import asyncio
 import secrets
 import string
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -89,19 +88,15 @@ def _batch_item_to_portfolio_item(rank: int, bi: ScoreBatchItem) -> PortfolioIte
 
 @router.post("/portfolio", response_model=PortfolioEnvelope)
 async def post_portfolio(req: PortfolioCreateRequest) -> PortfolioEnvelope:
-    tasks = [
-        _score_one_for_batch(a, req.project_type, req.config_version)
-        for a in req.addresses
-    ]
+    tasks = [_score_one_for_batch(a, req.project_type, req.config_version) for a in req.addresses]
     batch_items = await asyncio.gather(*tasks)
     batch_items.sort(key=lambda i: (i.ok, i.total_score or -1.0), reverse=True)
-    items = [
-        _batch_item_to_portfolio_item(i + 1, bi) for i, bi in enumerate(batch_items)
-    ]
+    items = [_batch_item_to_portfolio_item(i + 1, bi) for i, bi in enumerate(batch_items)]
 
     # Resolve parcel_id per item (one round-trip).
     loc_ids_by_report: dict[int, str] = {}
     report_ids = [i.score_report_id for i in items if i.score_report_id]
+
     # Write + resolve in a single thread-hop to keep the event loop free.
     def _persist() -> tuple[str, datetime, datetime]:
         from app.db import SessionLocal
@@ -110,9 +105,7 @@ async def post_portfolio(req: PortfolioCreateRequest) -> PortfolioEnvelope:
         with SessionLocal() as session:
             if report_ids:
                 rows = session.execute(
-                    text(
-                        "SELECT id, parcel_loc_id FROM score_history WHERE id = ANY(:ids)"
-                    ),
+                    text("SELECT id, parcel_loc_id FROM score_history WHERE id = ANY(:ids)"),
                     {"ids": report_ids},
                 ).mappings()
                 for row in rows:
@@ -141,12 +134,17 @@ async def post_portfolio(req: PortfolioCreateRequest) -> PortfolioEnvelope:
                     "scored_at": scored_at,
                 },
             )
-            row = session.execute(
-                text("SELECT created_at FROM portfolios WHERE id = :id"),
-                {"id": pid},
-            ).mappings().first()
+            created_row = (
+                session.execute(
+                    text("SELECT created_at FROM portfolios WHERE id = :id"),
+                    {"id": pid},
+                )
+                .mappings()
+                .first()
+            )
             session.commit()
-            return pid, row["created_at"], scored_at
+            assert created_row is not None  # just inserted; row must exist
+            return pid, created_row["created_at"], scored_at
 
     pid, created_at, scored_at = await asyncio.to_thread(_persist)
     # Patch parcel_id into the response envelope too.
@@ -166,20 +164,22 @@ async def post_portfolio(req: PortfolioCreateRequest) -> PortfolioEnvelope:
 
 
 @router.get("/portfolio/{portfolio_id}", response_model=PortfolioEnvelope)
-def get_portfolio(
-    portfolio_id: str, session: Session = Depends(get_session)
-) -> PortfolioEnvelope:
-    row = session.execute(
-        text(
-            """
+def get_portfolio(portfolio_id: str, session: Session = Depends(get_session)) -> PortfolioEnvelope:
+    row = (
+        session.execute(
+            text(
+                """
             SELECT id, state, name, project_type, config_version,
                    created_at, scored_at, items
             FROM portfolios
             WHERE id = :id
             """
-        ),
-        {"id": portfolio_id},
-    ).mappings().first()
+            ),
+            {"id": portfolio_id},
+        )
+        .mappings()
+        .first()
+    )
     if not row:
         raise HTTPException(404, f"portfolio {portfolio_id!r} not found")
     return PortfolioEnvelope(
@@ -195,12 +195,8 @@ def get_portfolio(
 
 
 @router.delete("/portfolio/{portfolio_id}", status_code=204)
-def delete_portfolio(
-    portfolio_id: str, session: Session = Depends(get_session)
-) -> None:
-    res = session.execute(
-        text("DELETE FROM portfolios WHERE id = :id"), {"id": portfolio_id}
-    )
+def delete_portfolio(portfolio_id: str, session: Session = Depends(get_session)) -> None:
+    res = session.execute(text("DELETE FROM portfolios WHERE id = :id"), {"id": portfolio_id})
     session.commit()
-    if not res.rowcount:
+    if not res.rowcount:  # type: ignore[attr-defined]
         raise HTTPException(404, f"portfolio {portfolio_id!r} not found")

@@ -50,9 +50,7 @@ def _geocode(address: str) -> tuple[float, float]:
         return g["lat"], g["lon"]
     key = os.getenv("GOOGLE_PLACES_API_KEY", "").strip()
     if not key:
-        raise ResolveError(
-            f"{address!r} not cached and GOOGLE_PLACES_API_KEY is unset"
-        )
+        raise ResolveError(f"{address!r} not cached and GOOGLE_PLACES_API_KEY is unset")
     r = httpx.get(
         PLACES_URL,
         params={
@@ -105,9 +103,10 @@ def resolve_parcel(
     lat, lon = _geocode(address)
     params = {"lat": lat, "lon": lon}
 
-    esmp = session.execute(
-        text(
-            """
+    esmp = (
+        session.execute(
+            text(
+                """
             WITH pt AS (
               SELECT ST_Transform(
                 ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 26986
@@ -120,9 +119,12 @@ def resolve_parcel(
             ORDER BY e.geom <-> pt.g
             LIMIT 1
             """
-        ),
-        {**params, "r": esmp_anchor_radius_m},
-    ).mappings().first()
+            ),
+            {**params, "r": esmp_anchor_radius_m},
+        )
+        .mappings()
+        .first()
+    )
     if esmp:
         anchored = session.execute(
             text(
@@ -174,6 +176,5 @@ def resolve_parcel(
     if nearest:
         return nearest, "nearest"
     raise ResolveError(
-        f"no parcel within {fallback_radius_m:.0f} m of {address!r} "
-        f"(lat={lat}, lon={lon})"
+        f"no parcel within {fallback_radius_m:.0f} m of {address!r} (lat={lat}, lon={lon})"
     )

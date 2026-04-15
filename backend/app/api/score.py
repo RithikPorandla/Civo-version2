@@ -21,7 +21,7 @@ import asyncio
 import json
 import time
 from statistics import median
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -129,7 +129,7 @@ def _score_and_persist(req: ScoreRequest) -> ScoreEnvelope:
     return ScoreEnvelope(
         report_id=report_id,
         address=req.address,
-        resolution_mode=mode,
+        resolution_mode=cast(ResolutionMode, mode),
         report=report,
     )
 
@@ -148,9 +148,7 @@ async def post_score(req: ScoreRequest) -> ScoreEnvelope:
 async def _score_one_for_batch(
     address: str, project_type: str, config_version: str
 ) -> ScoreBatchItem:
-    req = ScoreRequest(
-        address=address, project_type=project_type, config_version=config_version
-    )
+    req = ScoreRequest(address=address, project_type=project_type, config_version=config_version)
     try:
         env = await asyncio.to_thread(_score_and_persist, req)
     except HTTPException as e:
@@ -171,10 +169,7 @@ async def _score_one_for_batch(
 async def post_score_batch(req: ScoreBatchRequest) -> ScoreBatchResponse:
     if len(req.addresses) > BATCH_MAX:
         raise HTTPException(422, f"batch size capped at {BATCH_MAX}")
-    tasks = [
-        _score_one_for_batch(a, req.project_type, req.config_version)
-        for a in req.addresses
-    ]
+    tasks = [_score_one_for_batch(a, req.project_type, req.config_version) for a in req.addresses]
     items = await asyncio.gather(*tasks)
 
     # Rank by score desc; failures sink to the bottom.
@@ -202,9 +197,7 @@ async def post_score_batch(req: ScoreBatchRequest) -> ScoreBatchResponse:
 @router.get("/report/{report_id}", response_model=SuitabilityReport)
 def get_report(report_id: int, session: Session = Depends(get_session)) -> SuitabilityReport:
     row = session.execute(
-        text(
-            "SELECT report FROM score_history WHERE id = :rid"
-        ),
+        text("SELECT report FROM score_history WHERE id = :rid"),
         {"rid": report_id},
     ).scalar()
     if row is None:
@@ -216,20 +209,22 @@ def get_report(report_id: int, session: Session = Depends(get_session)) -> Suita
 # GET /parcel/{parcel_id}/geojson
 # ---------------------------------------------------------------------------
 @router.get("/parcel/{parcel_id}/geojson")
-def get_parcel_geojson(
-    parcel_id: str, session: Session = Depends(get_session)
-) -> dict:
-    row = session.execute(
-        text(
-            """
+def get_parcel_geojson(parcel_id: str, session: Session = Depends(get_session)) -> dict:
+    row = (
+        session.execute(
+            text(
+                """
             SELECT loc_id, site_addr, town_name, city, total_val, lot_size,
                    ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geom
             FROM parcels
             WHERE loc_id = :pid
             """
-        ),
-        {"pid": parcel_id},
-    ).mappings().first()
+            ),
+            {"pid": parcel_id},
+        )
+        .mappings()
+        .first()
+    )
     if not row:
         raise HTTPException(404, f"parcel {parcel_id!r} not found")
 
@@ -245,6 +240,43 @@ def get_parcel_geojson(
             "lot_size": row["lot_size"],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /parcel/{parcel_id}/precedents
+# ---------------------------------------------------------------------------
+@router.get("/parcel/{parcel_id}/precedents")
+def get_parcel_precedents(
+    parcel_id: str,
+    limit: int = Query(5, ge=1, le=25),
+    session: Session = Depends(get_session),
+) -> list[dict]:
+    """Return recent ConCom/Planning precedents for the parcel's town.
+
+    Phase 5 wiring: retrieval is filter-based (same town). Vector
+    similarity comes when the embeddings backend is chosen.
+    """
+    rows = (
+        session.execute(
+            text(
+                """
+            SELECT pr.id, pr.docket, pr.project_type, pr.project_address,
+                   pr.applicant, pr.decision, pr.decision_date, pr.filing_date,
+                   pr.meeting_body, pr.source_url, pr.full_text, pr.confidence,
+                   pr.created_at
+            FROM precedents pr
+            JOIN parcels p ON p.town_id = pr.town_id
+            WHERE p.loc_id = :pid
+            ORDER BY COALESCE(pr.decision_date, pr.filing_date, pr.created_at) DESC
+            LIMIT :lim
+            """
+            ),
+            {"pid": parcel_id, "lim": limit},
+        )
+        .mappings()
+        .all()
+    )
+    return [dict(r) for r in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +395,9 @@ _OVERLAY_SPECS: list[tuple[str, str, str]] = [
 @router.get("/parcel/{parcel_id}/overlays")
 def get_parcel_overlays(
     parcel_id: str,
-    radius_m: int = Query(2000, ge=500, le=10000, description="Buffer radius in meters (500-10000)"),
+    radius_m: int = Query(
+        2000, ge=500, le=10000, description="Buffer radius in meters (500-10000)"
+    ),
     session: Session = Depends(get_session),
 ) -> dict:
     """Return every overlay feature that intersects the parcel + buffer.
@@ -379,9 +413,10 @@ def get_parcel_overlays(
     if cached is not None:
         return cached
 
-    parcel = session.execute(
-        text(
-            """
+    parcel = (
+        session.execute(
+            text(
+                """
             SELECT loc_id, site_addr, town_name, city, total_val, lot_size,
                    ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geom_4326,
                    ST_AsEWKT(geom) AS geom_ewkt,
@@ -389,9 +424,12 @@ def get_parcel_overlays(
             FROM parcels
             WHERE loc_id = :pid
             """
-        ),
-        {"pid": parcel_id, "r": radius_m},
-    ).mappings().first()
+            ),
+            {"pid": parcel_id, "r": radius_m},
+        )
+        .mappings()
+        .first()
+    )
     if not parcel:
         raise HTTPException(404, f"parcel {parcel_id!r} not found")
 
@@ -422,9 +460,10 @@ def get_parcel_overlays(
             truncated = True
             counts[layer] = 0
             continue
-        rows = session.execute(
-            text(
-                f"""
+        rows = (
+            session.execute(
+                text(
+                    f"""
                 SELECT
                   ST_AsGeoJSON(ST_Transform(ST_MakeValid(geom), 4326)) AS geom,
                   {props_expr} AS props
@@ -432,9 +471,12 @@ def get_parcel_overlays(
                 WHERE ST_Intersects(ST_MakeValid(geom), CAST(:buf AS geometry))
                 LIMIT :lim
                 """
-            ),
-            {"buf": parcel["buffer_ewkt"], "lim": remaining_budget + 1},
-        ).mappings().all()
+                ),
+                {"buf": parcel["buffer_ewkt"], "lim": remaining_budget + 1},
+            )
+            .mappings()
+            .all()
+        )
         added = 0
         for row in rows:
             if remaining_budget <= 0:

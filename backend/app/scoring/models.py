@@ -21,13 +21,9 @@ class SourceCitation(BaseModel):
     """Pointer back to the exact dataset row that drove a claim."""
 
     dataset: str = Field(..., description="Human-readable dataset name")
-    row_id: str | None = Field(
-        default=None, description="PK / natural key for the underlying row"
-    )
+    row_id: str | None = Field(default=None, description="PK / natural key for the underlying row")
     url: str | None = Field(default=None, description="Public URL for the dataset")
-    detail: str | None = Field(
-        default=None, description="Short free text, e.g. '14.2% overlap'"
-    )
+    detail: str | None = Field(default=None, description="Short free text, e.g. '14.2% overlap'")
 
 
 class CriterionScore(BaseModel):

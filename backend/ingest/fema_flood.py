@@ -69,13 +69,16 @@ def ingest_town(town: str) -> int:
     with httpx.Client() as client, engine.begin() as conn:
         tg = fetch_town_geometry(client, town)
         wkt = _town_wkt(tg)
-        n_del = conn.execute(
-            text(
-                "DELETE FROM flood_zones "
-                "WHERE ST_Intersects(geom, ST_GeomFromText(:wkt, 26986))"
-            ),
-            {"wkt": wkt},
-        ).rowcount or 0
+        n_del = (
+            conn.execute(
+                text(
+                    "DELETE FROM flood_zones "
+                    "WHERE ST_Intersects(geom, ST_GeomFromText(:wkt, 26986))"
+                ),
+                {"wkt": wkt},
+            ).rowcount
+            or 0
+        )
         if n_del:
             print(f"  [{town}/flood] deleted {n_del}")
         params = {"where": "1=1", "outFields": "*"}

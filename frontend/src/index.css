@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  color: #1a1a1a;
+  background: #fafaf7;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+body { margin: 0; }
+
+/* Editorial eyebrow label: italic Fraunces with a wide track */
+.eyebrow {
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: #8b7355;
+  text-transform: uppercase;
+}
+
+.display { font-family: 'Fraunces', ui-serif, Georgia, serif; font-weight: 400; }
+
+/* Hairline rule */
+.hairline { border-color: #ececec; }
+
+/* Thin progress bar used inside criterion cards */
+.bar-track { height: 4px; background: #f0ede5; border-radius: 100px; }
+.bar-fill { height: 4px; border-radius: 100px; transition: width 240ms ease; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  border: 1px solid #ececec;
+  background: #ffffff;
+  color: #6b6b6b;
+}
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  transition: all 160ms ease;
+  border: 1px solid transparent;
+}
+.btn-pill-primary {
+  background: #1a1a1a;
+  color: #fafaf7;
+}
+.btn-pill-primary:hover { background: #000000; }
+.btn-pill-ghost {
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #ececec;
+}
+.btn-pill-ghost:hover { border-color: #d4d1c7; }
+
+.maplibregl-canvas { outline: none !important; }
