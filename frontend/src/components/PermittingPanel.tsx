@@ -20,11 +20,14 @@ const C = {
 };
 
 const PROJECT_TYPE_LABEL: Record<ProjectTypeCode, string> = {
-  solar_ground_mount: 'Solar PV (Ground-Mount)',
-  bess: 'Battery Energy Storage',
+  solar_rooftop: 'Solar Rooftop',
+  solar_ground_mount: 'Solar Ground-Mount',
+  solar_canopy: 'Solar Canopy',
+  bess_standalone: 'BESS Standalone',
+  bess_colocated: 'BESS Co-located',
   substation: 'Substation',
-  wind: 'Wind Turbine',
   transmission: 'Transmission Line',
+  ev_charging: 'EV Charging',
 };
 
 export default function PermittingPanel({

@@ -5,11 +5,14 @@ import { api, ProjectTypeCode } from '../lib/api';
 
 const DISPLAY = "'Fraunces', Georgia, serif";
 const PROJECT_TYPES: Array<{ code: ProjectTypeCode; label: string }> = [
-  { code: 'solar_ground_mount', label: 'Solar PV (Ground)' },
-  { code: 'bess', label: 'Battery Storage' },
+  { code: 'solar_rooftop', label: 'Solar Rooftop' },
+  { code: 'solar_ground_mount', label: 'Solar Ground-Mount' },
+  { code: 'solar_canopy', label: 'Solar Canopy' },
+  { code: 'bess_standalone', label: 'BESS Standalone' },
+  { code: 'bess_colocated', label: 'BESS Co-located' },
   { code: 'substation', label: 'Substation' },
-  { code: 'wind', label: 'Wind' },
   { code: 'transmission', label: 'Transmission' },
+  { code: 'ev_charging', label: 'EV Charging' },
 ];
 
 export default function MunicipalitiesRoute() {
@@ -75,7 +78,7 @@ function MunicipalityDetail({ townId }: { townId: number }) {
     queryKey: ['municipality', townId],
     queryFn: () => api.getMunicipality(townId),
   });
-  const [active, setActive] = useState<ProjectTypeCode>('solar_ground_mount');
+  const [active, setActive] = useState<ProjectTypeCode>('solar_rooftop');
   if (isLoading || !data) return <div className="px-12 py-12 text-textDim">Loading…</div>;
   const bylaws = data.project_type_bylaws[active] || null;
 

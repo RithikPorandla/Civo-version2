@@ -26,10 +26,13 @@ router = APIRouter()
 
 ProjectTypeCode = Literal[
     "solar_ground_mount",
-    "bess",
+    "solar_rooftop",
+    "solar_canopy",
+    "bess_standalone",
+    "bess_colocated",
     "substation",
-    "wind",
     "transmission",
+    "ev_charging",
 ]
 
 

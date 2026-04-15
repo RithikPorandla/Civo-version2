@@ -6,16 +6,19 @@ import ThreeDMap from '../components/ThreeDMap';
 const DISPLAY = "'Fraunces', Georgia, serif";
 
 const PROJECT_TYPES: Array<{ code: ProjectTypeCode; label: string; hint: string }> = [
-  { code: 'solar_ground_mount', label: 'Solar PV (Ground-Mount)', hint: '225 CMR 29 + town bylaw' },
-  { code: 'bess', label: 'Battery Energy Storage', hint: '527 CMR 1 + NFPA 855' },
+  { code: 'solar_rooftop', label: 'Solar Rooftop', hint: 'Building permit · by-right accessory' },
+  { code: 'solar_ground_mount', label: 'Solar Ground-Mount', hint: '225 CMR 29 + town bylaw' },
+  { code: 'solar_canopy', label: 'Solar Canopy', hint: 'Parking-lot · SMART canopy adder' },
+  { code: 'bess_standalone', label: 'BESS Standalone', hint: 'NFPA 855 · 50 ft setback' },
+  { code: 'bess_colocated', label: 'BESS Co-located', hint: 'Rider on solar permit' },
   { code: 'substation', label: 'Substation', hint: 'G.L. c.40A §3 + EFSB' },
-  { code: 'wind', label: 'Wind Turbine', hint: 'Town height bylaw + EFSB ≥100 MW' },
-  { code: 'transmission', label: 'Transmission Line', hint: 'G.L. c.164 §69J (≥69 kV)' },
+  { code: 'transmission', label: 'Transmission', hint: 'G.L. c.164 §69J (≥69 kV)' },
+  { code: 'ev_charging', label: 'EV Charging', hint: 'By-right statewide (2022)' },
 ];
 
 export default function AddressLookup() {
   const [address, setAddress] = useState('Kendall Square, Cambridge, MA 02142');
-  const [projectType, setProjectType] = useState<ProjectTypeCode>('substation');
+  const [projectType, setProjectType] = useState<ProjectTypeCode>('solar_ground_mount');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const nav = useNavigate();
@@ -72,7 +75,7 @@ export default function AddressLookup() {
 
       <section className="mt-10">
         <div className="eyebrow mb-3">Project type</div>
-        <div className="grid grid-cols-5 gap-3 max-w-4xl">
+        <div className="grid grid-cols-4 gap-3 max-w-5xl">
           {PROJECT_TYPES.map((pt) => {
             const active = projectType === pt.code;
             return (

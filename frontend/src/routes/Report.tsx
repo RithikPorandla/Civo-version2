@@ -167,7 +167,7 @@ function btnPrimary(): React.CSSProperties {
 export default function Report() {
   const { reportId } = useParams();
   const [qp] = useSearchParams();
-  const projectType = (qp.get('pt') as ProjectTypeCode) || 'substation';
+  const projectType = (qp.get('pt') as ProjectTypeCode) || 'solar_ground_mount';
   const { data: report, isLoading, error } = useQuery({
     queryKey: ['report', reportId],
     queryFn: () => api.report(reportId!),

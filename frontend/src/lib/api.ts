@@ -83,10 +83,13 @@ async function jf<T>(path: string, init?: RequestInit): Promise<T> {
 
 export type ProjectTypeCode =
   | 'solar_ground_mount'
-  | 'bess'
+  | 'solar_rooftop'
+  | 'solar_canopy'
+  | 'bess_standalone'
+  | 'bess_colocated'
   | 'substation'
-  | 'wind'
-  | 'transmission';
+  | 'transmission'
+  | 'ev_charging';
 
 export interface MunicipalitySummary {
   town_id: number;

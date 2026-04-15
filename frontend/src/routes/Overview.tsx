@@ -21,11 +21,14 @@ export default function Overview() {
   });
 
   const projectTypes = [
-    { code: 'solar_ground_mount', label: 'Solar PV (Ground-Mount)' },
-    { code: 'bess', label: 'Battery Energy Storage' },
+    { code: 'solar_rooftop', label: 'Solar Rooftop' },
+    { code: 'solar_ground_mount', label: 'Solar Ground-Mount' },
+    { code: 'solar_canopy', label: 'Solar Canopy' },
+    { code: 'bess_standalone', label: 'BESS Standalone' },
+    { code: 'bess_colocated', label: 'BESS Co-located' },
     { code: 'substation', label: 'Substation' },
-    { code: 'wind', label: 'Wind Turbine' },
     { code: 'transmission', label: 'Transmission' },
+    { code: 'ev_charging', label: 'EV Charging' },
   ];
 
   return (
@@ -54,7 +57,7 @@ export default function Overview() {
         <Stat label="Parcels indexed" value={health?.parcels_loaded?.toLocaleString() || '—'} />
         <Stat label="ESMP projects" value={String(health?.esmp_projects_loaded || '—')} />
         <Stat label="Towns covered" value={String(munis?.length || '—')} />
-        <Stat label="Project types" value="5" />
+        <Stat label="Project types" value="8" />
       </div>
 
       <section className="mt-16">
@@ -83,7 +86,7 @@ export default function Overview() {
 
       <section className="mt-16">
         <div className="eyebrow mb-4">Supported project types</div>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {projectTypes.map((p) => (
             <div
               key={p.code}

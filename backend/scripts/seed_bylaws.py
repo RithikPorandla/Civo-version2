@@ -114,28 +114,106 @@ def _statewide_transmission() -> dict:
     }
 
 
-def _baseline_bess(town_notes: str = "") -> dict:
-    """BESS baseline for towns without a dedicated bylaw."""
+def _baseline_solar_rooftop(town_notes: str = "") -> dict:
     return {
-        "approval_authority": "Planning Board (site plan review) + Fire Department (NFPA 855)",
-        "process": "site_plan_review",
-        "estimated_timeline_months": [4, 9],
+        "approval_authority": "Building Department (by-right accessory use); registration optional",
+        "process": "building_permit",
+        "estimated_timeline_months": [1, 3],
         "key_triggers": [
             {
-                "description": "BESS installations must comply with NFPA 855 (2023), adopted into 527 CMR 1.00 (MA Comprehensive Fire Safety Code). Fire Department sign-off required.",
-                "bylaw_ref": "527 CMR 1.00",
-                "source_url": "https://www.mass.gov/regulations/527-CMR-1-00-massachusetts-comprehensive-fire-safety-code",
+                "description": "G.L. c. 40A §3 prohibits municipalities from unreasonably regulating rooftop solar energy systems. Standard residential/commercial rooftop solar is accessory by-right.",
+                "bylaw_ref": "M.G.L. c. 40A §3",
+                "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40A/Section3",
             },
             {
-                "description": "No town-specific BESS zoning bylaw identified as of 2026; default pathway is site plan review under commercial/industrial use classification.",
-                "bylaw_ref": None,
-                "source_url": None,
+                "description": "Structural review under 780 CMR (MA State Building Code) + electrical permit under 527 CMR 12.00 (MA Electrical Code).",
+                "bylaw_ref": "780 CMR; 527 CMR 12.00",
+                "source_url": "https://www.mass.gov/regulations/780-CMR-massachusetts-state-building-code",
+            },
+            {
+                "description": "Historic District review required for installations visible from public way in designated districts (G.L. c. 40C).",
+                "bylaw_ref": "M.G.L. c. 40C",
+                "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40C",
             },
         ],
         "setbacks_ft": None,
         "acreage_cap": None,
         "overlay_districts": [],
-        "notes": town_notes or "BESS typically reviewed as an industrial accessory use plus NFPA 855 compliance.",
+        "notes": town_notes or "Rooftop solar is by-right accessory use in most zoning districts; building permit typically sufficient.",
+        "citations": [
+            {
+                "source_url": "https://www.mass.gov/info-details/solar-energy-systems",
+                "retrieved_at": RETRIEVED,
+                "document_title": "MA DOER — Solar Energy Systems guidance",
+            }
+        ],
+        "verification_note": "Town-specific rooftop solar provisions (if any) pending verification; statewide baseline applied.",
+    }
+
+
+def _baseline_solar_canopy(town_notes: str = "") -> dict:
+    return {
+        "approval_authority": "Planning Board (site plan review; sometimes Building Department if under accessory-height threshold)",
+        "process": "site_plan_review",
+        "estimated_timeline_months": [3, 6],
+        "key_triggers": [
+            {
+                "description": "Parking-lot solar canopies trigger stormwater review (additional impervious coverage) and structural review; height often within accessory-structure limits but varies by district.",
+                "bylaw_ref": None,
+                "source_url": None,
+            },
+            {
+                "description": "SMART 3.0 provides a canopy adder incentive ($/kWh) for qualifying parking-lot canopies; eligibility has siting criteria.",
+                "bylaw_ref": "225 CMR 20.00 (SMART 3.0)",
+                "source_url": "https://www.mass.gov/regulations/225-CMR-20-00-solar-massachusetts-renewable-target-smart-program",
+            },
+            {
+                "description": "Historic District Commission review required in designated districts (G.L. c. 40C).",
+                "bylaw_ref": "M.G.L. c. 40C",
+                "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40C",
+            },
+        ],
+        "setbacks_ft": None,
+        "acreage_cap": None,
+        "overlay_districts": [],
+        "notes": town_notes or "Canopies over existing parking count as structures; most towns treat them as a ground-mount variant for permitting.",
+        "citations": [
+            {
+                "source_url": "https://www.mass.gov/doc/225-cmr-20-solar-massachusetts-renewable-target-smart-program-regulations",
+                "retrieved_at": RETRIEVED,
+                "document_title": "225 CMR 20.00 — SMART Program",
+            }
+        ],
+        "verification_note": "Town-specific canopy provisions (if any) pending verification.",
+    }
+
+
+def _baseline_bess_standalone(town_notes: str = "") -> dict:
+    return {
+        "approval_authority": "Planning Board (special permit / site plan review) + Fire Department (NFPA 855)",
+        "process": "special_permit",
+        "estimated_timeline_months": [6, 12],
+        "key_triggers": [
+            {
+                "description": "NFPA 855 (2023) clearance distances: 3 ft between modules, 10 ft from structures, and 50 ft from lot lines for Li-ion installations >20 kWh. Adopted into MA fire code.",
+                "bylaw_ref": "527 CMR 1.00 (NFPA 855 adopted)",
+                "source_url": "https://www.mass.gov/regulations/527-CMR-1-00-massachusetts-comprehensive-fire-safety-code",
+            },
+            {
+                "description": "UL 9540A large-scale fire testing report often required by AHJ before occupancy sign-off.",
+                "bylaw_ref": "UL 9540A",
+                "source_url": "https://www.ul.com/services/ul-9540a-battery-testing",
+            },
+            {
+                "description": "Post-Moss Landing (CA, 2025) fires, many MA municipalities are drafting BESS-specific bylaws — expect stricter setbacks, evacuation planning, and emergency response training requirements.",
+                "bylaw_ref": None,
+                "source_url": None,
+            },
+        ],
+        "setbacks_ft": {"front": None, "side": 50, "rear": 50, "note": "NFPA 855 minimum 50 ft to lot lines for Li-ion >20 kWh; town setbacks may add on top."},
+        "acreage_cap": None,
+        "overlay_districts": [],
+        "notes": town_notes or "Standalone BESS is the highest-friction new category in MA permitting as of 2026; expect 6-12 month timelines and significant fire-department engagement.",
         "citations": [
             {
                 "source_url": "https://www.nfpa.org/codes-and-standards/nfpa-855-standard-development/855",
@@ -143,34 +221,81 @@ def _baseline_bess(town_notes: str = "") -> dict:
                 "document_title": "NFPA 855 Standard for the Installation of Stationary Energy Storage Systems",
             }
         ],
-        "verification_note": "BESS bylaw detail pending per-town verification; baseline reflects NFPA 855 + general site-plan review.",
+        "verification_note": "Town-specific BESS bylaw detail pending; NFPA 855 is statewide via 527 CMR 1.00.",
     }
 
 
-def _baseline_wind_restricted() -> dict:
-    """Commercial wind is effectively restricted in most MA towns via height limits."""
+def _baseline_bess_colocated(town_notes: str = "") -> dict:
     return {
-        "approval_authority": "Zoning Board of Appeals (variance) or Planning Board (special permit)",
-        "process": "special_permit_or_variance",
-        "estimated_timeline_months": [9, 18],
+        "approval_authority": "Planning Board (concurrent with solar permit) + Fire Department",
+        "process": "site_plan_review",
+        "estimated_timeline_months": [4, 9],
         "key_triggers": [
             {
-                "description": "Typical residential/commercial zoning height limits (35-50 ft) preclude utility-scale wind (100+ ft hub height) without a variance.",
-                "bylaw_ref": None,
-                "source_url": None,
+                "description": "Co-located BESS typically rides the host solar project's permit; same NFPA 855 fire-code requirements apply (527 CMR 1.00).",
+                "bylaw_ref": "527 CMR 1.00",
+                "source_url": "https://www.mass.gov/regulations/527-CMR-1-00-massachusetts-comprehensive-fire-safety-code",
             },
             {
-                "description": "If ≥100 MW nameplate, EFSB review under G.L. c. 164 §69H applies.",
-                "bylaw_ref": "M.G.L. c. 164 §69H",
-                "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXXII/Chapter164/Section69H",
+                "description": "SMART 3.0 Energy Storage Adder incentive requires co-located storage to be ≥25% of solar DC capacity and ≥4-hour duration.",
+                "bylaw_ref": "225 CMR 20.00",
+                "source_url": "https://www.mass.gov/regulations/225-CMR-20-00-solar-massachusetts-renewable-target-smart-program",
+            },
+        ],
+        "setbacks_ft": {"front": None, "side": 50, "rear": 50, "note": "NFPA 855 minimum applies to battery equipment regardless of solar co-location."},
+        "acreage_cap": None,
+        "overlay_districts": [],
+        "notes": town_notes or "Adding BESS to a solar project is usually a ~60 day addition to the solar timeline; the key risk is fire-setback encroaching on the solar array layout.",
+        "citations": [
+            {
+                "source_url": "https://www.mass.gov/doc/225-cmr-20-solar-massachusetts-renewable-target-smart-program-regulations",
+                "retrieved_at": RETRIEVED,
+                "document_title": "225 CMR 20.00 — SMART Program (Energy Storage Adder)",
+            }
+        ],
+        "verification_note": "Co-located BESS treated as a rider to the solar permit; town-specific supplemental rules may apply.",
+    }
+
+
+def _baseline_ev_charging(town_notes: str = "") -> dict:
+    return {
+        "approval_authority": "Building Department (electrical/structural) + Planning Board (if new curb cut or DCFC hub)",
+        "process": "building_permit",
+        "estimated_timeline_months": [1, 4],
+        "key_triggers": [
+            {
+                "description": "G.L. c. 40A §3 (amended 2022) designates EVSE as a by-right accessory use; municipalities cannot unreasonably regulate.",
+                "bylaw_ref": "M.G.L. c. 40A §3",
+                "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40A/Section3",
+            },
+            {
+                "description": "MassDOT NEVI Plan designates Alternative Fuel Corridors; DCFC sites on these corridors have expedited state-level review.",
+                "bylaw_ref": "MassDOT NEVI Deployment Plan",
+                "source_url": "https://www.mass.gov/doc/massachusetts-nevi-plan/download",
+            },
+            {
+                "description": "Eversource / National Grid Make-Ready programs subsidize utility-side infrastructure (service upgrade, transformer) for qualifying sites.",
+                "bylaw_ref": "DPU 21-90 (Eversource) / DPU 21-91 (National Grid)",
+                "source_url": "https://www.mass.gov/info-details/electric-vehicle-charging-make-ready-programs",
+            },
+            {
+                "description": "ADA accessibility and stormwater review for sites with ≥4 DCFC ports or new curb cuts.",
+                "bylaw_ref": "521 CMR (MA Architectural Access Board)",
+                "source_url": "https://www.mass.gov/regulations/521-CMR-architectural-access-board",
             },
         ],
         "setbacks_ft": None,
         "acreage_cap": None,
         "overlay_districts": [],
-        "notes": "Commercial wind is uncommon in MA; most towns' height limits + noise bylaws + Mass Audubon / NHESP review make utility-scale wind infeasible.",
-        "citations": [],
-        "verification_note": "Town-specific wind bylaw text not separately verified; state/general baseline applied.",
+        "notes": town_notes or "EVSE is largely by-right statewide as of 2022. DCFC hubs on NEVI corridors are the most active segment.",
+        "citations": [
+            {
+                "source_url": "https://www.mass.gov/doc/massachusetts-nevi-plan/download",
+                "retrieved_at": RETRIEVED,
+                "document_title": "Massachusetts NEVI Deployment Plan",
+            }
+        ],
+        "verification_note": "By-right statewide as of 2022 (c.40A §3 amendment); town-specific site-plan thresholds may still apply for DCFC hubs.",
     }
 
 
@@ -376,52 +501,50 @@ BURLINGTON_SOLAR = {
 # ---------------------------------------------------------------------------
 # Per-town assembly
 # ---------------------------------------------------------------------------
+def _full_town(solar_ground: dict, town_name: str, bess_note: str = "", canopy_note: str = "") -> dict:
+    """Assemble all 8 project types for a town."""
+    return {
+        "solar_ground_mount": solar_ground,
+        "solar_rooftop": _baseline_solar_rooftop(),
+        "solar_canopy": _baseline_solar_canopy(canopy_note),
+        "bess_standalone": _baseline_bess_standalone(bess_note),
+        "bess_colocated": _baseline_bess_colocated(),
+        "substation": _statewide_substation(),
+        "transmission": _statewide_transmission(),
+        "ev_charging": _baseline_ev_charging(),
+    }
+
+
 TOWN_BYLAWS: dict[str, dict[str, dict]] = {
-    "Acton": {
-        "solar_ground_mount": ACTON_SOLAR,
-        "bess": _baseline_bess(
-            "Acton processes BESS under its site plan review bylaw; no separate BESS section in Zoning Bylaw §3 as of May 2024."
-        ),
-        "substation": _statewide_substation(),
-        "wind": _baseline_wind_restricted(),
-        "transmission": _statewide_transmission(),
-    },
-    "Cambridge": {
-        "solar_ground_mount": CAMBRIDGE_SOLAR,
-        "bess": _baseline_bess(
-            "Cambridge couples BESS review with Article 22 (Green Building) special permit processes for large commercial redevelopment."
-        ),
-        "substation": _statewide_substation(),
-        "wind": _baseline_wind_restricted(),
-        "transmission": _statewide_transmission(),
-    },
-    "East Freetown": {
-        "solar_ground_mount": FREETOWN_SOLAR,
-        "bess": _baseline_bess(
-            "Freetown reviews BESS as an industrial accessory use plus Fire Department sign-off per 527 CMR 1.00 / NFPA 855."
-        ),
-        "substation": _statewide_substation(),
-        "wind": _baseline_wind_restricted(),
-        "transmission": _statewide_transmission(),
-    },
-    "Whately": {
-        "solar_ground_mount": WHATELY_SOLAR,
-        "bess": _baseline_bess(
-            "Whately has no dedicated BESS bylaw; Planning Board reviews via special permit under the 2023 zoning amendments."
-        ),
-        "substation": _statewide_substation(),
-        "wind": _baseline_wind_restricted(),
-        "transmission": _statewide_transmission(),
-    },
-    "Burlington": {
-        "solar_ground_mount": BURLINGTON_SOLAR,
-        "bess": _baseline_bess(
-            "Burlington Planning Board has reviewed commercial BESS applications along the Route 128 industrial corridor under site plan review."
-        ),
-        "substation": _statewide_substation(),
-        "wind": _baseline_wind_restricted(),
-        "transmission": _statewide_transmission(),
-    },
+    "Acton": _full_town(
+        ACTON_SOLAR,
+        "Acton",
+        bess_note="Acton has no dedicated standalone BESS bylaw as of May 2024; reviewed via Planning Board special permit plus NFPA 855.",
+        canopy_note="Nagog Park Innovative Overlay (2025) encourages parking-lot solar canopies adjacent to the planned New North Acton Substation.",
+    ),
+    "Cambridge": _full_town(
+        CAMBRIDGE_SOLAR,
+        "Cambridge",
+        bess_note="Cambridge couples BESS review with Article 22 (Green Building) for large commercial redevelopment in Kendall and Alewife.",
+        canopy_note="Cambridge supports solar canopies through Registered Solar Energy Systems; dense urban parking canopies are rare but permitted.",
+    ),
+    "East Freetown": _full_town(
+        FREETOWN_SOLAR,
+        "East Freetown",
+        bess_note="Freetown reviews standalone BESS as an industrial accessory use plus Fire Department NFPA 855 sign-off.",
+    ),
+    "Whately": _full_town(
+        WHATELY_SOLAR,
+        "Whately",
+        bess_note="Whately has no dedicated BESS bylaw; Planning Board reviews via special permit under 2023 zoning amendments.",
+        canopy_note="Canopies over existing farm infrastructure (barns, equipment sheds) are a favored siting for 'dual-use' agrivoltaic pilots.",
+    ),
+    "Burlington": _full_town(
+        BURLINGTON_SOLAR,
+        "Burlington",
+        bess_note="Burlington Planning Board has reviewed commercial BESS applications along the Route 128 industrial corridor under site plan review.",
+        canopy_note="Burlington's commercial corridor (Middlesex Tpk, Route 3A) has significant parking-canopy potential and active interest.",
+    ),
 }
 
 
