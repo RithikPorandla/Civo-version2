@@ -1,8 +1,15 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api, type Bucket, type CriterionScore, type SuitabilityReport } from '../lib/api';
+import {
+  api,
+  type Bucket,
+  type CriterionScore,
+  type ProjectTypeCode,
+  type SuitabilityReport,
+} from '../lib/api';
 import { MapView } from '../components/MapView';
+import PermittingPanel from '../components/PermittingPanel';
 
 const C = {
   bg: '#fafaf7',
@@ -159,6 +166,8 @@ function btnPrimary(): React.CSSProperties {
 
 export default function Report() {
   const { reportId } = useParams();
+  const [qp] = useSearchParams();
+  const projectType = (qp.get('pt') as ProjectTypeCode) || 'substation';
   const { data: report, isLoading, error } = useQuery({
     queryKey: ['report', reportId],
     queryFn: () => api.report(reportId!),
@@ -175,7 +184,15 @@ export default function Report() {
   if (isLoading) return <Loading />;
   if (error || !report) return <ErrorState err={String(error)} />;
 
-  return <ReportView report={report} precedents={precedents || []} expanded={expanded} setExpanded={setExpanded} />;
+  return (
+    <ReportView
+      report={report}
+      precedents={precedents || []}
+      expanded={expanded}
+      setExpanded={setExpanded}
+      projectType={projectType}
+    />
+  );
 }
 
 function Loading() {
@@ -202,11 +219,13 @@ function ReportView({
   precedents,
   expanded,
   setExpanded,
+  projectType,
 }: {
   report: SuitabilityReport;
   precedents: NonNullable<Awaited<ReturnType<typeof api.parcelPrecedents>>>;
   expanded: string | null;
   setExpanded: (k: string | null) => void;
+  projectType: ProjectTypeCode;
 }) {
   const tone = bucketTone(report.bucket);
   const address = report.address || report.parcel_id;
@@ -469,6 +488,11 @@ function ReportView({
               />
             ))}
           </div>
+        </section>
+
+        {/* Municipal permitting panel — project-type-aware */}
+        <section style={{ marginBottom: 64 }}>
+          <PermittingPanel parcelId={report.parcel_id} projectType={projectType} />
         </section>
 
         {/* Two columns */}
