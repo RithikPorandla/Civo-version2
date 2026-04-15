@@ -81,12 +81,50 @@ async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export type ProjectTypeCode =
+  | 'solar_ground_mount'
+  | 'bess'
+  | 'substation'
+  | 'wind'
+  | 'transmission';
+
+export interface MunicipalitySummary {
+  town_id: number;
+  town_name: string;
+  project_types: string[];
+  last_refreshed_at: string | null;
+}
+
+export interface MunicipalityDetail {
+  town_id: number;
+  town_name: string;
+  county: string | null;
+  project_type_bylaws: Record<string, any>;
+  last_refreshed_at: string | null;
+}
+
 export const api = {
+  health: () => jf<{
+    database: boolean;
+    postgis: string;
+    pgvector: string;
+    parcels_loaded: number;
+    esmp_projects_loaded: number;
+    municipalities_loaded: number;
+    status: string;
+  }>('/health'),
   score: (address: string, project_type = 'generic') =>
     jf<ScoreEnvelope>('/score', {
       method: 'POST',
       body: JSON.stringify({ address, project_type }),
     }),
+  listMunicipalities: () => jf<MunicipalitySummary[]>('/municipalities'),
+  getMunicipality: (townId: number) =>
+    jf<MunicipalityDetail>(`/municipality/${townId}`),
+  getProjectTypeBylaws: (townId: number, projectType: ProjectTypeCode) =>
+    jf<{ town_id: number; town_name: string; project_type: ProjectTypeCode; bylaws: any }>(
+      `/municipality/${townId}/bylaws/${projectType}`
+    ),
   report: (id: number | string) => jf<SuitabilityReport>(`/report/${id}`),
   parcelGeoJSON: (loc_id: string) =>
     jf<GeoJSON.Feature>(`/parcel/${encodeURIComponent(loc_id)}/geojson`),
