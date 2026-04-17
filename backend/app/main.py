@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.doer import router as doer_router
 from app.api.municipality import router as municipality_router
 from app.api.portfolio import router as portfolio_router
 from app.api.score import router as score_router
@@ -15,6 +16,7 @@ app = FastAPI(title="Civo API", version="0.1.0")
 app.include_router(score_router)
 app.include_router(portfolio_router)
 app.include_router(municipality_router)
+app.include_router(doer_router)
 
 
 @app.get("/health")

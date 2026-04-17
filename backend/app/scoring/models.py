@@ -17,6 +17,22 @@ CriterionStatus = Literal["ok", "flagged", "ineligible", "data_unavailable"]
 Bucket = Literal["SUITABLE", "CONDITIONALLY SUITABLE", "CONSTRAINED"]
 
 
+class LinkHealthInfo(BaseModel):
+    """Runtime health signal attached to a citation at serve time.
+
+    Populated by app.services.link_health — never by the scoring engine
+    (which runs offline) nor by the agent. Frontend uses this to decide
+    whether to render the canonical URL, a "archived ↗" fallback to the
+    Wayback Machine, or a muted "link unavailable" state.
+    """
+
+    status: Literal["healthy", "broken"]
+    status_code: int | None = None
+    wayback_url: str | None = None
+    final_url: str | None = None
+    checked_at: str | None = None
+
+
 class SourceCitation(BaseModel):
     """Pointer back to the exact dataset row that drove a claim."""
 
@@ -24,6 +40,10 @@ class SourceCitation(BaseModel):
     row_id: str | None = Field(default=None, description="PK / natural key for the underlying row")
     url: str | None = Field(default=None, description="Public URL for the dataset")
     detail: str | None = Field(default=None, description="Short free text, e.g. '14.2% overlap'")
+    health: LinkHealthInfo | None = Field(
+        default=None,
+        description="Runtime health status. None when the URL hasn't been probed yet.",
+    )
 
 
 class CriterionScore(BaseModel):
@@ -37,6 +57,36 @@ class CriterionScore(BaseModel):
     status: CriterionStatus = "ok"
     finding: str = Field(..., description="2-4 sentence explanation shown to the user")
     citations: list[SourceCitation] = Field(default_factory=list)
+
+
+class ExemptionCheck(BaseModel):
+    """Result of checking a project against 225 CMR 29.07(1) exemptions.
+
+    ``is_exempt=None`` when there isn't enough information to decide
+    (e.g. capacity or footprint missing). In that case the UI should
+    prompt the user to provide the missing fields rather than assume
+    non-exempt. Never fabricate a boolean when the inputs don't support one.
+    """
+
+    is_exempt: bool | None = Field(
+        default=None,
+        description=(
+            "True if the project qualifies for exemption under 225 CMR 29.07(1); "
+            "False if it does not; None if inputs are insufficient."
+        ),
+    )
+    reason: str | None = Field(
+        default=None,
+        description="Short, human-readable explanation (e.g. 'solar ≤ 25 kW AC').",
+    )
+    regulation_reference: str = Field(
+        default="225 CMR 29.07(1)",
+        description="The exemption rule this result is keyed to.",
+    )
+    missing_fields: list[str] = Field(
+        default_factory=list,
+        description="When is_exempt is None, which input fields the caller needs to supply.",
+    )
 
 
 class SuitabilityReport(BaseModel):

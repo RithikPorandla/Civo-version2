@@ -14,6 +14,7 @@ from geoalchemy2 import Geometry
 from sqlalchemy import (
     ARRAY,
     BigInteger,
+    Boolean,
     Date,
     DateTime,
     Float,
@@ -249,9 +250,71 @@ class Municipality(Base):
     project_type_bylaws: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     moratoriums: Mapped[dict | None] = mapped_column(JSONB)
     political_signals: Mapped[dict | None] = mapped_column(JSONB)
+    # DOER alignment cache — populated on demand by the comparison engine.
+    doer_model_aligned: Mapped[dict | None] = mapped_column(JSONB)
+    doer_deviation_count: Mapped[dict | None] = mapped_column(JSONB)
+    doer_deviation_details: Mapped[dict | None] = mapped_column(JSONB)
     last_refreshed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     next_refresh_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     precedents: Mapped[list["Precedent"]] = relationship(back_populates="municipality")
+
+
+# ---------------------------------------------------------------------------
+# DOER model bylaws (Solar + BESS) — canonical reference documents
+# ---------------------------------------------------------------------------
+class DoerModelBylaw(Base):
+    """Parsed DOER draft model bylaw (solar or BESS).
+
+    ``parsed_data`` carries the full structure extracted via Claude vision:
+    tiers, setback requirements, fee structure, decommissioning standards,
+    Dover Amendment notes, etc. Comparison engine reads from here.
+    """
+
+    __tablename__ = "doer_model_bylaws"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    state: Mapped[str] = mapped_column(Text, nullable=False, default="MA")
+    project_type: Mapped[str] = mapped_column(Text, nullable=False)  # 'solar' | 'bess'
+    version: Mapped[str] = mapped_column(Text, nullable=False)
+    parsed_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    source_pdf_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    parsed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class MunicipalDoerAdoption(Base):
+    """Per-(town, project_type) adoption status against the DOER model bylaw.
+
+    ``doer_version_ref`` pins *which* DOER version the town adopted against,
+    so when DOER ships a revised draft we can flag previously-adopted towns
+    whose adoption is now stale relative to the active version.
+    """
+
+    __tablename__ = "municipal_doer_adoption"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    state: Mapped[str] = mapped_column(Text, nullable=False, default="MA")
+    municipality_id: Mapped[int] = mapped_column(
+        ForeignKey("municipalities.town_id", ondelete="CASCADE"), nullable=False
+    )
+    project_type: Mapped[str] = mapped_column(Text, nullable=False)
+    adoption_status: Mapped[str] = mapped_column(Text, nullable=False)
+    adopted_date: Mapped[date | None] = mapped_column(Date)
+    town_meeting_article: Mapped[str | None] = mapped_column(Text)
+    local_modifications: Mapped[dict | None] = mapped_column(JSONB)
+    modification_summary: Mapped[str | None] = mapped_column(Text)
+    current_local_bylaw_url: Mapped[str | None] = mapped_column(Text)
+    doer_circuit_rider: Mapped[str | None] = mapped_column(Text)
+    doer_version_ref: Mapped[str | None] = mapped_column(Text)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    source_type: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float | None] = mapped_column(Numeric)
+    extracted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    reviewed_by_human: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
 
 class Precedent(Base):

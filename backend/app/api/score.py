@@ -32,6 +32,7 @@ from app.db import SessionLocal, get_session
 from app.scoring.engine import score_site
 from app.scoring.models import SuitabilityReport
 from app.scoring.resolver import ResolveError, resolve_parcel
+from app.services.link_health import enrich_citations_in_place
 
 router = APIRouter()
 
@@ -126,6 +127,12 @@ def _score_and_persist(req: ScoreRequest) -> ScoreEnvelope:
         ).scalar_one()
         session.commit()
 
+        # Enrich the fresh report with runtime link-health before returning
+        # so the user sees the archived-fallback state on first render.
+        report_dict = report.model_dump()
+        enrich_citations_in_place(session, report_dict)
+        report = SuitabilityReport.model_validate(report_dict)
+
     return ScoreEnvelope(
         report_id=report_id,
         address=req.address,
@@ -202,6 +209,9 @@ def get_report(report_id: int, session: Session = Depends(get_session)) -> Suita
     ).scalar()
     if row is None:
         raise HTTPException(404, f"report {report_id} not found")
+    # Attach runtime link-health to every citation so the UI can fall back
+    # to a Wayback snapshot when mass.gov restructures a slug.
+    enrich_citations_in_place(session, row)
     return SuitabilityReport.model_validate(row)
 
 

@@ -442,6 +442,19 @@ SYSTEM_PROMPT = textwrap.dedent(
        storage, solar, data center, etc.), write 'moratoriums.<type>.*'
        with start_date, end_date, and source_url.
     5. **ConCom precedents.** Browse the ConCom meeting-archive page.
+       NOTE (step 7a — TODO, deferred to next sprint): check DOER model
+       bylaw adoption status for solar and BESS. Search queries to run
+       once this step is implemented:
+         - '"{town}" DOER model bylaw'
+         - '"{town}" solar zoning bylaw adoption'
+         - '"{town}" 225 CMR 29'
+         - site:{town_url} "BESS" OR "battery storage"
+         - '"{town}" annual town meeting warrant solar article'
+       Expected outputs: one row in municipal_doer_adoption per
+       (town, project_type ∈ {solar, bess}) with source_url,
+       adoption_status ∈ {adopted, in_progress, not_started, unknown},
+       confidence per the scoring guide in the sprint spec. Use a new
+       write_doer_adoption tool (not yet implemented — build alongside).
        Pick the 5-10 most recent agenda PDFs (last 12 months). For each,
        call fetch_pdf and examine the contents. For every agenda item
        that references a specific project (not a procedural item),

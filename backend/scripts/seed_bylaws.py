@@ -96,7 +96,7 @@ def _statewide_transmission() -> dict:
             {
                 "description": "Crossings of NHESP Priority Habitat require MESA review under 321 CMR 10.00; Article 97 ROW requires legislative approval (2/3 vote).",
                 "bylaw_ref": "321 CMR 10.00; MA Const. Article XCVII",
-                "source_url": "https://www.mass.gov/regulations/321-CMR-10-00-massachusetts-endangered-species-act-mesa",
+                "source_url": "https://www.mass.gov/regulations/321-CMR-1000-massachusetts-endangered-species-act",
             },
         ],
         "setbacks_ft": None,
@@ -128,7 +128,7 @@ def _baseline_solar_rooftop(town_notes: str = "") -> dict:
             {
                 "description": "Structural review under 780 CMR (MA State Building Code) + electrical permit under 527 CMR 12.00 (MA Electrical Code).",
                 "bylaw_ref": "780 CMR; 527 CMR 12.00",
-                "source_url": "https://www.mass.gov/regulations/780-CMR-massachusetts-state-building-code",
+                "source_url": "https://www.mass.gov/massachusetts-state-building-code-780-cmr",
             },
             {
                 "description": "Historic District review required for installations visible from public way in designated districts (G.L. c. 40C).",
@@ -142,7 +142,7 @@ def _baseline_solar_rooftop(town_notes: str = "") -> dict:
         "notes": town_notes or "Rooftop solar is by-right accessory use in most zoning districts; building permit typically sufficient.",
         "citations": [
             {
-                "source_url": "https://www.mass.gov/info-details/solar-energy-systems",
+                "source_url": "https://www.mass.gov/info-details/solar",
                 "retrieved_at": RETRIEVED,
                 "document_title": "MA DOER — Solar Energy Systems guidance",
             }
@@ -165,7 +165,7 @@ def _baseline_solar_canopy(town_notes: str = "") -> dict:
             {
                 "description": "SMART 3.0 provides a canopy adder incentive ($/kWh) for qualifying parking-lot canopies; eligibility has siting criteria.",
                 "bylaw_ref": "225 CMR 20.00 (SMART 3.0)",
-                "source_url": "https://www.mass.gov/regulations/225-CMR-20-00-solar-massachusetts-renewable-target-smart-program",
+                "source_url": "https://www.mass.gov/regulations/225-CMR-2000-solar-massachusetts-renewable-target-smart-program",
             },
             {
                 "description": "Historic District Commission review required in designated districts (G.L. c. 40C).",
@@ -179,7 +179,7 @@ def _baseline_solar_canopy(town_notes: str = "") -> dict:
         "notes": town_notes or "Canopies over existing parking count as structures; most towns treat them as a ground-mount variant for permitting.",
         "citations": [
             {
-                "source_url": "https://www.mass.gov/doc/225-cmr-20-solar-massachusetts-renewable-target-smart-program-regulations",
+                "source_url": "https://www.mass.gov/regulations/225-CMR-2000-solar-massachusetts-renewable-target-smart-program",
                 "retrieved_at": RETRIEVED,
                 "document_title": "225 CMR 20.00 — SMART Program",
             }
@@ -197,7 +197,7 @@ def _baseline_bess_standalone(town_notes: str = "") -> dict:
             {
                 "description": "NFPA 855 (2023) clearance distances: 3 ft between modules, 10 ft from structures, and 50 ft from lot lines for Li-ion installations >20 kWh. Adopted into MA fire code.",
                 "bylaw_ref": "527 CMR 1.00 (NFPA 855 adopted)",
-                "source_url": "https://www.mass.gov/regulations/527-CMR-1-00-massachusetts-comprehensive-fire-safety-code",
+                "source_url": "https://www.mass.gov/regulations/527-CMR-100-massachusetts-comprehensive-fire-safety-code",
             },
             {
                 "description": "UL 9540A large-scale fire testing report often required by AHJ before occupancy sign-off.",
@@ -234,12 +234,12 @@ def _baseline_bess_colocated(town_notes: str = "") -> dict:
             {
                 "description": "Co-located BESS typically rides the host solar project's permit; same NFPA 855 fire-code requirements apply (527 CMR 1.00).",
                 "bylaw_ref": "527 CMR 1.00",
-                "source_url": "https://www.mass.gov/regulations/527-CMR-1-00-massachusetts-comprehensive-fire-safety-code",
+                "source_url": "https://www.mass.gov/regulations/527-CMR-100-massachusetts-comprehensive-fire-safety-code",
             },
             {
                 "description": "SMART 3.0 Energy Storage Adder incentive requires co-located storage to be ≥25% of solar DC capacity and ≥4-hour duration.",
                 "bylaw_ref": "225 CMR 20.00",
-                "source_url": "https://www.mass.gov/regulations/225-CMR-20-00-solar-massachusetts-renewable-target-smart-program",
+                "source_url": "https://www.mass.gov/regulations/225-CMR-2000-solar-massachusetts-renewable-target-smart-program",
             },
         ],
         "setbacks_ft": {"front": None, "side": 50, "rear": 50, "note": "NFPA 855 minimum applies to battery equipment regardless of solar co-location."},
@@ -248,7 +248,7 @@ def _baseline_bess_colocated(town_notes: str = "") -> dict:
         "notes": town_notes or "Adding BESS to a solar project is usually a ~60 day addition to the solar timeline; the key risk is fire-setback encroaching on the solar array layout.",
         "citations": [
             {
-                "source_url": "https://www.mass.gov/doc/225-cmr-20-solar-massachusetts-renewable-target-smart-program-regulations",
+                "source_url": "https://www.mass.gov/regulations/225-CMR-2000-solar-massachusetts-renewable-target-smart-program",
                 "retrieved_at": RETRIEVED,
                 "document_title": "225 CMR 20.00 — SMART Program (Energy Storage Adder)",
             }
@@ -271,17 +271,17 @@ def _baseline_ev_charging(town_notes: str = "") -> dict:
             {
                 "description": "MassDOT NEVI Plan designates Alternative Fuel Corridors; DCFC sites on these corridors have expedited state-level review.",
                 "bylaw_ref": "MassDOT NEVI Deployment Plan",
-                "source_url": "https://www.mass.gov/doc/massachusetts-nevi-plan/download",
+                "source_url": "https://www.mass.gov/massdot-nevi-plan",
             },
             {
                 "description": "Eversource / National Grid Make-Ready programs subsidize utility-side infrastructure (service upgrade, transformer) for qualifying sites.",
                 "bylaw_ref": "DPU 21-90 (Eversource) / DPU 21-91 (National Grid)",
-                "source_url": "https://www.mass.gov/info-details/electric-vehicle-charging-make-ready-programs",
+                "source_url": "https://www.mass.gov/info-details/electric-vehicle-charging",
             },
             {
                 "description": "ADA accessibility and stormwater review for sites with ≥4 DCFC ports or new curb cuts.",
                 "bylaw_ref": "521 CMR (MA Architectural Access Board)",
-                "source_url": "https://www.mass.gov/regulations/521-CMR-architectural-access-board",
+                "source_url": "https://www.mass.gov/law-library/521-cmr",
             },
         ],
         "setbacks_ft": None,
@@ -290,7 +290,7 @@ def _baseline_ev_charging(town_notes: str = "") -> dict:
         "notes": town_notes or "EVSE is largely by-right statewide as of 2022. DCFC hubs on NEVI corridors are the most active segment.",
         "citations": [
             {
-                "source_url": "https://www.mass.gov/doc/massachusetts-nevi-plan/download",
+                "source_url": "https://www.mass.gov/massdot-nevi-plan",
                 "retrieved_at": RETRIEVED,
                 "document_title": "Massachusetts NEVI Deployment Plan",
             }

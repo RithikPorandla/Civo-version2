@@ -44,12 +44,12 @@ _MASSGIS_URLS = {
     "nhesp_priority": "https://www.arcgis.com/home/item.html?id=a953ef7fe0744ef2b2a8fb49118c51c7",
     "nhesp_estimated": "https://www.arcgis.com/home/item.html?id=e99c0aae177247ae85636102db6ede5f",
     "fema_flood": "https://www.mass.gov/info-details/massgis-data-fema-national-flood-hazard-layer",
-    "wetlands": "https://www.mass.gov/info-details/massgis-data-massdep-wetlands",
+    "wetlands": "https://gis.data.mass.gov/search?q=massdep%20wetlands",
     "land_use": "https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use",
-    "prime_farmland": "https://www.mass.gov/info-details/massgis-data-noaa-soils",
+    "prime_farmland": "https://gis.data.mass.gov/search?q=noaa%20soils",
     "massenviroscreen": "https://mass-eoeea.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4be63e892a3d42d69334615a64095a39",
-    "esmp": "https://www.mass.gov/doc/dpu-24-10-electric-sector-modernization-plan/download",
-    "regulation": "https://www.mass.gov/regulations/225-CMR-29-site-suitability-criteria-for-clean-energy-infrastructure",
+    "esmp": "https://eeaonline.eea.state.ma.us/DPU/Fileroom/dockets/get/?num=24-10",
+    "regulation": "https://www.mass.gov/regulations/225-CMR-29-225-cmr-2900-small-clean-energy-infrastructure-facility-siting-and-permitting-draft-regulation",
 }
 
 
