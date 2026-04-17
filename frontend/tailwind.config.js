@@ -4,46 +4,53 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#fafaf7',
-        surface: '#ffffff',
-        surfaceAlt: '#f5f2ea',
-        accentSoft: '#f0ede5',
-        border: '#ececec',
-        borderHover: '#d4d1c7',
+        // Page + surfaces
+        bg: '#f7f8fa',              // near-white page background
+        surface: '#ffffff',          // cards / panels
+        surfaceAlt: '#f1f2f4',       // hover / very subtle fills
+        hover: '#f4f5f7',            // row hover
+
+        // Borders — hairline
+        border: '#e8eaed',
+        borderHover: '#d7dae0',
+
+        // Text hierarchy
         text: '#1a1a1a',
-        textMid: '#6b6b6b',
-        textDim: '#9b9b9b',
+        textMid: '#525252',
+        textDim: '#8a8a8a',
         textFaint: '#b8b8b8',
-        accent: '#8b7355',
-        good: '#4a7c4f',
-        goodSoft: '#eaf2e7',
-        warn: '#c08a3e',
-        warnSoft: '#f7efe0',
-        bad: '#a85a4a',
-        badSoft: '#f5e8e4',
+
+        // Accent — quiet indigo/slate for links and focus
+        accent: '#2563eb',
+        accentSoft: '#e8efff',
+
+        // Pastel stat card fills (match the screenshot)
+        pastelBlue: '#e3ebf5',
+        pastelLavender: '#eeedf2',
+        pastelMint: '#dbe8cc',
+        pastelPeach: '#f8e8d6',
+
+        // Status — kept muted
+        good: '#1f8a3d',
+        goodSoft: '#e4f3e7',
+        warn: '#b6781c',
+        warnSoft: '#fbecd6',
+        bad: '#c0392b',
+        badSoft: '#f9e3df',
       },
       fontFamily: {
-        display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        displayXL: ['68px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
-        displayL: ['54px', { lineHeight: '1.05', letterSpacing: '-0.015em' }],
-        displayM: ['40px', { lineHeight: '1.15', letterSpacing: '-0.01em' }],
-        displayS: ['32px', { lineHeight: '1.2', letterSpacing: '-0.008em' }],
-        displayXS: ['26px', { lineHeight: '1.2', letterSpacing: '-0.005em' }],
-        hero: ['96px', { lineHeight: '0.9', letterSpacing: '-0.04em' }],
+        'num-xl': ['36px', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '600' }],
+        'num-lg': ['28px', { lineHeight: '1.1', letterSpacing: '-0.01em', fontWeight: '600' }],
       },
       borderRadius: {
-        sm: '8px',
-        md: '14px',
-        lg: '20px',
+        card: '16px',
         pill: '100px',
       },
-      spacing: {
-        'rhythm-sm': '40px',
-        'rhythm': '56px',
-        'rhythm-lg': '80px',
+      boxShadow: {
+        card: '0 1px 2px rgba(15, 15, 15, 0.04)',
       },
     },
   },

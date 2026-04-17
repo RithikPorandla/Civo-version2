@@ -1,11 +1,20 @@
 export type CriterionStatus = 'ok' | 'flagged' | 'ineligible' | 'data_unavailable';
 export type Bucket = 'SUITABLE' | 'CONDITIONALLY SUITABLE' | 'CONSTRAINED';
 
+export interface LinkHealthInfo {
+  status: 'healthy' | 'broken';
+  status_code: number | null;
+  wayback_url: string | null;
+  final_url: string | null;
+  checked_at: string | null;
+}
+
 export interface SourceCitation {
   dataset: string;
   row_id?: string | null;
   url?: string | null;
   detail?: string | null;
+  health?: LinkHealthInfo | null;
 }
 
 export interface CriterionScore {
@@ -158,3 +167,85 @@ export const api = {
 
 export const bucketTone = (b?: Bucket | null) =>
   b === 'SUITABLE' ? 'good' : b === 'CONDITIONALLY SUITABLE' ? 'warn' : 'bad';
+
+// ---------------------------------------------------------------------------
+// DOER tracking + exemption check
+// ---------------------------------------------------------------------------
+export type DoerProjectType = 'solar' | 'bess';
+export type DoerAdoptionStatus = 'adopted' | 'in_progress' | 'not_started' | 'unknown';
+export type DoerSeverity = 'minor' | 'moderate' | 'major';
+export type DoerSafeHarbor = 'safe' | 'at_risk' | 'unknown';
+
+export interface DoerDeviation {
+  category: string;
+  severity: DoerSeverity;
+  tier_context: string;
+  town_value: string | null;
+  doer_value: string | null;
+  summary: string;
+  dover_risk: boolean;
+  source_bylaw_ref: string | null;
+}
+
+export interface DoerComparisonResult {
+  project_type: DoerProjectType;
+  comparison_available: boolean;
+  reason_unavailable: string | null;
+  deviations: DoerDeviation[];
+  deviation_counts: Record<DoerSeverity, number>;
+  dover_amendment_risk: boolean;
+  doer_version_compared: string | null;
+}
+
+export interface DoerAdoptionDetail {
+  project_type: DoerProjectType;
+  adoption_status: DoerAdoptionStatus;
+  adopted_date: string | null;
+  town_meeting_article: string | null;
+  current_local_bylaw_url: string | null;
+  modification_summary: string | null;
+  doer_circuit_rider: string | null;
+  confidence: number;
+  source_url: string;
+  source_type: string;
+  last_checked: string | null;
+  doer_version_ref: string | null;
+  comparison: DoerComparisonResult | null;
+  safe_harbor_status: DoerSafeHarbor;
+}
+
+export interface DoerStatusResponse {
+  town_id: number;
+  town_name: string;
+  solar: DoerAdoptionDetail | null;
+  bess: DoerAdoptionDetail | null;
+  deadline: string;
+  days_remaining: number;
+  other_project_types_note: string;
+}
+
+export interface ExemptionCheck {
+  is_exempt: boolean | null;
+  reason: string | null;
+  regulation_reference: string;
+  missing_fields: string[];
+}
+
+export interface ExemptionRequest {
+  project_type: string;
+  nameplate_capacity_kw?: number | null;
+  site_footprint_acres?: number | null;
+  is_behind_meter?: boolean;
+  is_accessory_use?: boolean;
+  in_existing_public_row?: boolean;
+  td_design_rating_kv?: number | null;
+}
+
+export const doerApi = {
+  townStatus: (townId: number) => jf<DoerStatusResponse>(`/towns/${townId}/doer-status`),
+  checkExemption: (req: ExemptionRequest) =>
+    jf<ExemptionCheck>('/exemption-check', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+};

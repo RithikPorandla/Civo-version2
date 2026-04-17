@@ -1,9 +1,10 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { api, ProjectTypeCode } from '../lib/api';
+import { api, doerApi, ProjectTypeCode } from '../lib/api';
+import DoerAlignmentStrip from '../components/DoerAlignmentStrip';
+import { IconArrowUpRight } from '../components/Icon';
 
-const DISPLAY = "'Fraunces', Georgia, serif";
 const PROJECT_TYPES: Array<{ code: ProjectTypeCode; label: string }> = [
   { code: 'solar_rooftop', label: 'Solar Rooftop' },
   { code: 'solar_ground_mount', label: 'Solar Ground-Mount' },
@@ -26,42 +27,79 @@ function MunicipalityIndex() {
     queryKey: ['municipalities'],
     queryFn: () => api.listMunicipalities(),
   });
-  if (isLoading) return <div className="px-12 py-12 text-textDim">Loading…</div>;
+  if (isLoading)
+    return <div style={{ padding: '28px', color: '#8a8a8a', fontSize: 13 }}>Loading…</div>;
+
+  const stats = [
+    { label: 'Towns indexed', value: String(data?.length || 0), bg: '#e3ebf5' },
+    {
+      label: 'Project types',
+      value: String(
+        new Set((data || []).flatMap((m) => m.project_types)).size
+      ),
+      bg: '#eeedf2',
+    },
+    { label: 'Recently refreshed', value: String(data?.length || 0), bg: '#e3ebf5' },
+    { label: 'DOER deadline', value: '228 days', bg: '#dbe8cc' },
+  ];
+
   return (
-    <div className="px-12 py-12 max-w-6xl">
-      <div className="eyebrow mb-3">Municipalities</div>
-      <h1
+    <div style={{ padding: '24px 28px 40px' }}>
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.3, margin: 0 }}>
+          Municipalities
+        </h1>
+        <p className="text-textMid" style={{ fontSize: 13, margin: '4px 0 0' }}>
+          Zoning and permitting posture for every MA town in the corpus.
+        </p>
+      </div>
+
+      <section
         style={{
-          fontFamily: DISPLAY,
-          fontSize: 54,
-          letterSpacing: -1.5,
-          lineHeight: 1.05,
-          fontWeight: 400,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 16,
+          marginBottom: 20,
         }}
       >
-        Permitting by town.
-      </h1>
-      <p className="text-textMid mt-6 max-w-2xl mb-12">
-        Zoning, wetlands, and conservation bylaws for every town where Eversource has
-        a planned ESMP project. Each entry cites back to the town's own bylaw document.
-      </p>
-      <div className="grid grid-cols-2 gap-4">
+        {stats.map((s) => (
+          <div key={s.label} className="stat-tile" style={{ background: s.bg }}>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{s.label}</div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: -0.5 }}>
+                {s.value}
+              </div>
+              <IconArrowUpRight size={12} />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
         {(data || []).map((m) => (
           <Link
             key={m.town_id}
             to={`/municipalities/${m.town_id}`}
-            className="border hairline rounded-md bg-surface px-6 py-6 hover:border-borderHover transition"
+            className="card"
+            style={{
+              padding: '20px 22px',
+              textDecoration: 'none',
+              color: 'inherit',
+              transition: 'border-color 120ms ease',
+            }}
           >
-            <div style={{ fontFamily: DISPLAY, fontSize: 26 }} className="mb-2">
+            <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>
               {m.town_name}
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {m.project_types.map((pt) => (
-                <span
-                  key={pt}
-                  className="chip"
-                  style={{ fontSize: 11, padding: '2px 10px' }}
-                >
+                <span key={pt} className="chip">
                   {pt.replace(/_/g, ' ')}
                 </span>
               ))}
@@ -78,56 +116,104 @@ function MunicipalityDetail({ townId }: { townId: number }) {
     queryKey: ['municipality', townId],
     queryFn: () => api.getMunicipality(townId),
   });
+  const { data: doer } = useQuery({
+    queryKey: ['doer-status', townId],
+    queryFn: () => doerApi.townStatus(townId),
+  });
   const [active, setActive] = useState<ProjectTypeCode>('solar_rooftop');
-  if (isLoading || !data) return <div className="px-12 py-12 text-textDim">Loading…</div>;
+  if (isLoading || !data)
+    return <div style={{ padding: '28px', color: '#8a8a8a', fontSize: 13 }}>Loading…</div>;
   const bylaws = data.project_type_bylaws[active] || null;
 
   return (
-    <div className="px-12 py-12 max-w-6xl">
-      <div className="eyebrow mb-3">
-        <Link to="/municipalities" className="hover:text-text">
+    <div style={{ padding: '24px 28px 40px' }}>
+      <div style={{ marginBottom: 20 }}>
+        <Link
+          to="/municipalities"
+          className="text-textDim"
+          style={{ fontSize: 12, textDecoration: 'none' }}
+        >
           ← Municipalities
         </Link>
-      </div>
-      <h1
-        style={{
-          fontFamily: DISPLAY,
-          fontSize: 54,
-          letterSpacing: -1.5,
-          lineHeight: 1.05,
-          fontWeight: 400,
-        }}
-      >
-        {data.town_name}
-      </h1>
-      <div className="text-sm text-textDim mt-2 mb-10">
-        town_id {data.town_id} · refreshed{' '}
-        {data.last_refreshed_at
-          ? new Date(data.last_refreshed_at).toLocaleDateString()
-          : '—'}
+        <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: -0.4, margin: '8px 0 0' }}>
+          {data.town_name}
+        </h1>
+        <p className="text-textDim" style={{ fontSize: 13, margin: '4px 0 0' }}>
+          town_id {data.town_id} · refreshed{' '}
+          {data.last_refreshed_at
+            ? new Date(data.last_refreshed_at).toLocaleDateString()
+            : '—'}
+        </p>
       </div>
 
-      <div className="flex gap-1 mb-8 border-b hairline">
-        {PROJECT_TYPES.map((pt) => (
-          <button
-            key={pt.code}
-            onClick={() => setActive(pt.code)}
-            className="px-4 py-3 text-sm transition-colors"
-            style={{
-              color: active === pt.code ? '#1a1a1a' : '#9b9b9b',
-              borderBottom:
-                active === pt.code ? '2px solid #8b7355' : '2px solid transparent',
-              marginBottom: -1,
-            }}
-          >
-            {pt.label}
-          </button>
-        ))}
-      </div>
-
-      {bylaws ? <BylawPanel bylaws={bylaws} /> : (
-        <div className="text-textDim">No data for this project type.</div>
+      {doer && (
+        <section style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+            DOER model bylaw status
+          </div>
+          <DoerAlignmentStrip status={doer} />
+        </section>
       )}
+
+      <section className="card" style={{ overflow: 'hidden' }}>
+        <div
+          style={{
+            padding: '14px 20px',
+            borderBottom: '1px solid #e8eaed',
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          Zoning matrix
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 4,
+            padding: '10px 16px 0',
+            borderBottom: '1px solid #e8eaed',
+            overflowX: 'auto',
+          }}
+        >
+          {PROJECT_TYPES.map((pt) => (
+            <button
+              key={pt.code}
+              onClick={() => setActive(pt.code)}
+              style={{
+                padding: '10px 14px',
+                fontSize: 13,
+                fontFamily: 'inherit',
+                color: active === pt.code ? '#1a1a1a' : '#8a8a8a',
+                fontWeight: active === pt.code ? 500 : 400,
+                borderBottom:
+                  active === pt.code ? '2px solid #1a1a1a' : '2px solid transparent',
+                marginBottom: -1,
+                background: 'transparent',
+                border: 'none',
+                borderTop: 'none',
+                borderLeft: 'none',
+                borderRight: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'color 120ms ease, border-color 120ms ease',
+              }}
+            >
+              {pt.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ padding: '20px 24px' }}>
+          {bylaws ? (
+            <BylawPanel bylaws={bylaws} />
+          ) : (
+            <div className="text-textDim" style={{ fontSize: 13 }}>
+              No data for this project type.
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -135,8 +221,8 @@ function MunicipalityDetail({ townId }: { townId: number }) {
 function BylawPanel({ bylaws }: { bylaws: any }) {
   const range = bylaws.estimated_timeline_months;
   return (
-    <div className="grid grid-cols-3 gap-8">
-      <div className="col-span-2 space-y-6">
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <Block label="Approval authority" value={bylaws.approval_authority} />
         <Block label="Process" value={String(bylaws.process || '—').replace(/_/g, ' ')} />
         <Block
@@ -146,13 +232,33 @@ function BylawPanel({ bylaws }: { bylaws: any }) {
         {bylaws.notes && <Block label="Notes" value={bylaws.notes} />}
         {bylaws.key_triggers?.length > 0 && (
           <div>
-            <div className="eyebrow mb-3">Key triggers</div>
-            <ul className="space-y-3">
+            <div className="label" style={{ marginBottom: 12 }}>
+              Key triggers
+            </div>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
               {bylaws.key_triggers.map((t: any, i: number) => (
-                <li key={i} className="border-l-2 pl-4" style={{ borderColor: '#ececec' }}>
-                  <div className="text-[14px]">{t.description}</div>
+                <li
+                  key={i}
+                  style={{
+                    borderLeft: '2px solid #e8eaed',
+                    paddingLeft: 14,
+                  }}
+                >
+                  <div style={{ fontSize: 14, lineHeight: 1.55 }}>{t.description}</div>
                   {t.bylaw_ref && (
-                    <div className="text-[11px] text-textDim mt-1 eyebrow" style={{ fontSize: 11 }}>
+                    <div
+                      className="text-textDim"
+                      style={{ fontSize: 11, marginTop: 4 }}
+                    >
                       {t.bylaw_ref}
                     </div>
                   )}
@@ -161,7 +267,8 @@ function BylawPanel({ bylaws }: { bylaws: any }) {
                       href={t.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] text-accent hover:underline mt-1 inline-block"
+                      className="text-accent"
+                      style={{ fontSize: 12, marginTop: 2, display: 'inline-block' }}
                     >
                       Source ↗
                     </a>
@@ -172,39 +279,66 @@ function BylawPanel({ bylaws }: { bylaws: any }) {
           </div>
         )}
       </div>
-      <div className="space-y-4">
+      <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {bylaws.setbacks_ft && (
-          <div className="border hairline rounded-md bg-surface p-5">
-            <div className="eyebrow mb-3" style={{ fontSize: 11 }}>
+          <div
+            style={{
+              background: '#fafbfc',
+              border: '1px solid #e8eaed',
+              borderRadius: 12,
+              padding: '16px 18px',
+            }}
+          >
+            <div className="label" style={{ marginBottom: 10 }}>
               Setbacks (ft)
             </div>
-            <div className="text-[13px] space-y-1">
+            <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div>Front: {bylaws.setbacks_ft.front ?? '—'}</div>
               <div>Side: {bylaws.setbacks_ft.side ?? '—'}</div>
               <div>Rear: {bylaws.setbacks_ft.rear ?? '—'}</div>
             </div>
             {bylaws.setbacks_ft.note && (
-              <div className="text-[11px] text-textDim mt-3">
+              <div
+                className="text-textDim"
+                style={{ fontSize: 11, marginTop: 10, lineHeight: 1.5 }}
+              >
                 {bylaws.setbacks_ft.note}
               </div>
             )}
           </div>
         )}
         {bylaws.citations?.length > 0 && (
-          <div className="border hairline rounded-md bg-surface p-5">
-            <div className="eyebrow mb-3" style={{ fontSize: 11 }}>
+          <div
+            style={{
+              background: '#fafbfc',
+              border: '1px solid #e8eaed',
+              borderRadius: 12,
+              padding: '16px 18px',
+            }}
+          >
+            <div className="label" style={{ marginBottom: 10 }}>
               Citations
             </div>
-            <ul className="space-y-3">
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
               {bylaws.citations.map((c: any, i: number) => (
-                <li key={i} className="text-[12px]">
+                <li key={i}>
                   <a
                     href={c.source_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-accent hover:underline"
+                    className="text-accent"
+                    style={{ fontSize: 12, lineHeight: 1.45, textDecoration: 'none' }}
                   >
-                    {c.document_title}
+                    {c.document_title} ↗
                   </a>
                 </li>
               ))}
@@ -212,11 +346,14 @@ function BylawPanel({ bylaws }: { bylaws: any }) {
           </div>
         )}
         {bylaws.verification_note && (
-          <div className="text-[11px] text-textDim italic">
+          <div
+            className="text-textDim"
+            style={{ fontSize: 11, lineHeight: 1.5, fontStyle: 'italic', padding: '0 2px' }}
+          >
             {bylaws.verification_note}
           </div>
         )}
-      </div>
+      </aside>
     </div>
   );
 }
@@ -224,10 +361,10 @@ function BylawPanel({ bylaws }: { bylaws: any }) {
 function Block({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="eyebrow mb-2" style={{ fontSize: 11 }}>
+      <div className="label" style={{ marginBottom: 6 }}>
         {label}
       </div>
-      <div style={{ fontFamily: DISPLAY, fontSize: 20, lineHeight: 1.35 }}>{value}</div>
+      <div style={{ fontSize: 15, lineHeight: 1.5 }}>{value}</div>
     </div>
   );
 }

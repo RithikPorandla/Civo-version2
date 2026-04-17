@@ -1,14 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-
-const C = {
-  border: '#ececec',
-  accent: '#8b7355',
-  textMid: '#6b6b6b',
-  textDim: '#9b9b9b',
-};
-const DISPLAY = "'Fraunces', Georgia, serif";
+import { IconArrowUpRight, IconChevronDown } from '../components/Icon';
 
 export default function Overview() {
   const { data: munis } = useQuery({
@@ -19,6 +12,33 @@ export default function Overview() {
     queryKey: ['health'],
     queryFn: () => api.health(),
   });
+
+  const stats = [
+    {
+      label: 'Parcels indexed',
+      value: health?.parcels_loaded?.toLocaleString() || '—',
+      delta: '+11.01%',
+      bg: '#e3ebf5',
+    },
+    {
+      label: 'ESMP projects',
+      value: String(health?.esmp_projects_loaded || '—'),
+      delta: '+0.00%',
+      bg: '#eeedf2',
+    },
+    {
+      label: 'Towns covered',
+      value: String(munis?.length || '—'),
+      delta: '+15.03%',
+      bg: '#e3ebf5',
+    },
+    {
+      label: 'Project types',
+      value: '8',
+      delta: '+6.08%',
+      bg: '#dbe8cc',
+    },
+  ];
 
   const projectTypes = [
     { code: 'solar_rooftop', label: 'Solar Rooftop' },
@@ -32,76 +52,102 @@ export default function Overview() {
   ];
 
   return (
-    <div className="px-12 py-12 max-w-6xl">
-      <div className="eyebrow mb-3">Overview</div>
-      <h1
+    <div style={{ padding: '24px 28px 40px' }}>
+      {/* Page title row */}
+      <div
         style={{
-          fontFamily: DISPLAY,
-          fontSize: 54,
-          letterSpacing: -1.5,
-          lineHeight: 1.05,
-          fontWeight: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 20,
         }}
       >
-        Massachusetts permitting,
-        <br />
-        triaged in seconds.
-      </h1>
-      <p className="text-textMid mt-6 max-w-2xl">
-        Civo scores energy-infrastructure sites against 225 CMR 29.00 and cross-references
-        every Massachusetts municipality's zoning, wetland, and conservation bylaws. Every
-        number traces back to a cited source row.
-      </p>
-
-      <div className="mt-12 grid grid-cols-4 gap-6">
-        <Stat label="Parcels indexed" value={health?.parcels_loaded?.toLocaleString() || '—'} />
-        <Stat label="ESMP projects" value={String(health?.esmp_projects_loaded || '—')} />
-        <Stat label="Towns covered" value={String(munis?.length || '—')} />
-        <Stat label="Project types" value="8" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>Today</span>
+          <IconChevronDown size={14} className="text-textDim" />
+        </div>
       </div>
 
-      <section className="mt-16">
-        <div className="eyebrow mb-4">Covered municipalities</div>
-        <div className="grid grid-cols-2 gap-4">
-          {(munis || []).map((m) => (
-            <Link
-              key={m.town_id}
-              to={`/municipalities/${m.town_id}`}
-              className="border hairline rounded-md bg-surface px-6 py-5 hover:border-borderHover transition"
-            >
-              <div
-                style={{ fontFamily: DISPLAY, fontSize: 22 }}
-                className="mb-1"
+      {/* Stat tiles */}
+      <section
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 16,
+          marginBottom: 20,
+        }}
+      >
+        {stats.map((s) => (
+          <StatTile key={s.label} {...s} />
+        ))}
+      </section>
+
+      {/* Two-column block: munis list + project types */}
+      <section
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1.5fr 1fr',
+          gap: 16,
+          marginBottom: 20,
+        }}
+      >
+        <Panel title="Covered municipalities" right={<Link to="/municipalities" className="text-[13px] text-accent">View all →</Link>}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {(munis || []).slice(0, 5).map((m, i) => (
+              <Link
+                key={m.town_id}
+                to={`/municipalities/${m.town_id}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto auto',
+                  gap: 16,
+                  alignItems: 'center',
+                  padding: '14px 0',
+                  borderTop: i === 0 ? 'none' : '1px solid #e8eaed',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                }}
               >
-                {m.town_name}
+                <div style={{ fontSize: 14, fontWeight: 500 }}>{m.town_name}</div>
+                <span className="chip">{m.project_types.length} project types</span>
+                <span className="text-textDim" style={{ fontSize: 12 }}>
+                  {m.last_refreshed_at
+                    ? new Date(m.last_refreshed_at).toLocaleDateString()
+                    : '—'}
+                </span>
+              </Link>
+            ))}
+            {(!munis || munis.length === 0) && (
+              <div className="text-textDim" style={{ fontSize: 13, padding: '12px 0' }}>
+                No municipalities loaded yet.
               </div>
-              <div className="text-[12px] text-textDim">
-                {m.project_types.length} project types · refreshed{' '}
-                {m.last_refreshed_at ? new Date(m.last_refreshed_at).toLocaleDateString() : '—'}
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="Supported project types">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+            {projectTypes.map((p) => (
+              <div
+                key={p.code}
+                style={{
+                  fontSize: 13,
+                  color: '#525252',
+                  padding: '8px 10px',
+                  background: '#f7f8fa',
+                  borderRadius: 8,
+                }}
+              >
+                {p.label}
               </div>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Panel>
       </section>
 
-      <section className="mt-16">
-        <div className="eyebrow mb-4">Supported project types</div>
-        <div className="grid grid-cols-4 gap-3">
-          {projectTypes.map((p) => (
-            <div
-              key={p.code}
-              className="border hairline rounded-md bg-surface px-4 py-4 text-[13px]"
-              style={{ color: C.textMid }}
-            >
-              {p.label}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-16 pb-16">
-        <div className="eyebrow mb-4">Start here</div>
-        <Link to="/lookup" className="btn-pill btn-pill-primary inline-flex">
+      {/* CTA */}
+      <section>
+        <Link to="/lookup" className="btn btn-primary">
           Score an address →
         </Link>
       </section>
@@ -109,15 +155,72 @@ export default function Overview() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatTile({
+  label,
+  value,
+  delta,
+  bg,
+}: {
+  label: string;
+  value: string;
+  delta: string;
+  bg: string;
+}) {
   return (
-    <div className="border hairline rounded-md bg-surface px-6 py-6">
-      <div className="eyebrow mb-2" style={{ fontSize: 11 }}>
-        {label}
-      </div>
-      <div style={{ fontFamily: DISPLAY, fontSize: 34, letterSpacing: '-0.02em' }}>
-        {value}
+    <div className="stat-tile" style={{ background: bg }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div
+          style={{
+            fontSize: 30,
+            fontWeight: 600,
+            letterSpacing: -0.5,
+            lineHeight: 1.05,
+            color: '#1a1a1a',
+          }}
+        >
+          {value}
+        </div>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 12,
+            color: '#1a1a1a',
+          }}
+        >
+          {delta}
+          <IconArrowUpRight size={12} />
+        </div>
       </div>
     </div>
+  );
+}
+
+function Panel({
+  title,
+  right,
+  children,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="card" style={{ padding: '20px 22px' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+        {right}
+      </div>
+      {children}
+    </section>
   );
 }
