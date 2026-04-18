@@ -31,8 +31,9 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal, get_session
 from app.scoring.engine import score_site
 from app.scoring.models import SuitabilityReport
-from app.scoring.resolver import ResolveError, resolve_parcel
+from app.scoring.resolver import ResolveError, resolve_parcel_detailed
 from app.services.link_health import enrich_citations_in_place
+from app.services.mitigation_costs import estimate_mitigation_costs
 
 router = APIRouter()
 
@@ -93,16 +94,32 @@ def _score_and_persist(req: ScoreRequest) -> ScoreEnvelope:
     """Open a fresh session, resolve + score + persist. One call = one tx."""
     with SessionLocal() as session:
         try:
-            loc_id, mode = resolve_parcel(session, req.address)
+            resolved = resolve_parcel_detailed(
+                session, req.address, project_type=req.project_type
+            )
         except ResolveError as e:
             raise HTTPException(status_code=422, detail=str(e)) from e
 
         report = score_site(
             session,
-            parcel_id=loc_id,
+            parcel_id=resolved.loc_id,
             project_type=req.project_type,
             config_version=req.config_version,
         )
+
+        # Stash resolution metadata INSIDE the report JSONB so GET /report/{id}
+        # can surface it later without a schema change. The SuitabilityReport
+        # pydantic is permissive about unknown keys in the raw JSON, but we
+        # attach after model_dump to avoid model-layer churn.
+        report_dict = report.model_dump(mode="json")
+        report_dict["resolution"] = {
+            "mode": resolved.resolution_mode,
+            "original_query": resolved.original_query,
+            "formatted_address": resolved.formatted_address,
+            "resolved_site_addr": resolved.resolved_site_addr,
+            "resolved_town": resolved.resolved_town,
+            "distance_m": round(resolved.distance_m, 1),
+        }
 
         report_id = session.execute(
             text(
@@ -122,21 +139,19 @@ def _score_and_persist(req: ScoreRequest) -> ScoreEnvelope:
                 "cfg": report.config_version,
                 "total": report.total_score,
                 "bucket": report.bucket,
-                "report": report.model_dump_json(),
+                "report": json.dumps(report_dict),
             },
         ).scalar_one()
         session.commit()
 
-        # Enrich the fresh report with runtime link-health before returning
-        # so the user sees the archived-fallback state on first render.
-        report_dict = report.model_dump()
+        # Enrich the fresh report with runtime link-health before returning.
         enrich_citations_in_place(session, report_dict)
         report = SuitabilityReport.model_validate(report_dict)
 
     return ScoreEnvelope(
         report_id=report_id,
         address=req.address,
-        resolution_mode=cast(ResolutionMode, mode),
+        resolution_mode=cast(ResolutionMode, resolved.resolution_mode),
         report=report,
     )
 
@@ -249,6 +264,68 @@ def get_parcel_geojson(parcel_id: str, session: Session = Depends(get_session)) 
             "total_val": row["total_val"],
             "lot_size": row["lot_size"],
         },
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /parcel/{parcel_id}/mitigation-costs
+# ---------------------------------------------------------------------------
+@router.get("/parcel/{parcel_id}/mitigation-costs")
+def get_parcel_mitigation_costs(
+    parcel_id: str,
+    project_type: str = Query(..., description="e.g. solar_ground_mount"),
+    nameplate_kw: float | None = Query(None, ge=0),
+    site_footprint_acres: float | None = Query(None, ge=0),
+    wetland_impact_acres: float | None = Query(None, ge=0),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Return a line-item mitigation cost estimate grounded in town precedents
+    and industry benchmarks. Feeds the "Relevant precedents" panel on the
+    Report page."""
+    return estimate_mitigation_costs(
+        session,
+        parcel_id=parcel_id,
+        project_type=project_type,
+        nameplate_kw=nameplate_kw,
+        site_footprint_acres=site_footprint_acres,
+        estimated_wetland_impact_acres=wetland_impact_acres,
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /parcel/{parcel_id}/moratoriums
+# ---------------------------------------------------------------------------
+@router.get("/parcel/{parcel_id}/moratoriums")
+def get_parcel_moratoriums(
+    parcel_id: str, session: Session = Depends(get_session)
+) -> dict:
+    """Return any active moratoriums in the parcel's town, keyed by project
+    type. Shape mirrors municipalities.moratoriums JSONB."""
+    row = (
+        session.execute(
+            text(
+                """
+                SELECT m.town_id, m.town_name, m.moratoriums
+                FROM parcels p
+                JOIN municipalities m ON m.town_id = p.town_id
+                WHERE p.loc_id = :pid
+                """
+            ),
+            {"pid": parcel_id},
+        )
+        .mappings()
+        .first()
+    )
+    if not row:
+        # No municipality row — not an error; just return empty.
+        return {"town_id": None, "town_name": None, "moratoriums": {}}
+    mors = row["moratoriums"] or {}
+    # Filter out the research-agent's _citations side-channel if present.
+    filtered = {k: v for k, v in mors.items() if not k.startswith("_")}
+    return {
+        "town_id": row["town_id"],
+        "town_name": row["town_name"],
+        "moratoriums": filtered,
     }
 
 

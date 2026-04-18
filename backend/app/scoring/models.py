@@ -89,6 +89,25 @@ class ExemptionCheck(BaseModel):
     )
 
 
+class ResolutionInfo(BaseModel):
+    """How the scored parcel relates to the user's original query.
+
+    Attached by /score and /report/{id} so the UI can show a
+    transparency banner when the resolver had to snap from the typed
+    address to a different parcel (nearest-match or ESMP-anchored).
+    """
+
+    mode: Literal["contains", "esmp_anchored", "nearest"]
+    original_query: str
+    formatted_address: str | None = None
+    resolved_site_addr: str | None = None
+    resolved_town: str | None = None
+    distance_m: float = Field(
+        default=0.0,
+        description="Straight-line distance from geocoded point to resolved parcel, meters.",
+    )
+
+
 class SuitabilityReport(BaseModel):
     parcel_id: str
     address: str | None = None
@@ -111,4 +130,8 @@ class SuitabilityReport(BaseModel):
     citations: list[SourceCitation] = Field(
         default_factory=list,
         description="Report-level citations (config, methodology, data limitations)",
+    )
+    resolution: ResolutionInfo | None = Field(
+        default=None,
+        description="Metadata about how the user query resolved to this parcel.",
     )
