@@ -28,6 +28,15 @@ export interface CriterionScore {
   citations: SourceCitation[];
 }
 
+export interface ResolutionInfo {
+  mode: 'contains' | 'esmp_anchored' | 'nearest';
+  original_query: string;
+  formatted_address?: string | null;
+  resolved_site_addr?: string | null;
+  resolved_town?: string | null;
+  distance_m: number;
+}
+
 export interface SuitabilityReport {
   parcel_id: string;
   address?: string | null;
@@ -41,6 +50,7 @@ export interface SuitabilityReport {
   ineligible_flags: string[];
   criteria: CriterionScore[];
   citations: SourceCitation[];
+  resolution?: ResolutionInfo | null;
 }
 
 export interface ScoreEnvelope {
@@ -248,4 +258,75 @@ export const doerApi = {
       method: 'POST',
       body: JSON.stringify(req),
     }),
+};
+
+// ---------------------------------------------------------------------------
+// Mitigation cost estimates (grounded in precedents + industry benchmarks)
+// ---------------------------------------------------------------------------
+export interface MitigationItem {
+  category: string;
+  label: string;
+  low: number;
+  high: number;
+  range_display: string;
+  observed_in_precedents: Array<{ applicant: string; source_url: string | null }>;
+  note: string | null;
+}
+
+export interface HcaInfo {
+  triggers: boolean;
+  reason: string | null;
+  low: number;
+  high: number;
+  range_display?: string;
+  pct_of_capital_display?: string;
+}
+
+export interface MitigationCostEstimate {
+  project_type: string;
+  items: MitigationItem[];
+  hca: HcaInfo;
+  total_low: number;
+  total_high: number;
+  total_range_display: string;
+  precedent_count: number;
+  caveats: string[];
+}
+
+export interface MoratoriumDetail {
+  type?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  source_url?: string | null;
+  [k: string]: unknown;
+}
+
+export interface MoratoriumResponse {
+  town_id: number | null;
+  town_name: string | null;
+  moratoriums: Record<string, MoratoriumDetail>;
+}
+
+export const reportApi = {
+  mitigationCosts: (
+    parcelId: string,
+    args: {
+      project_type: string;
+      nameplate_kw?: number | null;
+      site_footprint_acres?: number | null;
+      wetland_impact_acres?: number | null;
+    }
+  ) => {
+    const p = new URLSearchParams({ project_type: args.project_type });
+    if (args.nameplate_kw != null) p.set('nameplate_kw', String(args.nameplate_kw));
+    if (args.site_footprint_acres != null)
+      p.set('site_footprint_acres', String(args.site_footprint_acres));
+    if (args.wetland_impact_acres != null)
+      p.set('wetland_impact_acres', String(args.wetland_impact_acres));
+    return jf<MitigationCostEstimate>(
+      `/parcel/${encodeURIComponent(parcelId)}/mitigation-costs?${p.toString()}`
+    );
+  },
+  moratoriums: (parcelId: string) =>
+    jf<MoratoriumResponse>(`/parcel/${encodeURIComponent(parcelId)}/moratoriums`),
 };

@@ -4,3 +4,5 @@ dist/
 .env.local
 # Compiled JS from TS sources — only the .tsx/.ts should be tracked
 src/**/*.js
+# Generated walkthrough screenshots — the .mjs script regenerates on demand
+scripts/walkthrough/

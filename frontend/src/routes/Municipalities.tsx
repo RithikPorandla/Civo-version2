@@ -94,15 +94,12 @@ function MunicipalityIndex() {
               transition: 'border-color 120ms ease',
             }}
           >
-            <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>
-              {m.town_name}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {m.project_types.map((pt) => (
-                <span key={pt} className="chip">
-                  {pt.replace(/_/g, ' ')}
-                </span>
-              ))}
+            <div style={{ fontSize: 17, fontWeight: 600 }}>{m.town_name}</div>
+            <div className="text-textDim" style={{ fontSize: 12, marginTop: 6 }}>
+              Refreshed{' '}
+              {m.last_refreshed_at
+                ? new Date(m.last_refreshed_at).toLocaleDateString()
+                : '—'}
             </div>
           </Link>
         ))}

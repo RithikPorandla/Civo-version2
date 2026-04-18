@@ -3,9 +3,15 @@ import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   api,
+  reportApi,
   type Bucket,
   type CriterionScore,
+  type HcaInfo,
+  type MitigationCostEstimate,
+  type MitigationItem,
+  type MoratoriumDetail,
   type ProjectTypeCode,
+  type ResolutionInfo,
   type SourceCitation,
   type SuitabilityReport,
 } from '../lib/api';
@@ -128,6 +134,27 @@ export default function Report() {
     queryFn: () => api.parcelPrecedents(report!.parcel_id, 5),
     enabled: !!report?.parcel_id,
   });
+  const { data: moratoriums } = useQuery({
+    queryKey: ['moratoriums', report?.parcel_id],
+    queryFn: () => reportApi.moratoriums(report!.parcel_id),
+    enabled: !!report?.parcel_id,
+  });
+  const { data: mitigationCosts } = useQuery({
+    queryKey: [
+      'mitigation-costs',
+      report?.parcel_id,
+      projectType,
+      nameplateKw,
+      footprintAcres,
+    ],
+    queryFn: () =>
+      reportApi.mitigationCosts(report!.parcel_id, {
+        project_type: projectType,
+        nameplate_kw: nameplateKw,
+        site_footprint_acres: footprintAcres,
+      }),
+    enabled: !!report?.parcel_id,
+  });
 
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -138,6 +165,8 @@ export default function Report() {
     <ReportView
       report={report}
       precedents={precedents || []}
+      moratoriums={moratoriums?.moratoriums || {}}
+      mitigationCosts={mitigationCosts || null}
       expanded={expanded}
       setExpanded={setExpanded}
       projectType={projectType}
@@ -172,6 +201,8 @@ function ErrorState({ err }: { err: string }) {
 function ReportView({
   report,
   precedents,
+  moratoriums,
+  mitigationCosts,
   expanded,
   setExpanded,
   projectType,
@@ -180,6 +211,8 @@ function ReportView({
 }: {
   report: SuitabilityReport;
   precedents: NonNullable<Awaited<ReturnType<typeof api.parcelPrecedents>>>;
+  moratoriums: Record<string, MoratoriumDetail>;
+  mitigationCosts: MitigationCostEstimate | null;
   expanded: string | null;
   setExpanded: (k: string | null) => void;
   projectType: ProjectTypeCode;
@@ -262,13 +295,25 @@ function ReportView({
             <span>{new Date(report.computed_at).toISOString().slice(0, 10)}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost">Export PDF</button>
+        <div className="no-print" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={() => window.print()}>
+            Export PDF
+          </button>
           <Link to="/lookup" style={{ textDecoration: 'none' }}>
             <button className="btn btn-primary">New analysis</button>
           </Link>
         </div>
       </div>
+
+      {/* Resolver transparency banner — shown whenever the resolver had to
+          snap from the typed address to a different parcel. If the resolution
+          was a direct `contains` match we stay quiet. */}
+      <ResolutionBanner resolution={report.resolution ?? null} />
+
+      {/* Moratorium banner — only shown when the town has an active
+          moratorium affecting this project type. Research agent writes
+          `municipalities.moratoriums` as { project_type: {dates, source} }. */}
+      <MoratoriumBanner moratoriums={moratoriums} projectType={projectType} />
 
       {/* Stat tiles */}
       <section
@@ -383,7 +428,7 @@ function ReportView({
             border: '1px solid #e8eaed',
           }}
         >
-          <MapView parcelId={report.parcel_id} />
+          <MapView parcelId={report.parcel_id} address={address} />
         </div>
       </Panel>
 
@@ -455,6 +500,9 @@ function ReportView({
         </Panel>
 
         <Panel title="Relevant precedents">
+          {mitigationCosts && (
+            <MitigationCostBlock mitigation={mitigationCosts} />
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {precedents.length === 0 ? (
               <div
@@ -901,5 +949,389 @@ function CitationChip({ s }: { s: SourceCitation }) {
       {baseLabel}
       <IconArrowUpRight size={11} />
     </a>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Moratorium banner — visible at top of Report when the town has an active
+// moratorium affecting the current project type. Surfaces even a partial match
+// (e.g. moratoriums["battery_storage"] applies to both bess_standalone and
+// bess_colocated project codes).
+// ---------------------------------------------------------------------------
+function MoratoriumBanner({
+  moratoriums,
+  projectType,
+}: {
+  moratoriums: Record<string, MoratoriumDetail>;
+  projectType: ProjectTypeCode;
+}) {
+  const hit = findMoratoriumFor(moratoriums, projectType);
+  if (!hit) return null;
+  const [key, detail] = hit;
+
+  const end = detail.end_date ? new Date(detail.end_date).toLocaleDateString() : null;
+  const start = detail.start_date
+    ? new Date(detail.start_date).toLocaleDateString()
+    : null;
+
+  return (
+    <div
+      style={{
+        background: '#f9e3df',
+        border: '1px solid #f1b6ad',
+        borderRadius: 12,
+        padding: '14px 18px',
+        marginBottom: 20,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 12,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 100,
+          background: '#c0392b',
+          marginTop: 6,
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#c0392b' }}>
+          Active moratorium on {key.replace(/_/g, ' ')} in this town
+        </div>
+        <div style={{ fontSize: 12, color: '#525252', marginTop: 4, lineHeight: 1.55 }}>
+          {start && `Effective ${start}`}
+          {start && end && ' · '}
+          {end && `through ${end}`}
+          {detail.source_url && (
+            <>
+              {(start || end) && ' · '}
+              <a
+                href={detail.source_url as string}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#c0392b' }}
+              >
+                source ↗
+              </a>
+            </>
+          )}
+          <div style={{ marginTop: 4, color: '#8a8a8a' }}>
+            MA AG has historically rejected overly-broad moratoria; verify current
+            enforceability with town counsel before advancing this site.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function findMoratoriumFor(
+  moratoriums: Record<string, MoratoriumDetail>,
+  projectType: ProjectTypeCode
+): [string, MoratoriumDetail] | null {
+  if (!moratoriums || Object.keys(moratoriums).length === 0) return null;
+
+  // Synonyms: map report project_type to the broader moratorium key the agent writes.
+  const candidates: string[] = [projectType];
+  if (projectType.startsWith('bess')) candidates.push('battery_storage', 'bess');
+  if (projectType.startsWith('solar')) candidates.push('solar');
+  if (projectType === 'substation' || projectType === 'transmission')
+    candidates.push('grid_infrastructure');
+
+  for (const k of candidates) {
+    const hit = moratoriums[k];
+    if (hit && typeof hit === 'object') {
+      // Check it's still active — if end_date is in the past, skip.
+      const end = hit.end_date ? new Date(hit.end_date) : null;
+      if (end && end < new Date()) continue;
+      return [k, hit];
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Mitigation cost block — lives inside the Relevant precedents panel per the
+// 2026-04-17 meeting with Chris. Grounds dollar ranges in observed precedents
+// where available; otherwise shows industry benchmarks + a caveat.
+// ---------------------------------------------------------------------------
+function MitigationCostBlock({ mitigation }: { mitigation: MitigationCostEstimate }) {
+  if (mitigation.items.length === 0 && !mitigation.hca.triggers) return null;
+
+  return (
+    <div
+      style={{
+        background: '#fafbfc',
+        border: '1px solid #e8eaed',
+        borderRadius: 10,
+        padding: '14px 16px',
+        marginBottom: 14,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 10,
+        }}
+      >
+        <div>
+          <div className="label">Typical mitigation cost</div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 600,
+              letterSpacing: -0.3,
+              marginTop: 2,
+            }}
+          >
+            {mitigation.total_range_display}
+          </div>
+        </div>
+        <span className="text-textDim" style={{ fontSize: 11 }}>
+          {mitigation.precedent_count > 0
+            ? `${mitigation.precedent_count} precedent${mitigation.precedent_count === 1 ? '' : 's'} · industry benchmarks`
+            : 'industry benchmarks'}
+        </span>
+      </div>
+
+      <ul
+        style={{
+          listStyle: 'none',
+          padding: 0,
+          margin: '10px 0 0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}
+      >
+        {mitigation.items.map((it) => (
+          <MitigationRow key={it.category + it.label} item={it} />
+        ))}
+        {mitigation.hca.triggers && <HcaRow hca={mitigation.hca} />}
+      </ul>
+
+      {mitigation.caveats.length > 0 && (
+        <ul
+          className="text-textDim"
+          style={{
+            fontSize: 11,
+            margin: '12px 0 0',
+            padding: '0 0 0 16px',
+            lineHeight: 1.55,
+          }}
+        >
+          {mitigation.caveats.map((c, i) => (
+            <li key={i}>{c}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function MitigationRow({ item }: { item: MitigationItem }) {
+  return (
+    <li
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: 12,
+        alignItems: 'baseline',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>{item.label}</div>
+        {item.note && (
+          <div className="text-textDim" style={{ fontSize: 11, marginTop: 2 }}>
+            {item.note}
+          </div>
+        )}
+        {item.observed_in_precedents.length > 0 && (
+          <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {item.observed_in_precedents.slice(0, 3).map((p, i) =>
+              p.source_url ? (
+                <a
+                  key={i}
+                  href={p.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: 10,
+                    color: '#2563eb',
+                    background: '#e8efff',
+                    padding: '2px 8px',
+                    borderRadius: 100,
+                    textDecoration: 'none',
+                  }}
+                >
+                  {p.applicant} ↗
+                </a>
+              ) : (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 10,
+                    color: '#525252',
+                    background: '#f1f2f4',
+                    padding: '2px 8px',
+                    borderRadius: 100,
+                  }}
+                >
+                  {p.applicant}
+                </span>
+              )
+            )}
+          </div>
+        )}
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#1a1a1a',
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {item.range_display}
+      </div>
+    </li>
+  );
+}
+
+function HcaRow({ hca }: { hca: HcaInfo }) {
+  return (
+    <li
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: 12,
+        alignItems: 'baseline',
+        paddingTop: 8,
+        borderTop: '1px solid #e8eaed',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>
+          Host Community Agreement{' '}
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              color: '#b6781c',
+              background: '#fbecd6',
+              padding: '2px 8px',
+              borderRadius: 100,
+              marginLeft: 4,
+            }}
+          >
+            likely triggered
+          </span>
+        </div>
+        <div className="text-textDim" style={{ fontSize: 11, marginTop: 2 }}>
+          {hca.reason}
+          {hca.pct_of_capital_display && ` · ${hca.pct_of_capital_display}`}
+        </div>
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {hca.range_display || '—'}
+      </div>
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Resolution banner — surfaces when the resolver had to snap the typed
+// address to a different parcel. Silent when mode === 'contains'.
+// ---------------------------------------------------------------------------
+function ResolutionBanner({ resolution }: { resolution: ResolutionInfo | null }) {
+  if (!resolution || resolution.mode === 'contains') return null;
+
+  const distDisplay =
+    resolution.distance_m < 1000
+      ? `${Math.round(resolution.distance_m)} m`
+      : `${(resolution.distance_m / 1609).toFixed(2)} mi`;
+
+  const resolved = [resolution.resolved_site_addr, resolution.resolved_town]
+    .filter(Boolean)
+    .join(', ') || 'unnamed parcel';
+
+  const modeCopy = {
+    nearest: {
+      title: 'Approximate match — scored the nearest parcel',
+      body: `Your query didn't fall inside a parcel polygon we have indexed. We snapped to the closest parcel (${distDisplay} away). If this isn't the site you meant, try a more specific street address.`,
+    },
+    esmp_anchored: {
+      title: 'Anchored to a planned Eversource ESMP project',
+      body: `Because the project type is substation or transmission and your query was near a planned Eversource ESMP project, we scored the parcel at the ESMP site (${distDisplay} from your query).`,
+    },
+  }[resolution.mode];
+
+  if (!modeCopy) return null;
+
+  return (
+    <div
+      style={{
+        background: '#fbecd6',
+        border: '1px solid #ecc58a',
+        borderRadius: 12,
+        padding: '14px 18px',
+        marginBottom: 16,
+        display: 'flex',
+        gap: 12,
+        alignItems: 'flex-start',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 100,
+          background: '#b6781c',
+          marginTop: 6,
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1, fontSize: 13, lineHeight: 1.55 }}>
+        <div style={{ fontWeight: 600, color: '#8a5a0f', marginBottom: 4 }}>
+          {modeCopy.title}
+        </div>
+        <div style={{ color: '#525252' }}>{modeCopy.body}</div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'auto 1fr',
+            gap: '4px 14px',
+            marginTop: 10,
+            fontSize: 12,
+          }}
+        >
+          <span className="text-textDim">You typed</span>
+          <span>{resolution.original_query}</span>
+          {resolution.formatted_address && (
+            <>
+              <span className="text-textDim">Google geocoded to</span>
+              <span>{resolution.formatted_address}</span>
+            </>
+          )}
+          <span className="text-textDim">Scored parcel</span>
+          <span>{resolved}</span>
+        </div>
+      </div>
+    </div>
   );
 }
