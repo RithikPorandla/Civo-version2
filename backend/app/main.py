@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.data_sources import router as data_sources_router
 from app.api.doer import router as doer_router
 from app.api.municipality import router as municipality_router
 from app.api.portfolio import router as portfolio_router
@@ -17,6 +18,7 @@ app.include_router(score_router)
 app.include_router(portfolio_router)
 app.include_router(municipality_router)
 app.include_router(doer_router)
+app.include_router(data_sources_router)
 
 
 @app.get("/health")

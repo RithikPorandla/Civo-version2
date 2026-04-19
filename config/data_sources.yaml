@@ -1,0 +1,387 @@
+# Civo — Data Sources Index
+# ------------------------------------------------------------------
+# Single source of truth for the /data-sources page.
+# Every dataset that feeds a score, every regulation cited on a report,
+# every external dependency, must live here.
+#
+# Schema
+# ------
+# id              stable slug, used as the anchor on the public page
+# name            human-readable display name
+# agency          the organization that publishes / maintains the source
+# category        spatial | regulatory | municipal | benchmark | external
+# url             primary reference URL (kept live by link_health)
+# docket          regulatory docket number (when applicable)
+# coverage        geographic / scope description
+# used_by         list of criteria, endpoints, or services this feeds
+# tables          list of DB tables backing this source (row counts are
+#                 summed across the list at request time)
+# last_refreshed  ISO date of the most recent ingestion run (manually set)
+# last_reviewed   ISO date a human verified the entry (manually set)
+# citation_format optional format string used when rendering a citation
+# status          ingested | planned | external
+# notes           free-form commentary, shown below the entry
+
+metadata:
+  schema_version: "1"
+  last_reviewed: "2026-04-18"
+
+sources:
+
+  # ------------------------------------------------------------------
+  # MA spatial layers — MassGIS + DEP
+  # ------------------------------------------------------------------
+
+  - id: massgis-l3-parcels
+    name: MassGIS Level 3 Parcels (Standardized Tax Parcels)
+    agency: MassGIS — Bureau of Geographic Information
+    category: spatial
+    url: https://www.mass.gov/info-details/massgis-data-property-tax-parcels
+    coverage: "10 target MA towns seeded (Acton, Cambridge, Boston, Burlington, Natick, Falmouth, East Freetown, Worthington, Whately)"
+    used_by:
+      - Address resolution
+      - Parcel polygon geometry
+      - Owner name + address (landowner packet)
+    tables: [parcels]
+    last_refreshed: "2026-04-02"
+
+  - id: massgis-biomap
+    name: MassGIS BioMap — Core Habitat + Critical Natural Landscapes
+    agency: MassGIS / MA Natural Heritage & Endangered Species Program (NHESP)
+    category: spatial
+    url: https://www.mass.gov/info-details/biomap-the-future-of-conservation-in-massachusetts
+    coverage: Statewide
+    used_by:
+      - "Criterion 4 · Biodiversity"
+      - "Ineligibility cap trigger — BioMap Core ≥ 5% of parcel area"
+    tables: [habitat_biomap_core, habitat_biomap_cnl]
+    last_refreshed: "2026-03-28"
+
+  - id: massgis-nhesp
+    name: NHESP Priority + Estimated Habitat
+    agency: MassWildlife / NHESP
+    category: spatial
+    url: https://www.mass.gov/info-details/masswildlifes-natural-heritage-endangered-species-program-nhesp
+    coverage: Statewide
+    used_by:
+      - "Criterion 4 · Biodiversity"
+      - "Ineligibility cap trigger — NHESP Priority ≥ 5% of parcel area"
+    tables: [habitat_nhesp_priority, habitat_nhesp_estimated]
+    last_refreshed: "2026-03-28"
+
+  - id: massdep-wetlands
+    name: MassDEP Wetlands (DEP WET_POLY)
+    agency: Massachusetts Department of Environmental Protection
+    category: spatial
+    url: https://www.mass.gov/info-details/massgis-data-massdep-wetlands-2005
+    coverage: Statewide
+    used_by:
+      - Mitigation cost signals (replication acreage estimation)
+      - Constraint mapping on Report page
+    tables: [wetlands]
+    last_refreshed: "2026-03-28"
+
+  - id: massgis-landcover-2016
+    name: MassGIS 2016 Land Cover / Land Use
+    agency: MassGIS
+    category: spatial
+    url: https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use
+    coverage: Statewide
+    used_by:
+      - "Criterion 3 · Carbon Storage — forested cover fraction proxy"
+      - "Criterion 6 · Social & Environmental Benefits — brownfield cover"
+    tables: [land_use]
+    last_refreshed: "2026-03-28"
+
+  - id: massenviroscreen
+    name: Massachusetts EJ + EnviroScreen Cumulative Burden
+    agency: Executive Office of Energy & Environmental Affairs (EEA)
+    category: spatial
+    url: https://www.mass.gov/info-details/massachusetts-environmental-justice-policy
+    coverage: Statewide — MA block-group resolution
+    used_by:
+      - "Criterion 5 · Social & Environmental Burdens"
+    tables: [massenviroscreen]
+    last_refreshed: "2026-03-28"
+
+  - id: massgis-article97
+    name: MA Article 97 Protected Open Space
+    agency: MassGIS
+    category: spatial
+    url: https://www.mass.gov/info-details/massgis-data-protected-and-recreational-openspace
+    coverage: Statewide
+    used_by:
+      - Constraint detection (Article 97 disposition restriction)
+    tables: [article97]
+    last_refreshed: "2026-03-28"
+
+  # ------------------------------------------------------------------
+  # Federal spatial — FEMA + USDA
+  # ------------------------------------------------------------------
+
+  - id: fema-nfhl
+    name: FEMA National Flood Hazard Layer (NFHL)
+    agency: Federal Emergency Management Agency
+    category: spatial
+    url: https://www.fema.gov/flood-maps/national-flood-hazard-layer
+    coverage: National (MA subset ingested)
+    used_by:
+      - "Criterion 2 · Climate Resilience — SFHA overlap percent"
+    tables: [flood_zones]
+    last_refreshed: "2026-03-28"
+    notes: "SFHA zones A, AE, AO, AH, V, VE are penalized per ma-eea-2026-v1.yaml."
+
+  - id: usda-ssurgo
+    name: USDA SSURGO — Prime + Statewide-Importance Farmland
+    agency: USDA Natural Resources Conservation Service
+    category: spatial
+    url: https://www.nrcs.usda.gov/resources/data-and-reports/soil-survey-geographic-database-ssurgo
+    coverage: MA statewide (SSURGO-MA extract)
+    used_by:
+      - "Criterion 7 · Agricultural Production"
+    tables: [prime_farmland]
+    last_refreshed: "2026-03-28"
+
+  # ------------------------------------------------------------------
+  # Utility ESMPs — all three MA EDCs filed ESMPs approved 2024-08-29.
+  # Eversource is ingested; National Grid + Unitil are planned coverage.
+  # ------------------------------------------------------------------
+
+  - id: esmp-eversource
+    name: Eversource Electric Sector Modernization Plan
+    agency: Eversource Energy · MA DPU
+    category: spatial
+    docket: DPU 24-10
+    url: https://www.mass.gov/electric-sector-modernization-plans-esmps
+    coverage: Eversource MA service territory (Eastern + Central MA)
+    used_by:
+      - "Criterion 1 · Grid Alignment (distance to ESMP project / existing substation)"
+      - "Resolver — ESMP-anchored fallback"
+    tables: [esmp_projects]
+    count_filter:
+      source_filing: "DPU 24-10"
+    last_refreshed: "2026-03-14"
+    status: ingested
+    notes: "Filed 2024-01-29, approved 2024-08-29. First ESMP term commences 2025-07-01."
+
+  - id: esmp-national-grid
+    name: National Grid Future Grid Plan (ESMP)
+    agency: National Grid · MA DPU
+    category: spatial
+    docket: DPU 24-11
+    url: https://www.nationalgridus.com/Our-Company/dpu-filing
+    coverage: National Grid MA service territory (Western + Central MA, North Shore, South Coast)
+    used_by:
+      - "Criterion 1 · Grid Alignment (distance to ESMP project / existing substation)"
+      - "Resolver — ESMP-anchored fallback"
+    tables: [esmp_projects]
+    count_filter:
+      source_filing: "DPU 24-11"
+    last_refreshed: "2026-04-18"
+    status: ingested
+    notes: >-
+      Filed 2024-01-29, approved 2024-08-29. 24 named projects ingested —
+      substation rebuilds, EV highway charging stations, and transmission
+      refurbishments across North Andover, Lowell, Oxford, Southbridge,
+      Charlton, Bridgewater, Westborough, Revere, Lawrence, Dunstable, Ayer,
+      Salem, Millbury, Gardner, Pepperell, Sterling, and Somerset. Geocoded
+      at town-centroid precision (coordinate_confidence='town_centroid').
+
+  - id: esmp-unitil
+    name: Unitil Electric Sector Modernization Plan
+    agency: Unitil · MA DPU
+    category: spatial
+    docket: DPU 24-12
+    url: https://unitil.com/sites/default/files/2024-01/Unitil-ESMP-2025-2050-DPU-FINAL.pdf
+    coverage: Unitil MA service territory (Fitchburg, Ashby, Ashburnham, Lunenburg, Townsend)
+    used_by:
+      - "Criterion 1 · Grid Alignment (distance to ESMP project / existing substation)"
+    tables: [esmp_projects]
+    count_filter:
+      source_filing: "DPU 24-12"
+    last_refreshed: "2026-04-18"
+    status: ingested
+    notes: >-
+      Filed 2024-01, approved 2024-08-29. Spending cap $21.48M (M.D.P.U. 475).
+      2 named substation projects in Lunenburg ingested. Rest of Unitil's ESMP
+      is distribution-level feeder work, not tracked at the project-siting
+      level. Smallest of the three MA ESMPs.
+
+  # ------------------------------------------------------------------
+  # State regulatory framework
+  # ------------------------------------------------------------------
+
+  - id: cmr-225-29
+    name: 225 CMR 29.00 — Site Suitability Criteria for Clean Energy Siting
+    agency: MA Executive Office of Energy & Environmental Affairs
+    category: regulatory
+    url: https://www.mass.gov/regulations/225-CMR-2900-site-suitability-criteria-for-clean-energy-siting
+    used_by:
+      - "Entire scoring rubric (config: ma-eea-2026-v1.yaml)"
+    last_reviewed: "2026-03-14"
+    citation_format: "225 CMR 29.00 § {section}"
+
+  - id: mgl-c40a-s3
+    name: MGL Chapter 40A § 3 — Zoning Exemptions
+    agency: Massachusetts General Laws
+    category: regulatory
+    url: https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40A/Section3
+    used_by:
+      - "/exemption-check endpoint (agricultural solar + other §3 exemptions)"
+
+  - id: doer-model-solar-bylaw
+    name: DOER Model As-of-Right Solar Zoning Bylaw
+    agency: Massachusetts Department of Energy Resources
+    category: regulatory
+    url: https://www.mass.gov/info-details/model-as-of-right-solar-zoning-bylaw-for-municipalities
+    used_by:
+      - DOER alignment tracking per municipality
+      - DoerAlignmentStrip component on the Municipality detail page
+    tables: [doer_model_bylaws, municipal_doer_adoption]
+    status: ingested
+
+  - id: ma-2022-clean-energy-act
+    name: MA 2022 Clean Energy and Offshore Wind Act (Chapter 179)
+    agency: Massachusetts General Court
+    category: regulatory
+    url: https://malegislature.gov/Laws/SessionLaws/Acts/2022/Chapter179
+    used_by:
+      - "Policy framing for ESMP authority — G.L. c. 164 §§ 92B-92C"
+
+  - id: ma-2024-climate-act
+    name: MA 2024 Climate Act (Chapter 239)
+    agency: Massachusetts General Court
+    category: regulatory
+    url: https://malegislature.gov/Laws/SessionLaws/Acts/2024/Chapter239
+    used_by:
+      - EFSB pre-filing process
+      - 225 CMR 29.00 authorization
+
+  - id: mepa-regulations
+    name: MEPA Regulations — 301 CMR 11.00
+    agency: MA Executive Office of Energy & Environmental Affairs
+    category: regulatory
+    url: https://www.mass.gov/regulations/301-CMR-1100-meparegulations
+    used_by:
+      - EFSB / MEPA pre-filing checklist (planned output)
+    status: planned
+
+  # ------------------------------------------------------------------
+  # Municipal data — per-town, seeded via the research agent
+  # ------------------------------------------------------------------
+
+  - id: municipal-bylaws-project-type
+    name: Town zoning bylaws by project type
+    agency: Individual MA municipalities (Planning Boards)
+    category: municipal
+    coverage: "10 target towns seeded; per-town source URLs in municipalities.project_type_bylaws"
+    used_by:
+      - "/municipality/{town_id}/bylaws/{project_type} endpoint"
+      - PermittingPanel component on the Report page
+    tables: [municipalities]
+    notes: "Research agent keeps these current — python -m agent.research --town 'Town, MA'."
+
+  - id: municipal-moratoriums
+    name: Active moratoriums on clean-energy project types
+    agency: Individual MA municipalities
+    category: municipal
+    used_by:
+      - "/parcel/{id}/moratoriums endpoint"
+      - MoratoriumBanner on the Report page
+    tables: [municipalities]
+    notes: "Stored on municipalities.moratoriums JSONB, keyed by project type."
+
+  - id: municipal-contacts
+    name: Town permitting contacts
+    agency: Individual MA municipalities
+    category: municipal
+    used_by:
+      - Municipality detail page (Planner, ConCom agent, ZBA chair)
+    tables: [municipalities]
+    notes: "Stored on municipalities.contacts JSONB with source URLs."
+
+  - id: municipal-precedents
+    name: Special-permit precedents (conditions + outcomes)
+    agency: Individual MA municipalities (Planning + ZBA decisions)
+    category: municipal
+    used_by:
+      - "/parcel/{id}/precedents endpoint"
+      - Mitigation cost grounding (observed town conditions)
+    tables: [precedents]
+
+  - id: municipal-doer-adoption
+    name: Per-town DOER Model Bylaw adoption + deviation
+    agency: MA DOER · individual municipalities
+    category: municipal
+    used_by:
+      - DoerAlignmentStrip component
+      - "/towns/{town_id}/doer-status endpoint"
+    tables: [municipal_doer_adoption]
+
+  # ------------------------------------------------------------------
+  # Mitigation cost benchmarks — cited inside mitigation_costs.py
+  # ------------------------------------------------------------------
+
+  - id: smart-adu-program
+    name: SMART 3.0 ADU + Brownfield Adder Data Sheets
+    agency: MA DOER · SMART Solar Program
+    category: benchmark
+    url: https://www.mass.gov/info-details/solar-massachusetts-renewable-target-smart-program
+    used_by:
+      - "mitigation_costs.py — typical capital per MW, ADU adders"
+
+  - id: massdep-401-wqc
+    name: MassDEP 401 WQC Wetland Replication Cost Survey (2022)
+    agency: MassDEP — Wetlands & Waterways
+    category: benchmark
+    url: https://www.mass.gov/info-details/401-water-quality-certification-for-discharge-of-dredged-or-fill-material
+    used_by:
+      - "mitigation_costs.py — wetland replication $/acre range"
+
+  - id: nfpa-855
+    name: NFPA 855 + UL-9540A Testing Cost Survey (industry, 2024)
+    agency: National Fire Protection Association
+    category: benchmark
+    url: https://www.nfpa.org/codes-and-standards/all-codes-and-standards/list-of-codes-and-standards/detail?code=855
+    used_by:
+      - "mitigation_costs.py — BESS testing / compliance overhead"
+
+  - id: hca-hba-ma-benchmarks
+    name: Host Community / Host Benefits Agreement observed benchmarks
+    agency: Aggregated from MA municipal HCA/HBA filings
+    category: benchmark
+    used_by:
+      - "mitigation_costs.py — HCA payment as % of capital"
+    notes: "No single published source. Aggregated from HCA/HBA conditions observed across MA solar + BESS special-permit filings."
+
+  # ------------------------------------------------------------------
+  # External services — transparency, not scoring inputs
+  # ------------------------------------------------------------------
+
+  - id: ext-google-places
+    name: Google Places API — Find Place From Text
+    agency: Google
+    category: external
+    url: https://developers.google.com/maps/documentation/places/web-service/search-find-place
+    used_by:
+      - Address geocoding (resolver)
+    status: external
+    notes: "Responses cached in data/cache/address_geocode.json for reproducibility."
+
+  - id: ext-anthropic
+    name: Anthropic Claude API
+    agency: Anthropic
+    category: external
+    url: https://docs.anthropic.com/
+    used_by:
+      - Research agent (agent/research.py) — town metadata + precedent extraction
+    status: external
+
+  - id: ext-esri-basemap
+    name: Esri World Topographic / World Imagery basemaps
+    agency: Esri
+    category: external
+    url: https://www.arcgis.com/home/item.html?id=7dc6cea0b1764a1f9af2e679f642f0f5
+    used_by:
+      - Map rendering (MapView component)
+    status: external

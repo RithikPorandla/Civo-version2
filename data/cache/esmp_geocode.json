@@ -337,6 +337,30 @@
       "route"
     ]
   },
+  "Ayer, Massachusetts": {
+    "formatted_address": "Ayer, MA, USA",
+    "lat": 42.5600669,
+    "lon": -71.5901592,
+    "status": "OK"
+  },
+  "Bridgewater, Massachusetts": {
+    "formatted_address": "Bridgewater, MA 02324, USA",
+    "lat": 41.99024199999999,
+    "lon": -70.9754708,
+    "status": "OK"
+  },
+  "Charlton, Massachusetts": {
+    "formatted_address": "Charlton, MA 01507, USA",
+    "lat": 42.13565,
+    "lon": -71.970074,
+    "status": "OK"
+  },
+  "Dunstable, Massachusetts": {
+    "formatted_address": "Dunstable, MA 01827, USA",
+    "lat": 42.67508979999999,
+    "lon": -71.4828433,
+    "status": "OK"
+  },
   "EFT": {
     "formatted_address": "170 S Main St, Assonet, MA 02702, United States",
     "lat": 41.7794685,
@@ -353,6 +377,84 @@
       "establishment"
     ]
   },
+  "Gardner, Massachusetts": {
+    "formatted_address": "Gardner, MA, USA",
+    "lat": 42.5750883,
+    "lon": -71.998133,
+    "status": "OK"
+  },
+  "Lawrence, Massachusetts": {
+    "formatted_address": "Lawrence, MA, USA",
+    "lat": 42.7070354,
+    "lon": -71.1631137,
+    "status": "OK"
+  },
+  "Lowell, Massachusetts": {
+    "formatted_address": "Lowell, MA, USA",
+    "lat": 42.6458914,
+    "lon": -71.3127093,
+    "status": "OK"
+  },
+  "Lunenburg, Massachusetts": {
+    "formatted_address": "Lunenburg, MA 01462, USA",
+    "lat": 42.5971299,
+    "lon": -71.7416301,
+    "status": "OK"
+  },
+  "Millbury, Massachusetts": {
+    "formatted_address": "Millbury, MA, USA",
+    "lat": 42.19130740000001,
+    "lon": -71.7605519,
+    "status": "OK"
+  },
+  "North Andover, Massachusetts": {
+    "formatted_address": "North Andover, MA 01845, USA",
+    "lat": 42.69870239999999,
+    "lon": -71.1350575,
+    "status": "OK"
+  },
+  "Oxford, Massachusetts": {
+    "formatted_address": "Oxford, MA, USA",
+    "lat": 42.1170625,
+    "lon": -71.8647538,
+    "status": "OK"
+  },
+  "Pepperell, Massachusetts": {
+    "formatted_address": "Pepperell, MA 01463, USA",
+    "lat": 42.6662056,
+    "lon": -71.5883849,
+    "status": "OK"
+  },
+  "Revere, Massachusetts": {
+    "formatted_address": "Revere, MA, USA",
+    "lat": 42.4084302,
+    "lon": -71.0119948,
+    "status": "OK"
+  },
+  "Salem, Massachusetts": {
+    "formatted_address": "Salem, MA, USA",
+    "lat": 42.5197473,
+    "lon": -70.8954626,
+    "status": "OK"
+  },
+  "Somerset, Massachusetts": {
+    "formatted_address": "Somerset, MA, USA",
+    "lat": 41.7695425,
+    "lon": -71.12861939999999,
+    "status": "OK"
+  },
+  "Southbridge, Massachusetts": {
+    "formatted_address": "Southbridge, MA, USA",
+    "lat": 42.07496190000001,
+    "lon": -72.03368859999999,
+    "status": "OK"
+  },
+  "Sterling, Massachusetts": {
+    "formatted_address": "Sterling, MA 01564, USA",
+    "lat": 42.4380275,
+    "lon": -71.75945349999999,
+    "status": "OK"
+  },
   "WD-CIP": {
     "formatted_address": "Christian Ln, Whately, MA 01373, USA",
     "lat": 42.4456121,
@@ -364,5 +466,11 @@
     "types": [
       "route"
     ]
+  },
+  "Westborough, Massachusetts": {
+    "formatted_address": "Westborough, MA, USA",
+    "lat": 42.2694066,
+    "lon": -71.6133569,
+    "status": "OK"
   }
 }
