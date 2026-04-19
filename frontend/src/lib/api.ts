@@ -173,7 +173,45 @@ export const api = {
   portfolio: (id: string) => jf<PortfolioEnvelope>(`/portfolio/${id}`),
   createPortfolio: (body: { name?: string; addresses: string[]; project_type?: string }) =>
     jf<PortfolioEnvelope>('/portfolio', { method: 'POST', body: JSON.stringify(body) }),
+  dataSources: () => jf<DataSourcesResponse>('/data-sources'),
 };
+
+// ---------------------------------------------------------------------------
+// Data sources (public provenance index)
+// ---------------------------------------------------------------------------
+export type DataSourceCategory =
+  | 'spatial'
+  | 'regulatory'
+  | 'municipal'
+  | 'benchmark'
+  | 'external';
+
+export type DataSourceStatus = 'ingested' | 'planned' | 'external';
+
+export interface DataSource {
+  id: string;
+  name: string;
+  agency: string;
+  category: DataSourceCategory;
+  url?: string | null;
+  docket?: string | null;
+  coverage?: string | null;
+  used_by: string[];
+  tables: string[];
+  row_count?: number | null;
+  last_refreshed?: string | null;
+  last_reviewed?: string | null;
+  citation_format?: string | null;
+  status: DataSourceStatus;
+  notes?: string | null;
+}
+
+export interface DataSourcesResponse {
+  last_reviewed: string;
+  total_sources: number;
+  by_category: Record<string, number>;
+  sources: DataSource[];
+}
 
 export const bucketTone = (b?: Bucket | null) =>
   b === 'SUITABLE' ? 'good' : b === 'CONDITIONALLY SUITABLE' ? 'warn' : 'bad';

@@ -8,6 +8,7 @@ import Municipalities from './routes/Municipalities';
 import SiteSuitability from './routes/SiteSuitability';
 import Report from './routes/Report';
 import Portfolio from './routes/Portfolio';
+import DataSources from './routes/DataSources';
 
 const STORAGE_KEY = 'civo.sidebar.collapsed';
 
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/suitability" element={<SiteSuitability />} />
         <Route path="/report/:reportId" element={<Report />} />
         <Route path="/portfolio/:portfolioId" element={<Portfolio />} />
+        <Route path="/data-sources" element={<DataSources />} />
       </Routes>
     </Shell>
   );
