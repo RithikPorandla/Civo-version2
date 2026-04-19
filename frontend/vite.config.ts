@@ -18,6 +18,7 @@ const apiRoutes = [
   '/municipality',
   '/towns',
   '/exemption-check',
+  '/data-sources',
 ];
 
 export default defineConfig({

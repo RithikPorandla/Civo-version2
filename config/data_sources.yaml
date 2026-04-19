@@ -180,12 +180,13 @@ sources:
     last_refreshed: "2026-04-18"
     status: ingested
     notes: >-
-      Filed 2024-01-29, approved 2024-08-29. 24 named projects ingested —
-      substation rebuilds, EV highway charging stations, and transmission
-      refurbishments across North Andover, Lowell, Oxford, Southbridge,
-      Charlton, Bridgewater, Westborough, Revere, Lawrence, Dunstable, Ayer,
-      Salem, Millbury, Gardner, Pepperell, Sterling, and Somerset. Geocoded
-      at town-centroid precision (coordinate_confidence='town_centroid').
+      Filed 2024-01-29, approved 2024-08-29. 60 MA projects ingested by
+      automatically parsing the National Grid 2025 Local System Plan project
+      list PDF. Covers substations, EV highway charging stations, transmission
+      line refurbishments, and asset replacements across 30+ MA municipalities
+      including Lowell, Salem, Somerset, Ayer, Revere, Lynn, Billerica, Pembroke,
+      Palmer, Ware, Shutesbury, Barre, Northampton, Pittsfield, and Adams.
+      Geocoded at town-centroid precision (coordinate_confidence='town_centroid').
 
   - id: esmp-unitil
     name: Unitil Electric Sector Modernization Plan

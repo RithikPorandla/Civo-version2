@@ -337,10 +337,34 @@
       "route"
     ]
   },
+  "Adams, Massachusetts": {
+    "formatted_address": "Adams, MA, USA",
+    "lat": 42.625118,
+    "lon": -73.11897739999999,
+    "status": "OK"
+  },
+  "Andover, Massachusetts": {
+    "formatted_address": "Andover, MA, USA",
+    "lat": 42.6627301,
+    "lon": -71.1446897,
+    "status": "OK"
+  },
   "Ayer, Massachusetts": {
     "formatted_address": "Ayer, MA, USA",
     "lat": 42.5600669,
     "lon": -71.5901592,
+    "status": "OK"
+  },
+  "Barre, Massachusetts": {
+    "formatted_address": "Barre, MA, USA",
+    "lat": 42.422359,
+    "lon": -72.104837,
+    "status": "OK"
+  },
+  "Billerica, Massachusetts": {
+    "formatted_address": "Billerica, MA, USA",
+    "lat": 42.5584218,
+    "lon": -71.2689461,
     "status": "OK"
   },
   "Bridgewater, Massachusetts": {
@@ -377,16 +401,40 @@
       "establishment"
     ]
   },
+  "Foxborough, Massachusetts": {
+    "formatted_address": "Foxborough, MA, USA",
+    "lat": 42.06415,
+    "lon": -71.24997619999999,
+    "status": "OK"
+  },
   "Gardner, Massachusetts": {
     "formatted_address": "Gardner, MA, USA",
     "lat": 42.5750883,
     "lon": -71.998133,
     "status": "OK"
   },
+  "Haverhill, Massachusetts": {
+    "formatted_address": "Haverhill, MA, USA",
+    "lat": 42.7765894,
+    "lon": -71.0770811,
+    "status": "OK"
+  },
   "Lawrence, Massachusetts": {
     "formatted_address": "Lawrence, MA, USA",
     "lat": 42.7070354,
     "lon": -71.1631137,
+    "status": "OK"
+  },
+  "Leicester, Massachusetts": {
+    "formatted_address": "Leicester, MA, USA",
+    "lat": 42.245926,
+    "lon": -71.90868429999999,
+    "status": "OK"
+  },
+  "Lenox, Massachusetts": {
+    "formatted_address": "Lenox, MA, USA",
+    "lat": 42.3571806,
+    "lon": -73.2850138,
     "status": "OK"
   },
   "Lowell, Massachusetts": {
@@ -401,10 +449,40 @@
     "lon": -71.7416301,
     "status": "OK"
   },
+  "Lynn, Massachusetts": {
+    "formatted_address": "Lynn, MA, USA",
+    "lat": 42.4697809,
+    "lon": -70.95690239999999,
+    "status": "OK"
+  },
+  "Malden, Massachusetts": {
+    "formatted_address": "Malden, MA, USA",
+    "lat": 42.4250964,
+    "lon": -71.066163,
+    "status": "OK"
+  },
+  "Marlborough, Massachusetts": {
+    "formatted_address": "Marlborough, MA, USA",
+    "lat": 42.3459271,
+    "lon": -71.5522874,
+    "status": "OK"
+  },
+  "Methuen, Massachusetts": {
+    "formatted_address": "Methuen, MA 01844, USA",
+    "lat": 42.7262016,
+    "lon": -71.1908924,
+    "status": "OK"
+  },
   "Millbury, Massachusetts": {
     "formatted_address": "Millbury, MA, USA",
     "lat": 42.19130740000001,
     "lon": -71.7605519,
+    "status": "OK"
+  },
+  "Newton, Massachusetts": {
+    "formatted_address": "Newton, MA, USA",
+    "lat": 42.3370413,
+    "lon": -71.20922139999999,
     "status": "OK"
   },
   "North Andover, Massachusetts": {
@@ -413,10 +491,28 @@
     "lon": -71.1350575,
     "status": "OK"
   },
+  "Norton, Massachusetts": {
+    "formatted_address": "Norton, MA 02766, USA",
+    "lat": 41.9695328,
+    "lon": -71.18212439999999,
+    "status": "OK"
+  },
   "Oxford, Massachusetts": {
     "formatted_address": "Oxford, MA, USA",
     "lat": 42.1170625,
     "lon": -71.8647538,
+    "status": "OK"
+  },
+  "Palmer, Massachusetts": {
+    "formatted_address": "Palmer, MA, USA",
+    "lat": 42.1596906,
+    "lon": -72.3289472,
+    "status": "OK"
+  },
+  "Pembroke, Massachusetts": {
+    "formatted_address": "Pembroke, MA, USA",
+    "lat": 42.0714925,
+    "lon": -70.80919999999999,
     "status": "OK"
   },
   "Pepperell, Massachusetts": {
@@ -425,16 +521,40 @@
     "lon": -71.5883849,
     "status": "OK"
   },
+  "Pittsfield, Massachusetts": {
+    "formatted_address": "Pittsfield, MA 01201, USA",
+    "lat": 42.4500845,
+    "lon": -73.2453824,
+    "status": "OK"
+  },
+  "Plymouth, Massachusetts": {
+    "formatted_address": "Plymouth, MA, USA",
+    "lat": 41.9584457,
+    "lon": -70.6672621,
+    "status": "OK"
+  },
   "Revere, Massachusetts": {
     "formatted_address": "Revere, MA, USA",
     "lat": 42.4084302,
     "lon": -71.0119948,
     "status": "OK"
   },
+  "Royalston, Massachusetts": {
+    "formatted_address": "Royalston, MA, USA",
+    "lat": 42.6755982,
+    "lon": -72.18733329999999,
+    "status": "OK"
+  },
   "Salem, Massachusetts": {
     "formatted_address": "Salem, MA, USA",
     "lat": 42.5197473,
     "lon": -70.8954626,
+    "status": "OK"
+  },
+  "Shutesbury, Massachusetts": {
+    "formatted_address": "Shutesbury, MA, USA",
+    "lat": 42.4564779,
+    "lon": -72.4098077,
     "status": "OK"
   },
   "Somerset, Massachusetts": {
@@ -449,10 +569,34 @@
     "lon": -72.03368859999999,
     "status": "OK"
   },
+  "Springfield, Massachusetts": {
+    "formatted_address": "Springfield, MA, USA",
+    "lat": 42.1013104,
+    "lon": -72.58927419999999,
+    "status": "OK"
+  },
   "Sterling, Massachusetts": {
     "formatted_address": "Sterling, MA 01564, USA",
     "lat": 42.4380275,
     "lon": -71.75945349999999,
+    "status": "OK"
+  },
+  "Taunton, Massachusetts": {
+    "formatted_address": "Taunton, MA, USA",
+    "lat": 41.900101,
+    "lon": -71.0897674,
+    "status": "OK"
+  },
+  "Templeton, Massachusetts": {
+    "formatted_address": "Templeton, MA, USA",
+    "lat": 42.555644,
+    "lon": -72.06757900000001,
+    "status": "OK"
+  },
+  "Tewksbury, Massachusetts": {
+    "formatted_address": "Tewksbury, MA, USA",
+    "lat": 42.6106478,
+    "lon": -71.23422479999999,
     "status": "OK"
   },
   "WD-CIP": {
@@ -467,10 +611,34 @@
       "route"
     ]
   },
+  "Webster, Massachusetts": {
+    "formatted_address": "Webster, MA 01570, USA",
+    "lat": 42.05009099999999,
+    "lon": -71.88006279999999,
+    "status": "OK"
+  },
   "Westborough, Massachusetts": {
     "formatted_address": "Westborough, MA, USA",
     "lat": 42.2694066,
     "lon": -71.6133569,
+    "status": "OK"
+  },
+  "Winchendon, Massachusetts": {
+    "formatted_address": "Winchendon, MA, USA",
+    "lat": 42.6871009,
+    "lon": -72.0439529,
+    "status": "OK"
+  },
+  "Worcester, Massachusetts": {
+    "formatted_address": "Worcester, MA, USA",
+    "lat": 42.2628113,
+    "lon": -71.80249309999999,
+    "status": "OK"
+  },
+  "Wrentham, Massachusetts": {
+    "formatted_address": "Wrentham, MA 02093, USA",
+    "lat": 42.06688080000001,
+    "lon": -71.32783730000001,
     "status": "OK"
   }
 }
