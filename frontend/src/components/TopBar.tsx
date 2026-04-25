@@ -1,25 +1,22 @@
 import { useLocation } from 'react-router-dom';
-import { IconBell, IconClock, IconSearch, IconStar, IconSun } from './Icon';
+import { IconBell } from './Icon';
 
 /**
- * Dashboard top bar: breadcrumb on the left, search + utility icons on
- * the right. Sticky so it stays visible as the main content scrolls.
- *
- * Breadcrumb is derived from the current pathname so every route gets
- * a label for free — "/report/111" → "Report / 111".
+ * Warm dashboard top bar — breadcrumb on the left, notifications on the right.
+ * Sticky so it stays visible as the main content scrolls.
  */
 export default function TopBar() {
   const { pathname } = useLocation();
-  const segments = pathname.split('/').filter(Boolean);
-  const crumbs = segments.length === 0 ? ['Dashboards', 'Overview'] : ['Dashboards', ...segments.map(niceSegment)];
+  const segments = pathname.split('/').filter((s) => s && s !== 'app');
+  const crumbs = segments.length === 0 ? ['Overview'] : segments.map(niceSegment);
 
   return (
     <header
       style={{
         height: 56,
-        padding: '0 24px',
-        background: '#f7f8fa',
-        borderBottom: '1px solid #e8eaed',
+        padding: '0 32px',
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--border-soft)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -28,71 +25,32 @@ export default function TopBar() {
         zIndex: 20,
       }}
     >
-      {/* Left: breadcrumb + favorite */}
+      {/* Left: breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <IconButton aria-label="Favorite">
-          <IconStar size={16} />
-        </IconButton>
         <nav
           aria-label="Breadcrumb"
-          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
         >
           {crumbs.map((c, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
               <span
                 style={{
-                  color: i === crumbs.length - 1 ? '#1a1a1a' : '#8a8a8a',
+                  color: i === crumbs.length - 1 ? 'var(--text)' : 'var(--text-mid)',
+                  fontWeight: i === crumbs.length - 1 ? 500 : 400,
                 }}
               >
                 {c}
               </span>
-              {i < crumbs.length - 1 && (
-                <span style={{ color: '#c8cace' }}>/</span>
-              )}
+              {i < crumbs.length - 1 && <span style={{ color: 'var(--text-faint)' }}>/</span>}
             </span>
           ))}
         </nav>
       </div>
 
-      {/* Right: search + utility icons */}
+      {/* Right: notifications */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '7px 12px',
-            background: '#ffffff',
-            border: '1px solid #e8eaed',
-            borderRadius: 8,
-            minWidth: 240,
-            color: '#8a8a8a',
-            fontSize: 13,
-          }}
-        >
-          <IconSearch size={14} />
-          <span style={{ flex: 1 }}>Search</span>
-          <kbd
-            style={{
-              fontFamily: 'inherit',
-              fontSize: 11,
-              padding: '1px 6px',
-              borderRadius: 4,
-              background: '#f1f2f4',
-              color: '#8a8a8a',
-            }}
-          >
-            ⌘/
-          </kbd>
-        </div>
-        <IconButton aria-label="Theme">
-          <IconSun size={16} />
-        </IconButton>
-        <IconButton aria-label="History">
-          <IconClock size={16} />
-        </IconButton>
         <IconButton aria-label="Notifications">
-          <IconBell size={16} />
+          <IconBell size={14} />
         </IconButton>
       </div>
     </header>
@@ -107,16 +65,16 @@ function IconButton({ children, ...rest }: React.ComponentProps<'button'>) {
         width: 32,
         height: 32,
         borderRadius: 8,
-        border: 'none',
+        border: '1px solid transparent',
         background: 'transparent',
-        color: '#525252',
+        color: 'var(--text-mid)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
         transition: 'background 120ms ease',
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f2f4')}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-alt)')}
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
     >
       {children}
@@ -125,7 +83,6 @@ function IconButton({ children, ...rest }: React.ComponentProps<'button'>) {
 }
 
 function niceSegment(s: string): string {
-  // "solar_ground_mount" → "Solar Ground Mount"
   if (/^\d+$/.test(s)) return s;
   return s
     .split(/[-_]/)

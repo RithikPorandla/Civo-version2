@@ -3,145 +3,342 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  color: #1a1a1a;
-  background: #f7f8fa;
+  --bg: #ffffff;
+  --surface: #faf8f3;
+  --surface-alt: #f0ebde;
+  --surface-warm: #e8e0cf;
+  --border: #e4ddcb;
+  --border-soft: #efeadf;
+  /* Darker espresso brown palette with true black contrast */
+  --accent: #5a3a1f;
+  --accent-deep: #2a1a0c;
+  --accent-dark: #1a0f06;
+  --ink: #0a0a0a;
+  --text: #0a0a0a;
+  --text-mid: #4a4a4a;
+  --text-dim: #787878;
+  --text-faint: #b8b0a0;
+  --rust: #a85a4a;
+  --sage: #6b7e5a;
+  --gold: #c08a3e;
+  --display: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv11', 'ss01';
   text-rendering: optimizeLegibility;
 }
 
-body { margin: 0; }
+::selection { background: var(--accent); color: var(--bg); }
 
-/* Small label — reused across stat cards, section headers, tables */
-.label {
-  font-size: 12px;
+/* Eyebrow — small uppercase label with accent color */
+.eyebrow {
+  font-size: 11px;
   font-weight: 500;
-  color: #8a8a8a;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.eyebrow-dim {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.eyebrow-with-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.eyebrow-with-rule::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--accent);
+  display: block;
 }
 
-/* Card — used for stat tiles, content panels */
+/* Display type — Fraunces, editorial, tight tracking */
+.display {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: var(--text);
+}
+.display em,
+.display .italic-accent {
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 400;
+}
+
+/* Small label — metadata, table column heads */
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Card — panels, tables, overview blocks */
 .card {
-  background: #ffffff;
-  border: 1px solid #e8eaed;
-  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
 }
 
-/* Pastel stat tiles — rounded-xl with soft colored fill, no border */
+/* Warm tile with stat inside — optionally colored */
 .stat-tile {
-  border-radius: 16px;
-  padding: 18px 22px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  border: 1px solid transparent;
+  justify-content: space-between;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.stat-tile.tile-paper { background: #f7f3ea; }
+.stat-tile.tile-stone { background: #eef0ee; }
+.stat-tile.tile-sage  { background: #e8ece2; }
+.stat-tile.tile-rust  { background: #f3e7df; }
+
+/* Label used in the fixed-height report stat tiles */
+.stat-tile-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1;
+  display: block;
 }
 
-/* Chip / badge */
+.tile-num {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.028em;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* Chip — tag, table pill */
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 100px;
-  font-size: 12px;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.01em;
-  background: #f1f2f4;
-  color: #525252;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
 }
+.chip::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+.chip.plain::before { display: none; }
 
-/* Button variants */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 13px;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
   font-weight: 500;
-  letter-spacing: 0.01em;
-  transition: all 120ms ease;
+  letter-spacing: 0.005em;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease;
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
+  font-family: var(--sans);
 }
 .btn-primary {
-  background: #1a1a1a;
-  color: #ffffff;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08), 0 4px 16px rgba(26,26,26,0.18);
 }
-.btn-primary:hover { background: #000000; }
+.btn-primary:hover { background: #000; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost {
-  background: #ffffff;
-  color: #1a1a1a;
-  border-color: #e8eaed;
+.btn-accent {
+  background: var(--accent);
+  color: var(--bg);
 }
-.btn-ghost:hover { border-color: #d7dae0; background: #f4f5f7; }
+.btn-accent:hover { background: var(--accent-deep); }
+.btn-ghost {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--surface); border-color: var(--border-hover); }
+.btn .arr { transition: transform 150ms ease; }
+.btn:hover .arr { transform: translate(2px, -2px); }
+
+/* Pill — used on "Today" selector and small toggles */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-mid);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: var(--sans);
+}
 
 /* Hairline rule */
-.hairline { border-color: #e8eaed; }
+.hairline { border-color: var(--border-soft); }
+.rule { height: 1px; background: var(--border-soft); border: 0; margin: 0; }
 
 /* Progress bar */
-.bar-track { height: 4px; background: #eef0f3; border-radius: 100px; }
-.bar-fill { height: 4px; border-radius: 100px; transition: width 240ms ease; }
+.bar-track { height: 4px; background: var(--surface-alt); border-radius: 999px; }
+.bar-fill { height: 4px; border-radius: 999px; transition: width 240ms ease; }
 
-/* Clean focus ring — keyboard-visible only */
+/* Focus ring — warm-toned */
 :focus { outline: none; }
 :focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .maplibregl-canvas { outline: none !important; }
 
-/* ---------------------------------------------------------------------------
-   Print styles — drives "Export PDF" via the browser's native Save-as-PDF.
-   Chris asked for the criteria breakdown + permitting assessment + precedents
-   all on paper, sidebar/topbar/buttons stripped. Letter size, background
-   colors preserved so pastel stat tiles don't print as white boxes.
-   --------------------------------------------------------------------------- */
+/* Link */
+.link-accent { color: var(--accent); text-decoration: none; font-weight: 500; }
+.link-accent:hover { color: var(--accent-deep); }
+
+/* Tabular numbers for stats and data */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+/* ----- Landing-specific ----- */
+.hero-h1 {
+  font-family: var(--display);
+  font-size: clamp(52px, 7.4vw, 116px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 0.96;
+  margin: 0;
+  color: var(--text);
+  text-wrap: balance;
+}
+.hero-h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+}
+.big-cta {
+  aspect-ratio: 1.15 / 1;
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--bg);
+  text-decoration: none;
+  font-size: 20px;
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  transition: filter 200ms ease, transform 200ms ease;
+  position: relative;
+  overflow: hidden;
+}
+.big-cta .num {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  font-weight: 500;
+}
+.big-cta .arrow { align-self: flex-end; opacity: 0.95; transition: transform 200ms ease; }
+.big-cta:hover { filter: brightness(1.08); }
+.big-cta:hover .arrow { transform: translate(3px, -3px); }
+.big-cta.primary { background: var(--accent); }
+.big-cta.secondary { background: var(--accent-deep); }
+
+/* ----- Print / PDF export ----- */
 @media print {
   @page {
     size: letter;
-    margin: 0.5in 0.4in;
+    margin: 0.55in 0.45in;
   }
   html, body {
     background: #ffffff !important;
-    font-size: 11pt;
+    font-size: 10.5pt;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    color-adjust: exact;
   }
-  /* Strip chrome — the app shell has no value on paper. */
   aside,
   header,
   .no-print {
     display: none !important;
   }
+  /* Full-bleed content — the report div itself carries its own padding */
   main {
     flex: 1 1 100% !important;
     padding: 0 !important;
   }
-  /* Cards: remove shadows, keep the pastel backgrounds and hairline borders
-     (they still print well and preserve the visual hierarchy). */
-  .card, .stat-tile {
+  /* Reduce outer report padding so content fills the page properly */
+  main > div {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  /* Tiles: enforce fixed height so the 4-up grid stays aligned */
+  .stat-tile {
     page-break-inside: avoid;
     break-inside: avoid;
     box-shadow: none !important;
+    height: 72pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  /* Avoid orphaned section headers at page bottom. */
+  .card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
   h1, h2, h3 {
     page-break-after: avoid;
   }
-  /* Ensure the interactive map renders its current state — MapView is
-     `canvas` inside a div, and Chrome's PDF renderer handles that correctly. */
+  /* Map canvas: fix to a print-friendly height and prevent overflow */
   canvas {
     max-width: 100% !important;
+    max-height: 340pt !important;
   }
-  a[href]::after {
-    /* Print URL after external-link chips so the PDF stays citable offline */
-    content: '';
+  /* Don't print citation URLs inline */
+  a[href]::after { content: ''; }
+  /* Keep stat tile grid intact — no forced column break */
+  section:has(.stat-tile) {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

@@ -42,21 +42,34 @@ export default function AddressLookup() {
   }
 
   return (
-    <div style={{ padding: '24px 28px 40px', maxWidth: 840 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: -0.4, margin: 0 }}>
-          Score a Massachusetts site
-        </h1>
-        <p className="text-textMid" style={{ fontSize: 14, lineHeight: 1.55, margin: '8px 0 0' }}>
-          Paste any MA address and pick the project type. Civo resolves it to the MassGIS parcel
-          and produces a scored report with every constraint cited.
-        </p>
+    <div style={{ padding: '36px 40px 80px', maxWidth: 840 }}>
+      <div className="eyebrow" style={{ marginBottom: 10 }}>
+        Score a site
       </div>
+      <h1
+        className="display"
+        style={{ fontSize: 34, margin: 0, letterSpacing: '-0.018em', lineHeight: 1.05 }}
+      >
+        Score a Massachusetts site
+      </h1>
+      <p
+        style={{
+          fontSize: 15,
+          lineHeight: 1.6,
+          color: 'var(--text-mid)',
+          maxWidth: 560,
+          margin: '14px 0 0',
+        }}
+      >
+        Paste any MA address and pick the project type. Civo resolves to the MassGIS parcel and
+        produces a scored report with every constraint cited.
+      </p>
+      <hr className="rule" style={{ margin: '28px 0' }} />
 
       <form
         onSubmit={submit}
         className="card"
-        style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}
+        style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}
       >
         <Field label="Address">
           <input
@@ -87,7 +100,7 @@ export default function AddressLookup() {
                 right: 14,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#8a8a8a',
+                color: 'var(--text-dim)',
                 fontSize: 12,
                 pointerEvents: 'none',
               }}
@@ -121,19 +134,28 @@ export default function AddressLookup() {
             />
           </Field>
         </div>
-        <p className="text-textDim" style={{ fontSize: 12, margin: '-4px 0 0' }}>
-          Providing both triggers the 225 CMR 29.07(1) exemption check on the report.
+        <p
+          style={{
+            fontSize: 12,
+            color: 'var(--text-dim)',
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontStyle: 'italic',
+            margin: '-4px 0 0',
+          }}
+        >
+          Both values together trigger the 225 CMR 29.07(1) exemption check.
         </p>
 
         <div>
           <button className="btn btn-primary" disabled={busy}>
-            {busy ? 'Scoring…' : 'Score site →'}
+            {busy ? 'Scoring…' : 'Score site'}
+            <span className="arr">→</span>
           </button>
         </div>
       </form>
 
       {err && (
-        <div className="text-bad" style={{ marginTop: 14, fontSize: 13, lineHeight: 1.55 }}>
+        <div style={{ color: 'var(--bad)', fontSize: 13, lineHeight: 1.55, marginTop: 14 }}>
           {err}
         </div>
       )}
@@ -143,15 +165,15 @@ export default function AddressLookup() {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '10px 14px',
+  padding: '11px 14px',
   fontSize: 14,
   fontFamily: 'inherit',
-  background: '#ffffff',
-  border: '1px solid #e8eaed',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   outline: 'none',
-  color: '#1a1a1a',
-  transition: 'border-color 120ms ease, box-shadow 120ms ease',
+  color: 'var(--text)',
+  transition: 'border-color 150ms ease, box-shadow 150ms ease',
 };
 
 function Field({
@@ -168,7 +190,7 @@ function Field({
       <span className="label">{label}</span>
       {children}
       {hint && (
-        <span className="text-textDim" style={{ fontSize: 12 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           {hint}
         </span>
       )}

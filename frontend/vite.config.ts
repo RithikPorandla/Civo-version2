@@ -19,6 +19,8 @@ const apiRoutes = [
   '/towns',
   '/exemption-check',
   '/data-sources',
+  '/esmp-projects',
+  '/discover',
 ];
 
 export default defineConfig({

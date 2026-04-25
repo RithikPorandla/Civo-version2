@@ -115,6 +115,8 @@ export interface MunicipalitySummary {
   town_name: string;
   project_types: string[];
   last_refreshed_at: string | null;
+  moratorium_active: boolean;
+  moratoriums: Record<string, MoratoriumDetail> | null;
 }
 
 export interface MunicipalityDetail {
@@ -123,6 +125,8 @@ export interface MunicipalityDetail {
   county: string | null;
   project_type_bylaws: Record<string, any>;
   last_refreshed_at: string | null;
+  moratorium_active: boolean;
+  moratoriums: Record<string, MoratoriumDetail> | null;
 }
 
 export const api = {
@@ -345,6 +349,184 @@ export interface MoratoriumResponse {
   moratoriums: Record<string, MoratoriumDetail>;
 }
 
+// ---------------------------------------------------------------------------
+// Candidate site discovery (ESMP-anchored)
+// ---------------------------------------------------------------------------
+export type Utility = 'Eversource' | 'National Grid' | 'Unitil' | 'Unknown';
+
+export interface EsmpAnchor {
+  id: number;
+  project_name: string;
+  project_type: string | null;
+  mw: number | null;
+  municipality: string | null;
+  source_filing: string;
+  siting_status: string | null;
+  utility: Utility;
+  lat: number;
+  lon: number;
+}
+
+export interface CandidateSite {
+  parcel_id: string;
+  site_addr: string | null;
+  town_name: string | null;
+  lot_size_acres: number | null;
+  distance_to_anchor_m: number;
+  distance_to_anchor_mi: number;
+  use_code: string | null;
+  total_val: number | null;
+  total_score: number | null;
+  bucket: string | null;
+  primary_constraint: string | null;
+  composite_rank: number;
+}
+
+export interface CandidateSearchResponse {
+  anchor: Record<string, unknown>;
+  project_type: string;
+  radius_m: number;
+  min_acres: number;
+  max_acres: number;
+  config_version: string;
+  pre_filter_count: number;
+  scored_count: number;
+  candidates: CandidateSite[];
+}
+
+// ---------------------------------------------------------------------------
+// NL-powered Discover API (new)
+// ---------------------------------------------------------------------------
+
+export interface DiscoverResultItem {
+  parcel_id: string;
+  site_addr: string | null;
+  town_name: string;
+  lot_size_acres: number | null;
+  lat: number;
+  lon: number;
+  total_score: number | null;
+  bucket: Bucket | null;
+  primary_constraint: string | null;
+  in_biomap_core: boolean;
+  in_nhesp_priority: boolean;
+  in_flood_zone: boolean;
+  in_wetlands: boolean;
+  in_article97: boolean;
+  moratorium_active: boolean;
+  doer_status: string | null;
+  risk_multiplier: number;
+}
+
+export interface DiscoverInterpretedFilters {
+  municipalities: string[];
+  sub_region: string | null;
+  min_acres: number | null;
+  max_acres: number | null;
+  exclude_layers: string[];
+  include_layers: string[];
+  doer_bess_status: string | null;
+  doer_solar_status: string | null;
+  project_type: string | null;
+  project_size_mw: number | null;
+  min_score: number | null;
+  sort_by: string;
+}
+
+export interface DiscoverCitation {
+  claim: string;
+  source: string;
+}
+
+export interface DiscoverResponse {
+  query_id: string;
+  intent_type: string;
+  interpreted_filters: DiscoverInterpretedFilters;
+  results: DiscoverResultItem[];
+  narrative: string | null;
+  citations: DiscoverCitation[];
+  total_count: number;
+  confidence: number;
+}
+
+export const discoverNlApi = {
+  search: (query: string, limit = 50) =>
+    jf<DiscoverResponse>('/discover', {
+      method: 'POST',
+      body: JSON.stringify({ query, limit }),
+    }),
+  suggestions: (q = '') =>
+    jf<string[]>(`/discover/suggestions${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  followup: (query_id: string, follow_up: string, limit = 50) =>
+    jf<DiscoverResponse>('/discover/followup', {
+      method: 'POST',
+      body: JSON.stringify({ query_id, follow_up, limit }),
+    }),
+};
+
+export const discoverApi = {
+  listAnchors: (utility?: string, sitingStatus?: string) => {
+    const p = new URLSearchParams();
+    if (utility) p.set('utility', utility);
+    if (sitingStatus) p.set('siting_status', sitingStatus);
+    const qs = p.toString();
+    return jf<EsmpAnchor[]>(`/esmp-projects${qs ? '?' + qs : ''}`);
+  },
+  findCandidates: (
+    anchorId: number,
+    args: {
+      project_type: string;
+      radius_m?: number;
+      min_acres?: number;
+      max_acres?: number;
+      limit?: number;
+    }
+  ) => {
+    const p = new URLSearchParams({ project_type: args.project_type });
+    if (args.radius_m != null) p.set('radius_m', String(args.radius_m));
+    if (args.min_acres != null) p.set('min_acres', String(args.min_acres));
+    if (args.max_acres != null) p.set('max_acres', String(args.max_acres));
+    if (args.limit != null) p.set('limit', String(args.limit));
+    return jf<CandidateSearchResponse>(`/esmp-projects/${anchorId}/candidates?${p.toString()}`);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// AI site characterization (Claude vision on the aerial tile)
+// ---------------------------------------------------------------------------
+export interface SiteCharacterization {
+  impervious_pct: number;
+  tree_canopy_pct: number;
+  open_ground_pct: number;
+  water_visible: boolean;
+  water_description: string | null;
+  detected_building_count: number;
+  detected_paved_area_description: string | null;
+  surface_breakdown: Array<{ surface: string; pct: number }>;
+  narrative: string;
+  site_characteristics: string[];
+  confidence: number;
+}
+
+export interface SiteAnalysisReconciliation {
+  massgis_developed_pct: number | null;
+  vision_impervious_pct: number;
+  delta: number | null;
+  flag: 'aligned' | 'diverges' | null;
+  note: string | null;
+}
+
+export interface SiteAnalysisResponse {
+  parcel_loc_id: string;
+  vision_version: string;
+  model_id: string;
+  image_source: string;
+  image_bbox_wgs84: { lon_w: number; lat_s: number; lon_e: number; lat_n: number };
+  characterization: SiteCharacterization;
+  reconciliation: SiteAnalysisReconciliation | null;
+  cached: boolean;
+}
+
 export const reportApi = {
   mitigationCosts: (
     parcelId: string,
@@ -367,4 +549,8 @@ export const reportApi = {
   },
   moratoriums: (parcelId: string) =>
     jf<MoratoriumResponse>(`/parcel/${encodeURIComponent(parcelId)}/moratoriums`),
+  siteAnalysis: (parcelId: string, force = false) =>
+    jf<SiteAnalysisResponse>(
+      `/parcel/${encodeURIComponent(parcelId)}/site-analysis${force ? '?force=true' : ''}`
+    ),
 };

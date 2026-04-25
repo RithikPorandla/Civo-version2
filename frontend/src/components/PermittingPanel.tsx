@@ -1,23 +1,11 @@
 /**
- * Project-type-aware permitting panel.
- *
- * Given a parcel loc_id + project type, resolves the parcel's town, pulls
- * that town's seeded bylaws, and renders the permitting pathway: approval
- * authority, timeline window, key triggers with source citations, setbacks,
- * and a verification note for fields the seed could not directly verify.
+ * Project-type-aware permitting panel — aligned to the Earth & Paper
+ * design tokens (`.card`, `.eyebrow`, `.label`, `.display`, `.chip`,
+ * CSS variables). Previously had its own hardcoded color + font
+ * constants that drifted from the rest of the dashboard.
  */
 import { useQuery } from '@tanstack/react-query';
 import { api, type ProjectTypeCode } from '../lib/api';
-
-const DISPLAY = "'Fraunces', Georgia, serif";
-const C = {
-  border: '#ececec',
-  accent: '#8b7355',
-  text: '#1a1a1a',
-  textMid: '#6b6b6b',
-  textDim: '#9b9b9b',
-  surface: '#ffffff',
-};
 
 const PROJECT_TYPE_LABEL: Record<ProjectTypeCode, string> = {
   solar_rooftop: 'Solar Rooftop',
@@ -37,7 +25,6 @@ export default function PermittingPanel({
   parcelId: string;
   projectType: ProjectTypeCode;
 }) {
-  // 1. Resolve parcel → town via existing geojson endpoint
   const { data: geo } = useQuery({
     queryKey: ['parcel-geo', parcelId],
     queryFn: () => api.parcelGeoJSON(parcelId),
@@ -45,7 +32,6 @@ export default function PermittingPanel({
   });
   const townName = (geo?.properties as any)?.town_name as string | undefined;
 
-  // 2. Resolve townName → town_id via municipalities list
   const { data: munis } = useQuery({
     queryKey: ['municipalities'],
     queryFn: () => api.listMunicipalities(),
@@ -54,7 +40,6 @@ export default function PermittingPanel({
     (m) => m.town_name.toUpperCase() === (townName || '').toUpperCase()
   );
 
-  // 3. Fetch the project-type bylaws
   const { data: payload, isLoading } = useQuery({
     queryKey: ['bylaws', muni?.town_id, projectType],
     queryFn: () => api.getProjectTypeBylaws(muni!.town_id, projectType),
@@ -65,56 +50,70 @@ export default function PermittingPanel({
 
   if (!muni) {
     return (
-      <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 24 }}>
-        <Eyebrow>Municipal permitting</Eyebrow>
-        <div style={{ color: C.textMid, fontSize: 14 }}>
-          Parcel is in <strong>{townName}</strong>. Bylaws for this municipality
-          have not been seeded yet. See Municipalities → bylaws coverage.
+      <section className="card" style={{ padding: '22px 24px' }}>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>
+          Municipal permitting
         </div>
-      </div>
+        <div style={{ fontSize: 14, color: 'var(--text-mid)', lineHeight: 1.55 }}>
+          Parcel is in <strong style={{ color: 'var(--text)' }}>{townName}</strong>.
+          Bylaws for this municipality have not been seeded yet — see Municipalities →
+          coverage.
+        </div>
+      </section>
     );
   }
 
   if (isLoading || !payload) {
     return (
-      <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 24 }}>
-        <Eyebrow>Municipal permitting</Eyebrow>
-        <div style={{ color: C.textDim, fontSize: 14 }}>Loading bylaws…</div>
-      </div>
+      <section className="card" style={{ padding: '22px 24px' }}>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>
+          Municipal permitting
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Loading bylaws…</div>
+      </section>
     );
   }
 
-  const b = payload.bylaws;
+  const b = payload.bylaws as {
+    approval_authority?: string;
+    process?: string;
+    estimated_timeline_months?: [number, number];
+    key_triggers?: Array<{
+      description: string;
+      bylaw_ref?: string;
+      source_url?: string;
+    }>;
+    notes?: string;
+    verification_note?: string;
+  };
   const range = b.estimated_timeline_months;
 
   return (
-    <div
-      style={{
-        background: C.surface,
-        border: `1px solid ${C.border}`,
-        borderRadius: 14,
-        padding: '28px 32px',
-      }}
-    >
-      <div style={{ marginBottom: 18 }}>
-        <Eyebrow>Municipal permitting</Eyebrow>
+    <section className="card" style={{ padding: '24px 28px' }}>
+      <div style={{ marginBottom: 16 }}>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>
+          Municipal permitting
+        </div>
         <h2
-          style={{
-            fontFamily: DISPLAY,
-            fontSize: 28,
-            fontWeight: 400,
-            letterSpacing: -0.6,
-            margin: '6px 0 4px',
-          }}
+          className="display"
+          style={{ fontSize: 24, margin: 0, letterSpacing: '-0.015em', lineHeight: 1.15 }}
         >
           {PROJECT_TYPE_LABEL[projectType]} in {payload.town_name}
         </h2>
-        <div style={{ fontSize: 13, color: C.textDim }}>
-          Scored under project type <code>{projectType}</code> · bylaws refreshed{' '}
+        <p
+          className="tnum"
+          style={{
+            fontSize: 12,
+            color: 'var(--text-dim)',
+            margin: '8px 0 0',
+          }}
+        >
+          Scored under <code style={{ fontFamily: 'inherit' }}>{projectType}</code> ·
+          bylaws refreshed{' '}
           {muni.last_refreshed_at
             ? new Date(muni.last_refreshed_at).toLocaleDateString()
             : '—'}
-        </div>
+        </p>
       </div>
 
       <div
@@ -122,10 +121,10 @@ export default function PermittingPanel({
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1fr',
           gap: 28,
-          padding: '18px 0',
-          borderTop: `1px solid ${C.border}`,
-          borderBottom: `1px solid ${C.border}`,
-          marginBottom: 24,
+          padding: '16px 0',
+          borderTop: '1px solid var(--border-soft)',
+          borderBottom: '1px solid var(--border-soft)',
+          marginBottom: 20,
         }}
       >
         <FactBlock label="Approval authority" value={b.approval_authority} />
@@ -139,21 +138,45 @@ export default function PermittingPanel({
         />
       </div>
 
-      {b.key_triggers?.length > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <Eyebrow>Key triggers</Eyebrow>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {b.key_triggers.map((t: any, i: number) => (
+      {b.key_triggers && b.key_triggers.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div className="label" style={{ marginBottom: 10 }}>
+            Key triggers
+          </div>
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            {b.key_triggers.map((t, i) => (
               <li
                 key={i}
-                style={{ borderLeft: `2px solid ${C.border}`, padding: '2px 0 2px 16px' }}
+                style={{
+                  borderLeft: '2px solid var(--border)',
+                  padding: '2px 0 2px 14px',
+                }}
               >
-                <div style={{ fontSize: 14, color: C.text, lineHeight: 1.5 }}>
+                <div
+                  style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}
+                >
                   {t.description}
                 </div>
-                <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 12,
+                    marginTop: 6,
+                    fontSize: 11,
+                    alignItems: 'center',
+                  }}
+                >
                   {t.bylaw_ref && (
-                    <span style={{ color: C.textDim, fontStyle: 'italic', fontFamily: DISPLAY }}>
+                    <span className="tnum" style={{ color: 'var(--text-dim)' }}>
                       {t.bylaw_ref}
                     </span>
                   )}
@@ -162,7 +185,7 @@ export default function PermittingPanel({
                       href={t.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ color: C.accent }}
+                      className="link-accent"
                     >
                       Source ↗
                     </a>
@@ -175,55 +198,51 @@ export default function PermittingPanel({
       )}
 
       {b.notes && (
-        <div style={{ fontSize: 13, color: C.textMid, marginBottom: 18 }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--text-mid)',
+            margin: '0 0 12px',
+            lineHeight: 1.6,
+          }}
+        >
           {b.notes}
-        </div>
+        </p>
       )}
 
       {b.verification_note && (
-        <div style={{ fontSize: 11, color: C.textDim, fontStyle: 'italic', marginTop: 8 }}>
+        <p
+          style={{
+            fontSize: 11,
+            color: 'var(--text-dim)',
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontStyle: 'italic',
+            margin: '8px 0 0',
+            lineHeight: 1.55,
+          }}
+        >
           {b.verification_note}
-        </div>
+        </p>
       )}
-    </div>
+    </section>
   );
 }
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        fontFamily: DISPLAY,
-        fontStyle: 'italic',
-        color: C.accent,
-        fontSize: 13,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function FactBlock({ label, value }: { label: string; value: string }) {
+function FactBlock({ label, value }: { label: string; value: string | undefined }) {
   return (
     <div>
-      <div
-        style={{
-          fontFamily: DISPLAY,
-          fontStyle: 'italic',
-          color: C.accent,
-          fontSize: 11,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          marginBottom: 6,
-        }}
-      >
+      <div className="label" style={{ marginBottom: 6 }}>
         {label}
       </div>
       <div
-        style={{ fontFamily: DISPLAY, fontSize: 18, lineHeight: 1.3, color: C.text }}
+        style={{
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontSize: 18,
+          fontWeight: 500,
+          letterSpacing: '-0.012em',
+          lineHeight: 1.3,
+          color: 'var(--text)',
+        }}
       >
         {value || '—'}
       </div>

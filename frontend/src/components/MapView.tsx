@@ -22,16 +22,48 @@ import Map, { Layer, MapRef, NavigationControl, Source } from 'react-map-gl/mapl
  *   viewer knows what they're looking at even out of context.
  */
 
+// Each layer has a fill + outline tone + fill opacity. Article 97 parks /
+// protected open space get their own warm-taupe treatment so they read as
+// civic open space, distinct from BioMap habitat (sage) and NHESP (rust).
 const LAYER_STYLE: Record<string, { fill: string; line: string; opacity: number }> = {
+  article97: { fill: '#b5a07a', line: '#8b7355', opacity: 0.28 },
   biomap_core: { fill: '#4a7c4f', line: '#4a7c4f', opacity: 0.18 },
   biomap_cnl: { fill: '#4a7c4f', line: '#4a7c4f', opacity: 0.1 },
   nhesp_priority: { fill: '#a85a4a', line: '#a85a4a', opacity: 0.18 },
   nhesp_estimated: { fill: '#a85a4a', line: '#a85a4a', opacity: 0.1 },
-  fema_flood: { fill: '#2563eb', line: '#2563eb', opacity: 0.16 },
+  fema_flood: { fill: '#3f6b9c', line: '#3f6b9c', opacity: 0.18 },
   wetlands: { fill: '#525252', line: '#525252', opacity: 0.12 },
 };
 
 const CARTO_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+
+const SATELLITE_STYLE = {
+  version: 8 as const,
+  sources: {
+    'esri-sat': {
+      type: 'raster' as const,
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: 'Esri World Imagery',
+      maxzoom: 19,
+    },
+    'esri-labels': {
+      type: 'raster' as const,
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    { id: 'bg', type: 'background' as const, paint: { 'background-color': '#111' } },
+    { id: 'esri-sat', type: 'raster' as const, source: 'esri-sat' },
+    { id: 'esri-labels', type: 'raster' as const, source: 'esri-labels' },
+  ],
+};
 
 interface Props {
   parcelId: string;
@@ -44,6 +76,8 @@ export function MapView({ parcelId, address }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [overlay, setOverlay] = useState<GeoJSON.FeatureCollection | null>(null);
   const [parcelProps, setParcelProps] = useState<Record<string, unknown> | null>(null);
+  const [satellite, setSatellite] = useState(true);
+  const [showParcelGrid, setShowParcelGrid] = useState(false);
 
   useEffect(() => {
     api.parcelOverlays(parcelId, 2000).then(setOverlay).catch(console.error);
@@ -95,6 +129,13 @@ export function MapView({ parcelId, address }: Props) {
     [parcelFeat]
   );
 
+  // Parcel boundary styling flips between modes:
+  // Satellite → bright amber so the line pops against dark imagery; dark shadow halo
+  // Map       → dark ink stroke with white halo for the paper-map look
+  const parcelStroke = satellite ? '#f5a623' : '#1a1a1a';
+  const parcelHalo = satellite ? 'rgba(0,0,0,0.75)' : '#ffffff';
+  const parcelFillOpacity = satellite ? 0.09 : 0;
+
   const addressText = (address || (parcelProps?.site_addr as string | undefined) || '').trim();
   const townText = (parcelProps?.town_name as string | undefined) || '';
   const locIdText = (parcelProps?.loc_id as string | undefined) || parcelId;
@@ -105,7 +146,7 @@ export function MapView({ parcelId, address }: Props) {
         ref={mapRef}
         onLoad={() => setLoaded(true)}
         initialViewState={{ longitude: -71.5, latitude: 42.3, zoom: 10 }}
-        mapStyle={CARTO_STYLE}
+        mapStyle={satellite ? SATELLITE_STYLE : CARTO_STYLE}
         // Flat 2D only — no pitch, no drag-rotate. Keeps the output
         // PDF-deterministic and matches what Chris asked for (2D street map).
         maxPitch={0}
@@ -113,6 +154,7 @@ export function MapView({ parcelId, address }: Props) {
         attributionControl={false}
       >
         <NavigationControl position="top-right" showCompass={false} showZoom />
+
 
         {Object.entries(polygons).map(([layer, feats]) => {
           if (layer === 'parcel') return null;
@@ -141,18 +183,43 @@ export function MapView({ parcelId, address }: Props) {
           );
         })}
 
+        {/* Context: all MassGIS L3 parcel boundaries in the current viewport */}
+        {showParcelGrid && (
+          <Source
+            id="src-parcel-grid"
+            type="raster"
+            tileSize={256}
+            tiles={[
+              'https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/Massachusetts_Property_Tax_Parcels/MapServer/export?f=image&format=png32&transparent=true&size=256%2C256&bbox={bbox-epsg-3857}&bboxSR=102100&imageSR=102100&dpi=96',
+            ]}
+          >
+            <Layer
+              id="layer-parcel-grid"
+              type="raster"
+              paint={{ 'raster-opacity': satellite ? 0.55 : 0.45 }}
+            />
+          </Source>
+        )}
+
         {parcelFc && (
           <Source id="src-parcel" type="geojson" data={parcelFc}>
-            {/* white halo under the parcel stroke so it stays legible on any basemap cell */}
+            {/* Faint tint — on satellite helps the eye register the parcel area instantly */}
+            <Layer
+              id="parcel-fill"
+              type="fill"
+              paint={{ 'fill-color': '#f5a623', 'fill-opacity': parcelFillOpacity }}
+            />
+            {/* Shadow/halo behind the stroke so it reads on any basemap cell */}
             <Layer
               id="parcel-halo"
               type="line"
-              paint={{ 'line-color': '#ffffff', 'line-width': 6, 'line-opacity': 0.95 }}
+              paint={{ 'line-color': parcelHalo, 'line-width': 7, 'line-opacity': 0.9 }}
             />
+            {/* Main boundary — amber on satellite, dark ink on map */}
             <Layer
               id="parcel-outline"
               type="line"
-              paint={{ 'line-color': '#1a1a1a', 'line-width': 2.5, 'line-opacity': 1 }}
+              paint={{ 'line-color': parcelStroke, 'line-width': 2.5, 'line-opacity': 1 }}
             />
           </Source>
         )}
@@ -162,14 +229,14 @@ export function MapView({ parcelId, address }: Props) {
             <Layer
               id="pt-esmp-halo"
               type="circle"
-              paint={{ 'circle-radius': 12, 'circle-color': '#2563eb', 'circle-opacity': 0.18 }}
+              paint={{ 'circle-radius': 12, 'circle-color': '#8b7355', 'circle-opacity': 0.18 }}
             />
             <Layer
               id="pt-esmp"
               type="circle"
               paint={{
                 'circle-radius': 5,
-                'circle-color': '#2563eb',
+                'circle-color': '#8b7355',
                 'circle-stroke-color': '#ffffff',
                 'circle-stroke-width': 1.5,
               }}
@@ -178,6 +245,54 @@ export function MapView({ parcelId, address }: Props) {
         )}
       </Map>
 
+      {/* Satellite toggle — top right, below the nav control */}
+      <button
+        onClick={() => setSatellite((v) => !v)}
+        style={{
+          position: 'absolute',
+          top: 86,
+          right: 10,
+          background: satellite ? 'var(--ink)' : 'var(--bg)',
+          color: satellite ? 'var(--bg)' : 'var(--text)',
+          border: '1px solid var(--border)',
+          borderRadius: 6,
+          padding: '5px 10px',
+          fontSize: 11,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'var(--sans)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          letterSpacing: '0.03em',
+        }}
+        title={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+      >
+        {satellite ? 'Map' : 'Satellite'}
+      </button>
+
+      {/* All-parcels context grid toggle — shows MassGIS L3 boundary tiles for all nearby lots */}
+      <button
+        onClick={() => setShowParcelGrid((v) => !v)}
+        style={{
+          position: 'absolute',
+          top: 122,
+          right: 10,
+          background: showParcelGrid ? 'var(--ink)' : 'var(--bg)',
+          color: showParcelGrid ? 'var(--bg)' : 'var(--text)',
+          border: '1px solid var(--border)',
+          borderRadius: 6,
+          padding: '5px 10px',
+          fontSize: 11,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'var(--sans)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          letterSpacing: '0.03em',
+        }}
+        title="Show all parcel boundaries in view (MassGIS L3)"
+      >
+        All lots
+      </button>
+
       {/* Address chip — visible on-screen AND in PDF prints */}
       {(addressText || townText) && (
         <div
@@ -185,20 +300,20 @@ export function MapView({ parcelId, address }: Props) {
             position: 'absolute',
             top: 12,
             left: 12,
-            background: '#ffffff',
-            border: '1px solid #e8eaed',
+            background: 'var(--bg)',
+            border: '1px solid var(--border-soft)',
             borderRadius: 8,
             padding: '8px 12px',
             boxShadow: '0 1px 2px rgba(15,15,15,0.05)',
-            maxWidth: 320,
+            maxWidth: 440,
           }}
         >
           {addressText && (
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>
               {addressText}
             </div>
           )}
-          <div style={{ fontSize: 11, color: '#8a8a8a', marginTop: 2, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, lineHeight: 1.4 }}>
             {townText && <span>{townText} · </span>}
             <span>Parcel {locIdText}</span>
           </div>
@@ -211,22 +326,23 @@ export function MapView({ parcelId, address }: Props) {
           position: 'absolute',
           bottom: 10,
           left: 12,
-          background: '#ffffff',
-          border: '1px solid #e8eaed',
+          background: 'var(--bg)',
+          border: '1px solid var(--border-soft)',
           borderRadius: 8,
           padding: '6px 10px',
           fontSize: 11,
-          color: '#525252',
+          color: 'var(--text-mid)',
           boxShadow: '0 1px 2px rgba(15,15,15,0.05)',
           display: 'flex',
           gap: 12,
           alignItems: 'center',
         }}
       >
-        <LegendSwatch color="#1a1a1a" label="Parcel" />
+        <LegendSwatch color={parcelStroke} label="Parcel" />
+        <LegendSwatch color="#b5a07a" label="Parks · Art. 97" fill />
         <LegendSwatch color="#4a7c4f" label="Habitat" fill />
         <LegendSwatch color="#a85a4a" label="NHESP" fill />
-        <LegendSwatch color="#2563eb" label="Flood" fill />
+        <LegendSwatch color="#3f6b9c" label="Flood" fill />
         <LegendSwatch color="#525252" label="Wetlands" fill />
       </div>
     </div>

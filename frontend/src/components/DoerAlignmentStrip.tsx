@@ -17,16 +17,16 @@ const STATUS_TONE: Record<
   DoerAdoptionStatus,
   { c: string; bg: string; label: string }
 > = {
-  adopted: { c: '#1f8a3d', bg: '#e4f3e7', label: 'Adopted' },
-  in_progress: { c: '#b6781c', bg: '#fbecd6', label: 'In progress' },
-  not_started: { c: '#c0392b', bg: '#f9e3df', label: 'Not started' },
-  unknown: { c: '#8a8a8a', bg: '#f1f2f4', label: 'Unknown' },
+  adopted: { c: 'var(--good)', bg: 'var(--sage-soft, #eaf2e7)', label: 'Adopted' },
+  in_progress: { c: 'var(--gold, #c08a3e)', bg: 'var(--gold-soft, #f7efe0)', label: 'In progress' },
+  not_started: { c: 'var(--bad)', bg: 'var(--bad-soft, #f5e8e4)', label: 'Not started' },
+  unknown: { c: 'var(--text-dim)', bg: 'var(--surface-alt)', label: 'Unknown' },
 };
 
 const SAFE_HARBOR_TONE: Record<DoerSafeHarbor, { c: string; label: string }> = {
-  safe: { c: '#1f8a3d', label: 'Safe harbor' },
-  at_risk: { c: '#c0392b', label: 'At risk · Dover' },
-  unknown: { c: '#8a8a8a', label: 'Unassessed' },
+  safe: { c: 'var(--good)', label: 'Safe harbor' },
+  at_risk: { c: 'var(--bad)', label: 'At risk · Dover' },
+  unknown: { c: 'var(--text-dim)', label: 'Unassessed' },
 };
 
 export default function DoerAlignmentStrip({ status }: Props) {
@@ -156,7 +156,7 @@ function DoerCard({
           alignItems: 'center',
           gap: 10,
           fontSize: 12,
-          color: '#525252',
+          color: 'var(--text-mid)',
         }}
       >
         {counts ? (
@@ -198,10 +198,10 @@ function DeviationPill({
 }) {
   const tone =
     severity === 'major'
-      ? { c: '#c0392b', bg: '#f9e3df' }
+      ? { c: 'var(--bad)', bg: 'var(--bad-soft, #f5e8e4)' }
       : severity === 'moderate'
-      ? { c: '#b6781c', bg: '#fbecd6' }
-      : { c: '#525252', bg: '#f1f2f4' };
+      ? { c: 'var(--gold, #c08a3e)', bg: 'var(--gold-soft, #f7efe0)' }
+      : { c: 'var(--text-mid)', bg: 'var(--surface-alt)' };
   if (count === 0) {
     return (
       <span className="text-textDim" style={{ fontSize: 11 }}>
@@ -254,8 +254,8 @@ function DoerDrawer({
         style={{
           width: 'min(560px, 100%)',
           height: '100%',
-          background: '#ffffff',
-          borderLeft: '1px solid #e8eaed',
+          background: 'var(--bg)',
+          borderLeft: '1px solid var(--border-soft)',
           padding: '28px 26px',
           overflowY: 'auto',
         }}
@@ -334,7 +334,7 @@ function DoerDrawer({
         {c?.reason_unavailable && (
           <div
             className="card"
-            style={{ padding: '12px 14px', fontSize: 13, color: '#525252', marginTop: 16 }}
+            style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text-mid)', marginTop: 16 }}
           >
             {c.reason_unavailable}
           </div>
@@ -351,7 +351,7 @@ function DoerDrawer({
         {c?.comparison_available && c.deviations.length === 0 && (
           <div
             className="card"
-            style={{ padding: '12px 14px', fontSize: 13, color: '#525252', marginTop: 16 }}
+            style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text-mid)', marginTop: 16 }}
           >
             No deviations — town bylaw aligns with the DOER model.
           </div>
@@ -375,10 +375,10 @@ function Meta({ label, value }: { label: string; value: React.ReactNode }) {
 function DeviationRow({ d }: { d: import('../lib/api').DoerDeviation }) {
   const tone =
     d.severity === 'major'
-      ? { c: '#c0392b', bg: '#f9e3df' }
+      ? { c: 'var(--bad)', bg: 'var(--bad-soft, #f5e8e4)' }
       : d.severity === 'moderate'
-      ? { c: '#b6781c', bg: '#fbecd6' }
-      : { c: '#525252', bg: '#f1f2f4' };
+      ? { c: 'var(--gold, #c08a3e)', bg: 'var(--gold-soft, #f7efe0)' }
+      : { c: 'var(--text-mid)', bg: 'var(--surface-alt)' };
   return (
     <div className="card" style={{ padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -404,7 +404,7 @@ function DeviationRow({ d }: { d: import('../lib/api').DoerDeviation }) {
             style={{
               marginLeft: 'auto',
               fontSize: 10,
-              color: '#c0392b',
+              color: 'var(--bad)',
               textTransform: 'uppercase',
               letterSpacing: 0.3,
               fontWeight: 500,

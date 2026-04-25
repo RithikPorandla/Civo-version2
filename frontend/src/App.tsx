@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Overview from './routes/Overview';
 import AddressLookup from './routes/AddressLookup';
 import Municipalities from './routes/Municipalities';
 import SiteSuitability from './routes/SiteSuitability';
+import Discover from './routes/Discover';
 import Report from './routes/Report';
 import Portfolio from './routes/Portfolio';
 import DataSources from './routes/DataSources';
@@ -42,17 +43,49 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Shell>
-      <Routes>
-        <Route path="/" element={<Overview />} />
-        <Route path="/lookup" element={<AddressLookup />} />
-        <Route path="/municipalities" element={<Municipalities />} />
-        <Route path="/municipalities/:townId" element={<Municipalities />} />
-        <Route path="/suitability" element={<SiteSuitability />} />
-        <Route path="/report/:reportId" element={<Report />} />
-        <Route path="/portfolio/:portfolioId" element={<Portfolio />} />
-        <Route path="/data-sources" element={<DataSources />} />
-      </Routes>
-    </Shell>
+    <Routes>
+      <Route path="/" element={<Navigate to="/app/" replace />} />
+      <Route
+        path="/app/*"
+        element={
+          <Shell>
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/lookup" element={<AddressLookup />} />
+              <Route path="/suitability" element={<SiteSuitability />} />
+              <Route path="/discover" element={<Discover />} />
+              <Route path="/data-sources" element={<DataSources />} />
+            </Routes>
+          </Shell>
+        }
+      />
+      <Route
+        path="/municipalities/*"
+        element={
+          <Shell>
+            <Routes>
+              <Route path="/" element={<Municipalities />} />
+              <Route path=":townId" element={<Municipalities />} />
+            </Routes>
+          </Shell>
+        }
+      />
+      <Route
+        path="/report/:reportId"
+        element={
+          <Shell>
+            <Report />
+          </Shell>
+        }
+      />
+      <Route
+        path="/portfolio/:portfolioId"
+        element={
+          <Shell>
+            <Portfolio />
+          </Shell>
+        }
+      />
+    </Routes>
   );
 }

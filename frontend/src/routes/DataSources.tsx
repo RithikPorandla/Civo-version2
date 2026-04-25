@@ -35,44 +35,29 @@ export default function DataSources() {
 
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: '48px 32px 96px' }}>
-      <header style={{ marginBottom: 40 }}>
-        <div
-          style={{
-            fontSize: 11,
-            color: '#6B6B66',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            fontWeight: 500,
-            marginBottom: 10,
-          }}
-        >
+      <header style={{ marginBottom: 32 }}>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>
           Provenance
         </div>
         <h1
-          style={{
-            fontSize: 36,
-            fontWeight: 600,
-            letterSpacing: '-0.02em',
-            margin: 0,
-            color: '#141514',
-          }}
+          className="display"
+          style={{ fontSize: 44, margin: 0, letterSpacing: '-0.022em', lineHeight: 1.02 }}
         >
           Data sources
         </h1>
         <p
           style={{
             fontSize: 15,
-            color: '#6B6B66',
-            marginTop: 10,
+            color: 'var(--text-mid)',
+            marginTop: 14,
             maxWidth: 640,
             lineHeight: 1.6,
           }}
         >
           Every score on every Civo report traces back to one of the datasets below. This
-          index is the single source of truth — when a citation appears on a report, it
-          came from one of these rows.
+          index is the single source of truth — when a citation appears on a report, it came
+          from one of these rows.
         </p>
-
         <StatsStrip
           total={data.total_sources}
           ingested={ingestedCount}
@@ -105,15 +90,17 @@ export default function DataSources() {
       <footer
         style={{
           marginTop: 48,
-          paddingTop: 24,
-          borderTop: '1px solid #E8E5DD',
+          paddingTop: 22,
+          borderTop: '1px solid var(--border-soft)',
           fontSize: 12,
-          color: '#8A8A8A',
+          color: 'var(--text-dim)',
           lineHeight: 1.6,
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontStyle: 'italic',
         }}
       >
-        Coverage gaps (status · <em>planned</em>) are disclosed deliberately. We'd rather
-        tell you what isn't yet ingested than hide it. Last reviewed {data.last_reviewed}.
+        Coverage gaps (status · planned) are disclosed deliberately. We'd rather tell you what
+        isn't yet ingested than hide it. Last reviewed {data.last_reviewed}.
       </footer>
     </div>
   );
@@ -133,19 +120,20 @@ function StatsStrip({
   lastReviewed: string;
 }) {
   const stat = (label: string, value: string | number) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="label">{label}</div>
       <div
+        className="tnum"
         style={{
-          fontSize: 10,
-          color: '#6B6B66',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          fontWeight: 500,
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontSize: 22,
+          fontWeight: 400,
+          letterSpacing: '-0.018em',
+          color: 'var(--text)',
         }}
       >
-        {label}
+        {value}
       </div>
-      <div style={{ fontSize: 18, fontWeight: 600, color: '#141514' }}>{value}</div>
     </div>
   );
 
@@ -155,9 +143,9 @@ function StatsStrip({
         display: 'flex',
         gap: 40,
         marginTop: 24,
-        padding: '16px 0',
-        borderTop: '1px solid #E8E5DD',
-        borderBottom: '1px solid #E8E5DD',
+        padding: '18px 0',
+        borderTop: '1px solid var(--border-soft)',
+        borderBottom: '1px solid var(--border-soft)',
       }}
     >
       {stat('Total sources', total)}
@@ -187,17 +175,19 @@ function CategoryTabs({
         key={k}
         onClick={() => onChange(k)}
         style={{
-          background: on ? '#141514' : 'transparent',
-          color: on ? '#F7F5F0' : '#141514',
-          border: on ? '1px solid #141514' : '1px solid #E8E5DD',
-          borderRadius: 100,
+          background: on ? 'var(--text)' : 'transparent',
+          color: on ? 'var(--bg)' : 'var(--text)',
+          border: on ? '1px solid var(--text)' : '1px solid var(--border)',
+          borderRadius: 999,
           padding: '7px 16px',
           fontSize: 13,
           fontWeight: 500,
           cursor: 'pointer',
+          fontFamily: 'inherit',
+          transition: 'background 120ms ease, color 120ms ease, border-color 120ms ease',
         }}
       >
-        {label} <span style={{ opacity: 0.55 }}>· {count}</span>
+        {label} <span style={{ opacity: 0.55 }} className="tnum">· {count}</span>
       </button>
     );
   };
@@ -216,11 +206,9 @@ function SourceCard({ source: s }: { source: DataSource }) {
   return (
     <div
       id={s.id}
+      className="card"
       style={{
-        background: '#FFFFFF',
-        border: '1px solid #E8E5DD',
-        borderRadius: 14,
-        padding: '18px 22px',
+        padding: '20px 22px',
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
@@ -229,46 +217,63 @@ function SourceCard({ source: s }: { source: DataSource }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#141514' }}>{s.name}</div>
+            <div
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 17,
+                fontWeight: 500,
+                letterSpacing: '-0.012em',
+                color: 'var(--text)',
+              }}
+            >
+              {s.name}
+            </div>
             <StatusPill status={s.status} />
             {s.docket && <Tag>{s.docket}</Tag>}
           </div>
-          <div style={{ fontSize: 12, color: '#6B6B66', marginTop: 2 }}>{s.agency}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 4 }}>
+            {s.agency}
+          </div>
         </div>
         {s.row_count != null && (
           <div
+            className="tnum"
             style={{
-              fontSize: 13,
-              color: '#141514',
-              fontVariantNumeric: 'tabular-nums',
-              fontWeight: 500,
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: 18,
+              fontWeight: 400,
+              letterSpacing: '-0.015em',
+              color: 'var(--text)',
               whiteSpace: 'nowrap',
             }}
             title="Current DB row count"
           >
-            {s.row_count.toLocaleString()} <span style={{ color: '#8A8A8A' }}>rows</span>
+            {s.row_count.toLocaleString()}{' '}
+            <span style={{ color: 'var(--text-dim)', fontSize: 12, fontFamily: 'var(--sans)' }}>
+              rows
+            </span>
           </div>
         )}
       </div>
 
       {s.coverage && (
-        <div style={{ fontSize: 13, color: '#141514', lineHeight: 1.5 }}>{s.coverage}</div>
+        <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.55 }}>
+          {s.coverage}
+        </div>
       )}
 
       {s.used_by.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="label">Feeds</div>
+          <ul
             style={{
-              fontSize: 10,
-              color: '#8A8A8A',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              fontWeight: 500,
+              margin: 0,
+              padding: '0 0 0 16px',
+              fontSize: 13,
+              color: 'var(--text-mid)',
+              lineHeight: 1.5,
             }}
           >
-            Feeds
-          </div>
-          <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: 13, color: '#525252' }}>
             {s.used_by.map((u, i) => (
               <li key={i}>{u}</li>
             ))}
@@ -280,9 +285,10 @@ function SourceCard({ source: s }: { source: DataSource }) {
         <div
           style={{
             fontSize: 12,
-            color: '#6B6B66',
+            color: 'var(--text-mid)',
             lineHeight: 1.5,
             fontStyle: 'italic',
+            fontFamily: "'Fraunces', Georgia, serif",
           }}
         >
           {s.notes}
@@ -302,7 +308,8 @@ function SourceCard({ source: s }: { source: DataSource }) {
             href={s.url}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: 12, color: '#1F3D2E', textDecoration: 'none' }}
+            className="link-accent"
+            style={{ fontSize: 12 }}
           >
             {s.url.replace(/^https?:\/\//, '').slice(0, 60)}
             {s.url.length > 60 ? '…' : ''} ↗
@@ -310,7 +317,7 @@ function SourceCard({ source: s }: { source: DataSource }) {
         ) : (
           <span />
         )}
-        <div style={{ fontSize: 11, color: '#8A8A8A' }}>
+        <div className="tnum" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
           {s.last_refreshed && `Refreshed ${s.last_refreshed}`}
           {s.last_reviewed && !s.last_refreshed && `Reviewed ${s.last_reviewed}`}
         </div>
@@ -321,9 +328,9 @@ function SourceCard({ source: s }: { source: DataSource }) {
 
 function StatusPill({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; fg: string; label: string }> = {
-    ingested: { bg: '#EAF2E7', fg: '#3C6B3F', label: 'Ingested' },
-    planned: { bg: '#F7EFE0', fg: '#8C6726', label: 'Planned' },
-    external: { bg: '#F0EDE5', fg: '#6B5840', label: 'External' },
+    ingested: { bg: 'var(--sage-soft, #eaf2e7)', fg: 'var(--good)', label: 'Ingested' },
+    planned: { bg: 'var(--gold-soft, #f7efe0)', fg: 'var(--gold, #c08a3e)', label: 'Planned' },
+    external: { bg: 'var(--surface-alt)', fg: 'var(--accent)', label: 'External' },
   };
   const c = cfg[status] ?? cfg.ingested;
   return (
@@ -332,7 +339,7 @@ function StatusPill({ status }: { status: string }) {
         display: 'inline-block',
         background: c.bg,
         color: c.fg,
-        borderRadius: 100,
+        borderRadius: 999,
         padding: '2px 10px',
         fontSize: 11,
         fontWeight: 500,
@@ -348,9 +355,9 @@ function Tag({ children }: { children: React.ReactNode }) {
     <span
       style={{
         display: 'inline-block',
-        background: '#F0EDE5',
-        color: '#525252',
-        borderRadius: 100,
+        background: 'var(--surface-alt)',
+        color: 'var(--text-mid)',
+        borderRadius: 999,
         padding: '2px 10px',
         fontSize: 11,
         fontWeight: 500,
@@ -363,15 +370,24 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 function LoadingState() {
   return (
-    <div style={{ padding: 40, color: '#8A8A8A', fontSize: 14 }}>Loading sources…</div>
+    <div style={{ padding: 40, color: 'var(--text-dim)', fontSize: 14 }}>Loading sources…</div>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
   return (
     <div style={{ padding: 40 }}>
-      <div style={{ fontSize: 16, fontWeight: 600, color: '#C0392B' }}>Couldn't load sources</div>
-      <div style={{ fontSize: 13, color: '#6B6B66', marginTop: 6 }}>{message}</div>
+      <div
+        style={{
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontSize: 20,
+          fontWeight: 500,
+          color: 'var(--bad)',
+        }}
+      >
+        Couldn't load sources
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 6 }}>{message}</div>
     </div>
   );
 }

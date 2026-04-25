@@ -2,23 +2,55 @@
 
 from __future__ import annotations
 
+import threading
+
 from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.data_sources import router as data_sources_router
+from app.api.candidates import router as candidates_router
+from app.api.discover import router as discover_router
 from app.api.doer import router as doer_router
 from app.api.municipality import router as municipality_router
+from app.api.pdf import router as pdf_router
 from app.api.portfolio import router as portfolio_router
 from app.api.score import router as score_router
-from app.db import get_session
+from app.db import SessionLocal, get_session
+from app.services.jurisdiction_risk import refresh_all
 
 app = FastAPI(title="Civo API", version="0.1.0")
 app.include_router(score_router)
+app.include_router(pdf_router)
 app.include_router(portfolio_router)
 app.include_router(municipality_router)
 app.include_router(doer_router)
+app.include_router(candidates_router)
 app.include_router(data_sources_router)
+app.include_router(discover_router)
+
+
+@app.on_event("startup")
+def _refresh_jurisdiction_risk_on_startup() -> None:
+    """Refresh town_jurisdiction_risk in a background thread at startup.
+
+    Runs in a daemon thread so it never blocks the server from accepting
+    requests. Takes ~1s for 11 towns; safe to re-run anytime data changes.
+    """
+    def _run() -> None:
+        with SessionLocal() as session:
+            n = refresh_all(session)
+            print(f"[jurisdiction_risk] refreshed {n} rows")
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
+@app.post("/admin/refresh-jurisdiction-risk", tags=["admin"])
+def refresh_jurisdiction_risk() -> dict:
+    """Manually trigger a jurisdiction risk refresh (e.g. after seeding new DOER data)."""
+    with SessionLocal() as session:
+        n = refresh_all(session)
+    return {"rows_upserted": n}
 
 
 @app.get("/health")

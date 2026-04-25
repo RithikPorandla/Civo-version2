@@ -69,6 +69,11 @@ class ResolvedParcel:
     distance_m: float  # from geocoded point to resolved parcel (centroid)
 
 
+# In-memory geocode cache — survives for the lifetime of the process.
+# Populated from disk on first miss; disk is only written on new API calls.
+_MEM_CACHE: dict[str, dict] = {}
+
+
 def _load_cache() -> dict:
     if CACHE_PATH.exists():
         return json.loads(CACHE_PATH.read_text())
@@ -83,9 +88,17 @@ def _save_cache(cache: dict) -> None:
 def _geocode(address: str) -> dict:
     """Return the full cached Places entry so callers can inspect
     formatted_address + place types in addition to lat/lon."""
-    cache = _load_cache()
-    if address in cache and cache[address].get("status") == "OK":
-        return cache[address]
+    # 1. Hot in-memory cache — no I/O
+    if address in _MEM_CACHE and _MEM_CACHE[address].get("status") == "OK":
+        return _MEM_CACHE[address]
+
+    # 2. Disk cache — deserialise once, then populate memory cache
+    disk = _load_cache()
+    if address in disk and disk[address].get("status") == "OK":
+        _MEM_CACHE[address] = disk[address]
+        return disk[address]
+
+    # 3. Live API call
     key = os.getenv("GOOGLE_PLACES_API_KEY", "").strip()
     if not key:
         raise ResolveError(f"{address!r} not cached and GOOGLE_PLACES_API_KEY is unset")
@@ -102,8 +115,8 @@ def _geocode(address: str) -> dict:
     r.raise_for_status()
     data = r.json()
     if data.get("status") != "OK" or not data.get("candidates"):
-        cache[address] = {"status": data.get("status"), "raw": data}
-        _save_cache(cache)
+        disk[address] = {"status": data.get("status"), "raw": data}
+        _save_cache(disk)
         raise ResolveError(f"Places failed for {address!r}: {data.get('status')}")
     c = data["candidates"][0]
     entry = {
@@ -114,8 +127,9 @@ def _geocode(address: str) -> dict:
         "lat": c["geometry"]["location"]["lat"],
         "lon": c["geometry"]["location"]["lng"],
     }
-    cache[address] = entry
-    _save_cache(cache)
+    _MEM_CACHE[address] = entry
+    disk[address] = entry
+    _save_cache(disk)
     return entry
 
 

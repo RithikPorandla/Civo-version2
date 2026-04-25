@@ -11,11 +11,14 @@
 import puppeteer from 'puppeteer';
 
 const ROUTES = [
-  '/',
-  '/lookup',
+  '/',               // Landing
+  '/app',            // Overview
+  '/app/lookup',
+  '/app/suitability',
+  '/app/discover',
+  '/app/data-sources',
   '/municipalities',
   '/municipalities/2',
-  '/suitability',
   '/report/111',
 ];
 

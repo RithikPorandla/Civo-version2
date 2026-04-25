@@ -1,0 +1,48 @@
+# BESS-specific scoring config — overrides criterion weights from base config.
+# BESS footprint is small (~1-3 acres for 5MW), so grid proximity dominates.
+# Carbon and farmland are penalized less; climate resilience (flood) matters
+# more for battery enclosures than for solar arrays.
+#
+# Inherits all anchors, thresholds, and ineligibility rules from:
+#   ma-eea-2026-v1.yaml
+# Only criterion weights change here (must still sum to 1.0).
+
+version: "ma-eea-2026-v1-bess"
+methodology: "MA EEA Site Suitability, 225 CMR 29.00 — BESS-weighted"
+effective_date: "2024-01-01"
+last_reviewed: "2026-04-21"
+base_config: "ma-eea-2026-v1"
+
+# Weight rationale:
+#   grid_alignment:    0.30  (+0.10) — interconnection is the fatal constraint for BESS
+#   biodiversity:      0.20  (same)  — habitat ineligibility unchanged
+#   climate_resilience: 0.15 (same)  — flood risk matters for battery enclosure safety
+#   carbon_storage:    0.10  (-0.05) — smaller BESS footprint clears less forest
+#   burdens:           0.10  (same)
+#   benefits:          0.10  (same)
+#   agriculture:       0.05  (-0.05) — 1-3 acre BESS doesn't need prime farmland exemption
+criteria_weight_overrides:
+  grid_alignment:    0.30
+  biodiversity:      0.20
+  climate_resilience: 0.15
+  carbon_storage:    0.10
+  burdens:           0.10
+  benefits:          0.10
+  agriculture:       0.05
+
+buckets:
+  suitable_min: 70
+  conditional_min: 50
+
+ineligibility_total_cap: 55
+
+generation_storage_project_types:
+  - bess_standalone
+  - bess_colocated
+  - storage
+  - battery_storage
+
+project_buffer_m:
+  bess_standalone: 200
+  bess_colocated: 300
+  default: 200

@@ -23,7 +23,7 @@ import time
 from statistics import median
 from typing import Literal, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -34,6 +34,7 @@ from app.scoring.models import SuitabilityReport
 from app.scoring.resolver import ResolveError, resolve_parcel_detailed
 from app.services.link_health import enrich_citations_in_place
 from app.services.mitigation_costs import estimate_mitigation_costs
+from app.services.site_vision import analyze_site
 
 router = APIRouter()
 
@@ -144,24 +145,44 @@ def _score_and_persist(req: ScoreRequest) -> ScoreEnvelope:
         ).scalar_one()
         session.commit()
 
-        # Enrich the fresh report with runtime link-health before returning.
-        enrich_citations_in_place(session, report_dict)
-        report = SuitabilityReport.model_validate(report_dict)
-
+    # Link-health enrichment is deferred — it probes external URLs (8s
+    # timeout each) and must not block the score response. The GET
+    # /report/{id} path serves enriched citations once the cache warms.
     return ScoreEnvelope(
         report_id=report_id,
         address=req.address,
         resolution_mode=cast(ResolutionMode, resolved.resolution_mode),
-        report=report,
+        report=SuitabilityReport.model_validate(report_dict),
     )
+
+
+# ---------------------------------------------------------------------------
+# Background link-health warmer
+# ---------------------------------------------------------------------------
+def _warm_link_health(report_id: int) -> None:
+    with SessionLocal() as session:
+        row = session.execute(
+            text("SELECT report FROM score_history WHERE id = :rid"),
+            {"rid": report_id},
+        ).scalar()
+        if row is None:
+            return
+        enrich_citations_in_place(session, row)
+        session.execute(
+            text("UPDATE score_history SET report = CAST(:r AS jsonb) WHERE id = :rid"),
+            {"r": json.dumps(row), "rid": report_id},
+        )
+        session.commit()
 
 
 # ---------------------------------------------------------------------------
 # POST /score
 # ---------------------------------------------------------------------------
 @router.post("/score", response_model=ScoreEnvelope)
-async def post_score(req: ScoreRequest) -> ScoreEnvelope:
-    return await asyncio.to_thread(_score_and_persist, req)
+async def post_score(req: ScoreRequest, bg: BackgroundTasks) -> ScoreEnvelope:
+    envelope = await asyncio.to_thread(_score_and_persist, req)
+    bg.add_task(asyncio.to_thread, _warm_link_health, envelope.report_id)
+    return envelope
 
 
 # ---------------------------------------------------------------------------
@@ -290,6 +311,31 @@ def get_parcel_mitigation_costs(
         site_footprint_acres=site_footprint_acres,
         estimated_wetland_impact_acres=wetland_impact_acres,
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /parcel/{parcel_id}/site-analysis
+# ---------------------------------------------------------------------------
+@router.get("/parcel/{parcel_id}/site-analysis")
+def get_parcel_site_analysis(
+    parcel_id: str,
+    force: bool = Query(False, description="Bypass cache — bill a fresh vision call."),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Claude-vision characterization of a parcel — impervious %, canopy %,
+    detected buildings, narrative — reconciled against MassGIS LU/LC.
+
+    Lazy: first hit for a parcel fires a vision call (~5-10s, ~$0.10-$0.30).
+    Subsequent hits return the cached row instantly. Cache key is
+    (parcel_loc_id, vision_version) so bumping the prompt invalidates.
+    """
+    try:
+        result = analyze_site(session, parcel_id, force=force)
+    except ValueError as e:
+        raise HTTPException(404, str(e)) from e
+    except Exception as e:
+        raise HTTPException(500, f"vision extraction failed: {e}") from e
+    return result.model_dump(mode="json")
 
 
 # ---------------------------------------------------------------------------

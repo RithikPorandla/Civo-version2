@@ -1,4 +1,4 @@
-"""Seed project-type bylaws for 5 ESMP-targeted MA towns.
+"""Seed project-type bylaws for 11 ESMP-targeted MA towns.
 
 Every field carries a ``source_url`` and ``retrieved_at`` timestamp. Where
 town-specific detail is not directly verified from the source document, the
@@ -355,63 +355,78 @@ ACTON_SOLAR = {
 
 
 FREETOWN_SOLAR = {
-    "approval_authority": "Planning Board (site plan review for large-scale ground-mounted)",
+    "approval_authority": "Building Commissioner (building permit) + Planning Board Site Plan Review Authority",
     "process": "site_plan_review",
     "estimated_timeline_months": [4, 8],
     "key_triggers": [
         {
-            "description": "Large-Scale Ground-Mounted Solar PV regulated under Freetown Zoning Bylaw Article 11 §11.27C.",
-            "bylaw_ref": "Freetown Zoning Bylaw §11.27C",
+            "description": "Large-Scale Ground-Mounted Solar PV regulated under Freetown Zoning Bylaw Chapter 300, Article 11 §11.28. Two-step approval: building permit from Building Commissioner first, then site plan review by the Planning Board.",
+            "bylaw_ref": "Freetown Zoning Bylaw §11.28",
             "source_url": "https://ecode360.com/45032485",
         },
         {
-            "description": "As-of-right in designated overlay / by site plan review elsewhere; operation and maintenance plan required with stormwater controls.",
-            "bylaw_ref": "§11.27C",
+            "description": "All material modifications to a solar installation after permit issuance require approval by the Site Plan Review Authority.",
+            "bylaw_ref": "Freetown Zoning Bylaw §11.28",
+            "source_url": "https://www.freetownma.gov/sites/g/files/vyhlif4441/f/uploads/final_code_-_codification_-_zoning_bylaws_082924.pdf",
+        },
+        {
+            "description": "Utility company notification required before construction — proof of interconnection communication must be submitted to the Site Plan Review Authority. Underground connections strongly encouraged.",
+            "bylaw_ref": "Freetown Zoning Bylaw §11.28",
             "source_url": "https://www.freetownma.gov/sites/g/files/vyhlif4441/f/news/solarbylaws2020_text.pdf",
         },
         {
-            "description": "Utility company notification required before construction — proof of interconnection communication must be submitted to Site Plan Review Authority.",
-            "bylaw_ref": "§11.27C",
-            "source_url": "https://www.freetownma.gov/sites/g/files/vyhlif4441/f/news/solarbylaws2020_text.pdf",
+            "description": "Decommissioning: owner must notify the Planning Board by certified mail; physical removal within 150 days of discontinued operations. Financial surety (escrow or bond) required — amount not to exceed 125% of removal cost.",
+            "bylaw_ref": "Freetown Zoning Bylaw §11.28",
+            "source_url": "https://ecode360.com/45032485",
+        },
+        {
+            "description": "Emergency response plan required; applicant must coordinate with the Fire Chief and submit project summary, electrical schematic, and site plan to Fire Department.",
+            "bylaw_ref": "Freetown Zoning Bylaw §11.28",
+            "source_url": "https://ecode360.com/45032485",
         },
     ],
-    "setbacks_ft": {"front": None, "side": None, "rear": None, "note": "Per underlying district; plus landscape buffer."},
+    "setbacks_ft": {"front": 50, "side": 50, "rear": 50, "note": "50 ft from all property lines. Vegetation clearing limited to what is necessary for construction, operation, and maintenance."},
     "acreage_cap": None,
     "overlay_districts": [],
-    "notes": "Freetown's bylaw follows the MA DOER model: site plan review, utility notification, financial assurance for eventual removal, and stormwater controls.",
+    "notes": "Freetown's bylaw (§11.28) follows the MA DOER model: two-step approval (building permit + site plan review), utility notification, stormwater controls, and financial assurance for removal. Fire Chief coordination is mandatory. Planning Board meets 1st and 3rd Tuesday October–April.",
     "citations": [
         {
-            "source_url": "https://ecode360.com/FR6802",
+            "source_url": "https://ecode360.com/45032485",
             "retrieved_at": RETRIEVED,
-            "document_title": "Town of Freetown, MA General & Zoning Bylaws (eCode360)",
+            "document_title": "Town of Freetown, MA — Chapter 300 Zoning Bylaws (eCode360)",
+        },
+        {
+            "source_url": "https://www.freetownma.gov/sites/g/files/vyhlif4441/f/uploads/final_code_-_codification_-_zoning_bylaws_082924.pdf",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Freetown — Final Codified Zoning Bylaws (August 2024)",
         },
         {
             "source_url": "https://www.freetownma.gov/sites/g/files/vyhlif4441/f/uploads/2022-04-08_pb_site_plan_review-compiled_application.pdf",
             "retrieved_at": RETRIEVED,
-            "document_title": "Freetown Large-Scale Ground-Mounted Solar Site Plan Review Application (2022)",
+            "document_title": "Freetown Large-Scale Ground-Mounted Solar — Site Plan Review Application (2022)",
         },
     ],
-    "verification_note": "Section and process confirmed via Freetown Planning Board application document and eCode360; exact setback/acreage values pending direct bylaw-text fetch.",
+    "verification_note": "Section §11.28 confirmed via eCode360 and Freetown Planning Board application document. Front/side/rear setbacks of 50 ft each confirmed from bylaw research. Decommissioning 150-day timeline and 125% surety cap confirmed. Fire Chief coordination requirement confirmed.",
 }
 
 
 CAMBRIDGE_SOLAR = {
-    "approval_authority": "Planning Board / Board of Zoning Appeal (case-by-case; large ground-mounted is rare in Cambridge)",
-    "process": "special_permit_or_registration",
-    "estimated_timeline_months": [3, 9],
+    "approval_authority": "Building Commissioner (building permit for rooftop); Board of Zoning Appeal or Planning Board if special permit or variance required by adjacent development",
+    "process": "building_permit",
+    "estimated_timeline_months": [1, 3],
     "key_triggers": [
         {
-            "description": "Cambridge Zoning Ordinance provides for Registered Solar Energy Systems — a registration mechanism plus limited zoning protections. No ground-mount-specific ordinance; rooftop solar is treated as accessory use.",
-            "bylaw_ref": "Cambridge Zoning Ordinance, Solar Energy Systems section",
-            "source_url": "https://www.cambridgema.gov/CDD/zoninganddevelopment/Zoning/Ordinance",
+            "description": "Cambridge Zoning Ordinance Article 22, §§22.60–22.63 establishes Registered Solar Energy Systems. A system becomes 'Registered' after obtaining a building permit and operating for one year, then receives limited zoning protection — neighboring development seeking a special permit or variance must consider impacts on registered systems.",
+            "bylaw_ref": "Cambridge Zoning Ordinance Article 22, §§22.60–22.63",
+            "source_url": "https://library.municode.com/ma/cambridge/codes/zoning_ordinance?nodeId=ZONING_ORDINANCE_ART22.000SUDEDE",
         },
         {
-            "description": "Solar energy system elements are exempt from the height restrictions that normally apply to buildings and structures.",
-            "bylaw_ref": "Cambridge Zoning Ordinance",
-            "source_url": "https://www.cambridgema.gov/CDD/zoninganddevelopment/Zoning/Ordinance",
+            "description": "Solar energy system elements are exempt from the height restrictions that normally apply to buildings and structures; sun-exposed elements must be no lower than 5 feet below the maximum height allowed in the base zoning district.",
+            "bylaw_ref": "Cambridge Zoning Ordinance Article 22",
+            "source_url": "https://library.municode.com/ma/cambridge/codes/zoning_ordinance?nodeId=ZONING_ORDINANCE_ART22.000SUDEDE",
         },
         {
-            "description": "Article 22 (Green Building Zoning) imposes sustainable-design requirements on new construction and major renovation — any new solar integrates with that framework.",
+            "description": "Article 22 (Green Building Zoning) applies sustainable-design requirements to new construction and major renovations ≥25,000 sq ft — solar integrates with that framework. Commercial buildings ≥25,000 sq ft must demonstrate on-site solar feasibility.",
             "bylaw_ref": "Cambridge Zoning Ordinance Article 22",
             "source_url": "https://www.cambridgema.gov/~/media/Files/CDD/ZoningDevel/Ordinance/zo_article22_1397.ashx",
         },
@@ -419,51 +434,76 @@ CAMBRIDGE_SOLAR = {
     "setbacks_ft": None,
     "acreage_cap": None,
     "overlay_districts": [],
-    "notes": "Cambridge is dense urban; ground-mounted solar is uncommon. Rooftop and façade-integrated solar dominate. BESS is increasingly coupled to commercial redevelopment.",
+    "notes": "Cambridge is dense urban; ground-mounted solar is uncommon. No dedicated ground-mount bylaw exists — any ground-mount would be reviewed under general zoning as an accessory use. Rooftop solar dominates. Registration (§22.60–22.63) is optional but provides zoning protections for existing systems.",
     "citations": [
+        {
+            "source_url": "https://library.municode.com/ma/cambridge/codes/zoning_ordinance?nodeId=ZONING_ORDINANCE_ART22.000SUDEDE",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Cambridge Zoning Ordinance Article 22 — Sustainable Development (Municode)",
+        },
         {
             "source_url": "https://www.cambridgema.gov/CDD/zoninganddevelopment/Zoning/Ordinance",
             "retrieved_at": RETRIEVED,
-            "document_title": "City of Cambridge Zoning Ordinance",
-        }
+            "document_title": "City of Cambridge — Zoning Ordinance (CDD)",
+        },
     ],
-    "verification_note": "Cambridge does not have a dedicated ground-mount solar bylaw; regulations derive from general zoning + Article 22. Verified from city website.",
+    "verification_note": "Article 22 §§22.60–22.63 (Registered Solar Energy System) confirmed via Municode Library. Building permit + 1-year operation requirement for registration confirmed. No dedicated ground-mount solar bylaw exists in Cambridge.",
 }
 
 
 WHATELY_SOLAR = {
-    "approval_authority": "Planning Board (special permit; additional review if on agricultural land)",
-    "process": "special_permit",
+    "approval_authority": "Planning Board (site plan review in nonresidential zones; special permit on agricultural land)",
+    "process": "site_plan_review",
     "estimated_timeline_months": [6, 12],
     "key_triggers": [
         {
-            "description": "Whately Zoning Bylaw amendments approved by AG's office October 2023 address ground-mounted solar on agricultural land.",
+            "description": "Ground-mounted solar ('solar farms' and 'solar power plants') require Planning Board site plan review in all nonresidential zones. Whately originally adopted the MA DOER model solar bylaw in 2011; systems generating <10 kW are exempt from the large-scale provisions.",
             "bylaw_ref": "Whately Zoning Bylaw (as amended 2023)",
             "source_url": "https://www.whately.org/home/pages/bylaws-regulations",
         },
         {
-            "description": "~85 acres of agricultural land in Whately has been redeveloped as ground-mounted PV. The town's Community Solar Action Plan guides future siting away from prime farmland and Chapter 61A enrolled parcels.",
-            "bylaw_ref": "Whately Community Solar Action Plan",
+            "description": "Route 107 Large-Scale Ground-Mounted Solar Photovoltaic Installations Overlay District established March 2014. Solar farms are an expedited use within this overlay.",
+            "bylaw_ref": "Whately Zoning Bylaw — Route 107 Overlay District (est. 2014)",
             "source_url": "https://www.whately.org/home/pages/bylaws-regulations",
+        },
+        {
+            "description": "~85 acres of agricultural land in Whately has been redeveloped as ground-mounted PV. The town has signaled uncertainty about whether its acreage caps are enforceable following the MA Tracer Lane II court decision on municipal solar zoning limits.",
+            "bylaw_ref": "Whately Community Solar Action Plan; Tracer Lane II Realty (2024)",
+            "source_url": "https://www.recorder.com/As-solar-array-and-battery-storage-debate-heats-up-Whately-backs-municipal-zoning-bill-53729126",
         },
         {
             "description": "Chapter 61A land removed for solar triggers rollback tax + 120-day Right of First Refusal to the Town under G.L. c. 61A §14.",
             "bylaw_ref": "M.G.L. c. 61A §14",
             "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter61A/Section14",
         },
+        {
+            "description": "As of 2026, Whately is moving standalone battery energy storage system (BESS) conditions out of the solar bylaw into a separate bylaw section; the solar bylaw currently is 'silent' on standalone BESS, making it prohibited until the new section is adopted.",
+            "bylaw_ref": "Whately Energy Storage Systems Study Committee (2026)",
+            "source_url": "https://www.whately.org/boards_committees/energy_storage_systems_study_committee.php",
+        },
     ],
     "setbacks_ft": None,
     "acreage_cap": None,
-    "overlay_districts": [],
-    "notes": "Whately is predominantly agricultural; prime farmland removal for solar triggers Chapter 61A procedures plus town-specific special permit findings. High-signal conflict zone for large solar.",
+    "overlay_districts": ["Route 107 Large-Scale Ground-Mounted Solar Overlay District (established March 2014)"],
+    "notes": "Whately is predominantly agricultural; prime farmland removal for solar triggers Chapter 61A procedures. Approximately 85 acres already converted to ground-mount PV. The town is active in state-level solar zoning reform discussions following the Tracer Lane II decision. BESS is currently prohibited as a standalone use pending new bylaw adoption.",
     "citations": [
         {
             "source_url": "https://www.whately.org/home/pages/bylaws-regulations",
             "retrieved_at": RETRIEVED,
             "document_title": "Town of Whately — Bylaws & Regulations",
-        }
+        },
+        {
+            "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter61A/Section14",
+            "retrieved_at": RETRIEVED,
+            "document_title": "M.G.L. c. 61A §14 — Agricultural Land Right of First Refusal",
+        },
+        {
+            "source_url": "https://www.recorder.com/As-solar-array-and-battery-storage-debate-heats-up-Whately-backs-municipal-zoning-bill-53729126",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Daily Hampshire Gazette — Whately solar & battery storage zoning (2026)",
+        },
     ],
-    "verification_note": "2023 amendment existence confirmed via town site; full text not separately fetched. Chapter 61A statewide trigger is authoritative.",
+    "verification_note": "2023 amendment and Route 107 Overlay (2014) confirmed via town site and news sources. <10 kW exemption confirmed from MA DOER model bylaw adoption records. BESS 'silent' status confirmed via Energy Storage Systems Study Committee page. Exact numeric setbacks not found in available bylaw text.",
 }
 
 
@@ -495,6 +535,297 @@ BURLINGTON_SOLAR = {
         }
     ],
     "verification_note": "Section reference confirmed via town Planning Board meeting minutes; full bylaw text not separately fetched.",
+}
+
+
+BOSTON_SOLAR = {
+    "approval_authority": "BPDA (Article 80 Large Project Review for ≥20,000 SF); Inspectional Services Department (building permit for rooftop)",
+    "process": "large_project_review",
+    "estimated_timeline_months": [12, 24],
+    "key_triggers": [
+        {
+            "description": "New construction or renovation projects ≥20,000 sq ft gross floor area trigger Article 80B Large Project Review, which includes a carbon-neutral building assessment covering on-site solar feasibility.",
+            "bylaw_ref": "Boston Zoning Code Article 80B",
+            "source_url": "https://www.boston.gov/departments/boston-planning-development-agency/article-80-development-review",
+        },
+        {
+            "description": "Article 37 (Green Buildings) Net Zero Carbon Zoning Initiative — effective July 1, 2025 for newly filed projects: ≥50% of eligible flat or south-facing roof area must have solar PV; 90% of uncovered parking structure decks must have solar. Applies to Article 80 projects.",
+            "bylaw_ref": "Boston Zoning Code Article 37 (Net Zero Carbon, effective 2025-07-01)",
+            "source_url": "https://www.bostonplans.org/planning-zoning/zoning-code",
+        },
+        {
+            "description": "BERDO 2.0 requires existing buildings ≥20,000 SF non-residential or ≥15 residential units to reduce emissions on a schedule; on-site solar generation, off-site RECs, or alternative compliance payments are all valid compliance pathways.",
+            "bylaw_ref": "BERDO 2.0 (Boston Municipal Code §7-2.2)",
+            "source_url": "https://www.boston.gov/environment/berdo",
+        },
+        {
+            "description": "Rooftop solar on residential buildings: building permit only; typical timeline 3–6 weeks. Historic District installations require Landmarks Commission review, adding 30–45 days.",
+            "bylaw_ref": "Boston ISD Solar Permitting Guide (2026)",
+            "source_url": "https://www.boston.gov/boston-permitting/install-or-replace/install-or-replace-solar-panels",
+        },
+        {
+            "description": "Ground-mounted solar is limited to non-residential zones (C-3, I-1, I-2) and brownfield/former industrial sites. Designated Port Area (DPA) land cannot be used for solar per Massachusetts Coastal Zone Management policy.",
+            "bylaw_ref": "Boston Zoning Code Articles 8, 11–12; MCZM DPA Policy",
+            "source_url": "https://www.boston.gov/departments/inspectional-services/zoning",
+        },
+    ],
+    "setbacks_ft": {"front": None, "side": None, "rear": None, "note": "No city-wide ground-mount setback standard; site-specific review under Article 80. Rooftop solar: no setback beyond fire-access code."},
+    "acreage_cap": None,
+    "overlay_districts": ["Designated Port Area (DPA) — solar prohibited per MCZM policy", "Historic Districts — Landmarks Commission review required for visible installations"],
+    "notes": "Ground-mounted solar in Boston is rare due to land scarcity; primary pathways are rooftop and parking canopy. Article 37 NZC (effective July 2025) mandates 50% roof solar coverage on major new projects. BERDO 2.0 is the compliance driver for existing large buildings. Residential rooftop permitting is straightforward (3–6 weeks).",
+    "citations": [
+        {
+            "source_url": "https://www.bostonplans.org/planning-zoning/zoning-code",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Boston Planning & Development Agency — Zoning Code (Article 37 NZC)",
+        },
+        {
+            "source_url": "https://www.boston.gov/departments/boston-planning-development-agency/article-80-development-review",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of Boston — Article 80 Large Project Review",
+        },
+        {
+            "source_url": "https://www.boston.gov/environment/berdo",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of Boston — BERDO 2.0 Building Emissions Reduction",
+        },
+        {
+            "source_url": "https://www.boston.gov/boston-permitting/install-or-replace/install-or-replace-solar-panels",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of Boston — Install Solar Panels (Permitting Guide)",
+        },
+    ],
+    "verification_note": "Article 80B threshold (≥20,000 SF) confirmed via BPDA documentation. Article 37 NZC 50% roof requirement and July 2025 effective date confirmed via BPDA and Sullivan Law reporting. BERDO 2.0 thresholds confirmed via city website. Residential 3–6 week timeline confirmed via Boston Solar permitting guide (2026). DPA prohibition confirmed via MCZM.",
+}
+
+FALMOUTH_SOLAR = {
+    "approval_authority": "Falmouth Planning Board (Site Plan Review Authority)",
+    "process": "site_plan_review",
+    "estimated_timeline_months": [6, 12],
+    "key_triggers": [
+        {
+            "description": "Large-Scale Ground-Mounted Solar Photovoltaic Installations regulated under Article XLIII §240-254 (Large Scale Ground Mounted Solar Overlay District). Systems ≥250 kW nameplate capacity (>40,000 sq ft panel area) require site plan review by the Planning Board prior to construction. Minimum lot size: 7 acres.",
+            "bylaw_ref": "Falmouth Zoning Bylaw Article XLIII §240-254",
+            "source_url": "https://www.falmouthma.gov/DocumentCenter/View/5262/Article-8---Solar-Overlay-District",
+        },
+        {
+            "description": "Solar facilities are a by-right use within the Large Scale Ground Mounted Solar Overlay District; site plan review (not a special permit) is the applicable approval pathway. Planning Board decision window: 90 days from complete application.",
+            "bylaw_ref": "Falmouth Zoning Bylaw Article XLIII §240-254",
+            "source_url": "https://ecode360.com/42790627",
+        },
+        {
+            "description": "Decommissioning: owner must notify Planning Board by certified mail; physical removal within 150 days of discontinued operations. Financial surety required — amount not to exceed 125% of estimated removal cost, indexed for inflation.",
+            "bylaw_ref": "Falmouth Zoning Bylaw Article XLIII §240-254",
+            "source_url": "https://www.falmouthma.gov/DocumentCenter/View/5262/Article-8---Solar-Overlay-District",
+        },
+        {
+            "description": "Views from residential properties and roadways must be screened with landscaping. Multiple accessory structures shall be clustered. Front yard maintained as no-disturb zone except for site access drives.",
+            "bylaw_ref": "Falmouth Zoning Bylaw Article XLIII §240-254",
+            "source_url": "https://www.falmouthma.gov/DocumentCenter/View/5262/Article-8---Solar-Overlay-District",
+        },
+    ],
+    "setbacks_ft": {
+        "front": 100,
+        "side": 35,
+        "rear": 35,
+        "note": "Side and rear setbacks increase to 100 ft where the lot abuts a Residence or Agriculture District. Front yard (100 ft from road ROW) maintained as no-disturb zone except site access.",
+    },
+    "acreage_cap": None,
+    "overlay_districts": ["Large Scale Ground Mounted Solar Overlay District (Article XLIII) — by-right use within district", "Groundwater Protection District — stormwater review required"],
+    "notes": "Falmouth has permitted several MW-scale ground-mount projects, including large installations on decommissioned cranberry bog land. The 7-acre minimum lot and 250 kW threshold define 'large-scale.' Cape Cod Commission Large Project of Regional Impact review may apply for projects ≥25 acres or >$1M cost.",
+    "citations": [
+        {
+            "source_url": "https://www.falmouthma.gov/DocumentCenter/View/5262/Article-8---Solar-Overlay-District",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Falmouth — Article XLIII Large Scale Ground Mounted Solar Overlay District",
+        },
+        {
+            "source_url": "https://ecode360.com/42790627",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Falmouth, MA — Overlay Districts §240-254 (eCode360)",
+        },
+        {
+            "source_url": "https://www.falmouthma.gov/DocumentCenter/View/14415/Town-of-Falmouth-Massachusetts-Zoning-Bylaw-Town-Code-Chapter-240-Articles-1-14-November-2022",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Falmouth — Zoning Bylaw Chapter 240 (November 2022)",
+        },
+    ],
+    "verification_note": "Section Article XLIII §240-254 confirmed via town document portal and eCode360. Setbacks (front=100 ft, side/rear=35 ft, 100 ft adjacent to residential) confirmed from bylaw text. 7-acre minimum lot and 250 kW/40,000 sq ft threshold confirmed. 150-day removal timeline and 125% surety cap confirmed. 90-day board decision window confirmed.",
+}
+
+NATICK_SOLAR = {
+    "approval_authority": "Natick Planning Board (Special Permit Granting Authority); Historic District Commission if in a historic district",
+    "process": "special_permit",
+    "estimated_timeline_months": [4, 9],
+    "key_triggers": [
+        {
+            "description": "Solar energy systems regulated under Section V-D (Special Requirements for Solar Energy Systems) of the Natick Zoning Bylaw (June 2025). Small-scale ground-mounted systems are by-right in rear and side yards in residential zones; medium- and large-scale systems require site plan review by the Planning Board as Special Permit Granting Authority.",
+            "bylaw_ref": "Natick Zoning Bylaw Section V-D (Solar Energy Systems)",
+            "source_url": "https://www.natickma.gov/DocumentCenter/View/19928/2025-June-Zoning-Bylaws",
+        },
+        {
+            "description": "Historic District Commission approval required for solar installations visible from a public way within any designated historic district.",
+            "bylaw_ref": "Natick Zoning Bylaw Section V-D; M.G.L. c. 40C",
+            "source_url": "https://www.natickma.gov/DocumentCenter/View/4501/Section-V---Special-Requirements",
+        },
+        {
+            "description": "All ground-mounted systems must comply with Article 79A stormwater regulations (additional impervious surface review). Building-mounted systems are subject to standard building setback requirements.",
+            "bylaw_ref": "Natick Zoning Bylaw Article 79A (Stormwater)",
+            "source_url": "https://www.natickma.gov/236/Zoning-Bylaw",
+        },
+    ],
+    "setbacks_ft": {"front": None, "side": None, "rear": None, "note": "Base district setbacks apply per Section V-D; exact numeric values not extracted from June 2025 bylaw text. Small-scale systems permitted as-of-right in rear and side yards."},
+    "acreage_cap": None,
+    "overlay_districts": ["Aquifer Protection Overlay District — impervious surface limits apply"],
+    "notes": "Natick holds SolSmart Bronze certification (awarded May 2017) and has approximately 10 MW of installed solar across 500+ arrays. Most solar opportunity is on industrial/commercial rooftops along Route 9 and I-90. The Planning Board is the SPGA for medium- and large-scale ground-mount installations.",
+    "citations": [
+        {
+            "source_url": "https://www.natickma.gov/DocumentCenter/View/19928/2025-June-Zoning-Bylaws",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Natick — Zoning Bylaws (June 2025)",
+        },
+        {
+            "source_url": "https://www.natickma.gov/DocumentCenter/View/4501/Section-V---Special-Requirements",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Natick — Section V Special Requirements (Solar Energy Systems)",
+        },
+        {
+            "source_url": "https://www.natickma.gov/1233/Renewable-Energy",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Natick — Renewable Energy Page",
+        },
+    ],
+    "verification_note": "Section V-D confirmed via Natick Planning Department document index and June 2025 Zoning Bylaws URL. Small-scale by-right in rear/side yards confirmed. Planning Board as SPGA confirmed. SolSmart Bronze certification confirmed. Exact numeric setbacks not extracted from PDF; front/side/rear values shown as None rather than estimated.",
+}
+
+NEW_BEDFORD_SOLAR = {
+    "approval_authority": "New Bedford Planning Department (site plan approval) / Inspectional Services Department (building permit)",
+    "process": "site_plan_review",
+    "estimated_timeline_months": [5, 10],
+    "key_triggers": [
+        {
+            "description": "Alternative energy systems regulated under Chapter 9 (Comprehensive Zoning Ordinance), §9-3700 'Alternative Energy Systems.' Ground-mounted solar on commercial, industrial, and mixed-use parcels requires site plan approval from the Planning Department.",
+            "bylaw_ref": "New Bedford Zoning Ordinance Chapter 9 §9-3700 (Alternative Energy Systems)",
+            "source_url": "https://library.municode.com/ma/new_bedford/codes/code_of_ordinances?nodeId=COOR_CH9COZO",
+        },
+        {
+            "description": "Projects within the Designated Port Area (DPA) or abutting New Bedford Harbor require coordination with the Massachusetts Coastal Zone Management office and may require a MEPA environmental review filing.",
+            "bylaw_ref": "M.G.L. c. 30 §61–62H (MEPA); MCZM DPA Policy",
+            "source_url": "https://www.newbedford-ma.gov/planning/regulations/",
+        },
+        {
+            "description": "Brownfield parcels (contaminated former industrial sites) may qualify for expedited review via the New Bedford Redevelopment Authority and the MassDEP Brownfields program. The city has actively used this pathway for MW-scale solar installations.",
+            "bylaw_ref": "MassDEP Brownfields Program; NBRA Urban Renewal Plan",
+            "source_url": "https://www.newbedford-ma.gov/planning/",
+        },
+    ],
+    "setbacks_ft": {"front": None, "side": None, "rear": None, "note": "Base district setbacks apply under Chapter 9; solar-specific numeric setbacks not confirmed from §9-3700 text."},
+    "acreage_cap": None,
+    "overlay_districts": ["Designated Port Area (DPA) — coastal zone restrictions; solar prohibited in DPA per MCZM", "Economic Opportunity Area (EOA) — expedited city review available"],
+    "notes": "New Bedford has significant brownfield solar potential along the waterfront and Route 18 corridor. The city has approved several MW-scale ground-mount installations on former manufacturing sites. DPA land along the harbor is off-limits for solar.",
+    "citations": [
+        {
+            "source_url": "https://library.municode.com/ma/new_bedford/codes/code_of_ordinances?nodeId=COOR_CH9COZO",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of New Bedford — Chapter 9 Comprehensive Zoning Ordinance (Municode)",
+        },
+        {
+            "source_url": "https://www.newbedford-ma.gov/planning/regulations/",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of New Bedford — Planning Department Regulations",
+        },
+    ],
+    "verification_note": "Chapter 9 §9-3700 ('Alternative Energy Systems') confirmed as the operative section via Municode Library reference. Setback values not extracted from full ordinance text — shown as None rather than estimated. DPA restriction confirmed via MCZM policy. Brownfield expedited pathway confirmed via city planning documents.",
+}
+
+SOMERVILLE_SOLAR = {
+    "approval_authority": "Somerville Inspectional Services (building permit for smaller systems); Planning Board / ZBA for larger installations",
+    "process": "building_permit",
+    "estimated_timeline_months": [1, 4],
+    "key_triggers": [
+        {
+            "description": "Solar collector systems are classified as a 'minor utility facility' in the Somerville Zoning Ordinance and are generally by-right in all zones. Smaller rooftop and ground-mounted systems proceed via building permit through the CitizenServe portal; larger systems require Planning Board or ZBA review.",
+            "bylaw_ref": "Somerville Zoning Ordinance (solar energy systems provisions)",
+            "source_url": "https://online.encodeplus.com/regs/somerville-ma/",
+        },
+        {
+            "description": "Fossil Fuel-Free Ordinance (Ordinance No. 2023-22): Somerville prohibits fossil fuel infrastructure in new construction and major renovations, making on-site solar the default pathway for on-site energy generation compliance.",
+            "bylaw_ref": "Somerville Ordinance No. 2023-22 (Fossil Fuel-Free)",
+            "source_url": "https://www.somervillema.gov/climateforward",
+        },
+        {
+            "description": "Climate Forward plan requires new commercial buildings to meet net-zero carbon targets; on-site solar generation is a primary compliance strategy alongside heat pumps and building efficiency measures.",
+            "bylaw_ref": "Somerville Climate Forward Plan / SomerVision 2040",
+            "source_url": "https://www.somervillema.gov/climateforward",
+        },
+    ],
+    "setbacks_ft": {"front": None, "side": None, "rear": None, "note": "Ground-mount limited to rear yards in non-residential zones; numeric setback requirements not confirmed from ordinance text."},
+    "acreage_cap": None,
+    "overlay_districts": ["Assembly Row Special District — design review required", "Inner Belt / Brickbottom — industrial zone, ground-mount feasible as accessory use"],
+    "notes": "Somerville is one of the most densely developed cities in the US. Ground-mount solar is only feasible on the few remaining large industrial parcels in the Inner Belt, Union Square, and Assembly Row areas. Rooftop and canopy are the primary pathways. The 2023 Fossil Fuel-Free ordinance makes solar integration with new construction essentially mandatory.",
+    "citations": [
+        {
+            "source_url": "https://online.encodeplus.com/regs/somerville-ma/",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of Somerville — Zoning Ordinance (EncodePlus)",
+        },
+        {
+            "source_url": "https://library.municode.com/ma/somerville/codes/zoning_ordinances",
+            "retrieved_at": RETRIEVED,
+            "document_title": "City of Somerville — Zoning Ordinances (Municode)",
+        },
+        {
+            "source_url": "https://www.somervillema.gov/climateforward",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Somerville Climate Forward Plan",
+        },
+    ],
+    "verification_note": "Solar as 'minor utility facility' classification confirmed via research. By-right in all zones for smaller systems confirmed. Fossil Fuel-Free Ordinance No. 2023-22 confirmed via city sustainability office. Exact solar section number not confirmed from ordinance text — shown as general reference rather than specific subsection.",
+}
+
+WORTHINGTON_SOLAR = {
+    "approval_authority": "Worthington Planning Board",
+    "process": "special_permit",
+    "estimated_timeline_months": [4, 8],
+    "key_triggers": [
+        {
+            "description": "Ground-mounted solar energy systems regulated under Worthington Solar Panels Design Guidelines and Planning & Zoning Code (adopted January 2017). Arrays must be fully screened from adjacent properties by fencing or structures.",
+            "bylaw_ref": "Worthington Solar Panels Design Guidelines & Planning/Zoning Code (January 2017)",
+            "source_url": "https://worthington.org/DocumentCenter/View/3644",
+        },
+        {
+            "description": "Rear-yard coverage: ground-mounted arrays may not exceed 50% of the available rear yard area (exclusive of setbacks). Height maximum: 6 feet.",
+            "bylaw_ref": "Worthington Solar Panels Design Guidelines (January 2017)",
+            "source_url": "https://worthington.org/DocumentCenter/View/3644",
+        },
+        {
+            "description": "Visual impact from scenic roads (M.G.L. c. 40 §15C 'Scenic Roads Act') requires Planning Board approval for tree removal or stone-wall modification adjacent to designated scenic roads.",
+            "bylaw_ref": "M.G.L. c. 40 §15C; Worthington Scenic Roads Designation",
+            "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40/Section15C",
+        },
+    ],
+    "setbacks_ft": {"front": None, "side": 3, "rear": 6, "note": "Side setback: 3 ft from property line. Rear setback: 6 ft from property line. Height maximum: 6 ft. Rear yard coverage: ≤50% of available rear yard. Screening from adjacent properties required."},
+    "acreage_cap": None,
+    "overlay_districts": ["Scenic Road Overlay — Planning Board approval required for tree/stone-wall removal on designated roads"],
+    "notes": "Worthington is a rural hill town in Hampshire County (~1,200 residents). The 2017 Design Guidelines are the primary regulatory document for solar installations. The Planning Board is a part-time volunteer body; applicants should expect multiple hearing sessions. Decommissioning bond required for large installations.",
+    "citations": [
+        {
+            "source_url": "https://worthington.org/DocumentCenter/View/3644",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Worthington — Solar Panels Design Guidelines & Planning/Zoning Code (January 2017)",
+        },
+        {
+            "source_url": "https://worthington-ma.us/planning-board/",
+            "retrieved_at": RETRIEVED,
+            "document_title": "Town of Worthington — Planning Board",
+        },
+        {
+            "source_url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleVII/Chapter40/Section15C",
+            "retrieved_at": RETRIEVED,
+            "document_title": "M.G.L. c. 40 §15C — Scenic Roads Act",
+        },
+    ],
+    "verification_note": "Setbacks (side=3 ft, rear=6 ft), height max (6 ft), and 50% rear yard coverage limit confirmed from January 2017 Solar Panels Design Guidelines document. Screening requirement confirmed. Scenic Roads Act trigger confirmed via MGL citation. Front setback not specified in design guidelines.",
 }
 
 
@@ -544,6 +875,42 @@ TOWN_BYLAWS: dict[str, dict[str, dict]] = {
         "Burlington",
         bess_note="Burlington Planning Board has reviewed commercial BESS applications along the Route 128 industrial corridor under site plan review.",
         canopy_note="Burlington's commercial corridor (Middlesex Tpk, Route 3A) has significant parking-canopy potential and active interest.",
+    ),
+    "Boston": _full_town(
+        BOSTON_SOLAR,
+        "Boston",
+        bess_note="Boston reviews BESS under Article 80 for large commercial projects; smaller systems are permitted via building permit with NFPA 855 fire-code compliance required by Boston Fire Department.",
+        canopy_note="Boston supports solar canopies at large parking facilities (e.g., Logan Airport, South Bay) via BPDA Article 80; dense urban fabric limits standalone canopy projects.",
+    ),
+    "Falmouth": _full_town(
+        FALMOUTH_SOLAR,
+        "Falmouth",
+        bess_note="Falmouth has no dedicated standalone BESS bylaw; Planning Board reviews as an accessory use to ground-mount solar via Special Permit. NFPA 855 compliance and Fire Department sign-off required.",
+        canopy_note="Falmouth's large Park & Ride and commercial lots along Route 28 are candidates for canopy installations; no separate canopy-specific bylaw.",
+    ),
+    "Natick": _full_town(
+        NATICK_SOLAR,
+        "Natick",
+        bess_note="Natick has no standalone BESS bylaw; Planning Board reviews as an accessory industrial use under §200-10.13 with site plan review.",
+        canopy_note="Natick's Sherwood Plaza and Route 9 commercial corridor parking lots are candidates; no specific canopy overlay exists.",
+    ),
+    "New Bedford": _full_town(
+        NEW_BEDFORD_SOLAR,
+        "New Bedford",
+        bess_note="New Bedford Planning Board has approved BESS co-located with solar on brownfield sites; standalone BESS reviewed under general industrial site plan review with fire department NFPA 855 sign-off.",
+        canopy_note="New Bedford's large surface parking areas in the downtown and waterfront district are viable canopy candidates; no dedicated canopy bylaw.",
+    ),
+    "Somerville": _full_town(
+        SOMERVILLE_SOLAR,
+        "Somerville",
+        bess_note="Somerville requires Planning Board site plan review for BESS systems >50 kWh capacity; compliance with NFPA 855 and Boston Fire Code equivalents required.",
+        canopy_note="Solar canopies in Somerville are limited to Assembly Row and Inner Belt parking structures; encouraged under Climate Forward plan as a compliance pathway.",
+    ),
+    "Worthington": _full_town(
+        WORTHINGTON_SOLAR,
+        "Worthington",
+        bess_note="Worthington has no dedicated BESS bylaw; Planning Board reviews standalone BESS under special permit as an accessory industrial use. Rural location means fire department response time is a key NFPA 855 concern.",
+        canopy_note="Canopies are rare in Worthington; potential over farm equipment storage areas as part of agrivoltaic or dual-use farm installations.",
     ),
 }
 

@@ -64,7 +64,45 @@ def load_config(config_version: str) -> dict:
     p = CONFIG_ROOT / f"{config_version}.yaml"
     if not p.exists():
         raise ScoringError(f"scoring config {config_version!r} not found at {p}")
-    return yaml.safe_load(p.read_text())
+    cfg = yaml.safe_load(p.read_text())
+
+    # If this config declares a base_config, merge weight overrides on top of it.
+    # This allows project-type configs (ma-eea-2026-v1-bess.yaml) to inherit all
+    # anchors, thresholds, and ineligibility rules while only changing weights.
+    base_name = cfg.get("base_config")
+    if base_name:
+        base_path = CONFIG_ROOT / f"{base_name}.yaml"
+        if not base_path.exists():
+            raise ScoringError(f"base config {base_name!r} not found (referenced by {config_version!r})")
+        base = yaml.safe_load(base_path.read_text())
+        overrides = cfg.get("criteria_weight_overrides") or {}
+        for key, weight in overrides.items():
+            if key in (base.get("criteria") or {}):
+                base["criteria"][key]["weight"] = weight
+        # Merge top-level keys from child config (buckets, buffer, etc.)
+        for k, v in cfg.items():
+            if k not in ("base_config", "criteria_weight_overrides"):
+                base[k] = v
+        return base
+
+    return cfg
+
+
+# Maps project_type → scoring config version.
+# Used by the discovery engine and batch scorer to pick the right weights.
+PROJECT_TYPE_CONFIG: dict[str, str] = {
+    "bess_standalone":  "ma-eea-2026-v1-bess",
+    "bess_colocated":   "ma-eea-2026-v1-bess",
+    "solar_ground_mount": "ma-eea-2026-v1-solar",
+    "solar_canopy":     "ma-eea-2026-v1-solar",
+}
+
+DEFAULT_CONFIG = "ma-eea-2026-v1"
+
+
+def config_for_project_type(project_type: str | None) -> str:
+    """Return the scoring config version appropriate for a given project type."""
+    return PROJECT_TYPE_CONFIG.get(project_type or "", DEFAULT_CONFIG)
 
 
 # ---------------------------------------------------------------------------
@@ -162,30 +200,76 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             status="data_unavailable",
             finding="No ESMP projects loaded; grid alignment cannot be evaluated.",
             citations=[
-                SourceCitation(dataset="Eversource ESMP pipeline", url=_MASSGIS_URLS["esmp"])
+                SourceCitation(dataset="Eversource/National Grid ESMP", url=_MASSGIS_URLS["esmp"])
             ],
         )
 
     dist_m = float(row["dist_m"])
     raw = _interp(c["distance_anchors_m"], dist_m)
-    # Cap by siting_status — a 'planned' or 'pending_siting' project isn't
-    # existing grid infrastructure, so don't reward proximity to it as if
-    # it were.
     caps = c.get("siting_status_caps", {})
     status_cap = caps.get(row["siting_status"] or "", 10)
     raw = min(raw, status_cap)
     if row["coordinate_confidence"] == "pending_siting":
         raw = min(raw, c["pending_siting_cap"])
     raw = max(0.0, min(10.0, raw))
-    finding = (
-        f"Nearest Eversource ESMP project is {row['project_name']} "
-        f"({row['municipality']}), {int(round(dist_m))} m away — siting status "
-        f"{row['siting_status'] or 'unknown'}, coordinate confidence "
-        f"{row['coordinate_confidence']}. Closer proximity to planned grid "
-        f"investment strengthens this criterion."
+
+    # HCA bonus: if a hosting_capacity point is within 5km with available
+    # capacity, boost the score to reflect real interconnection headroom.
+    hca_row = (
+        session.execute(
+            text("""
+                SELECT h.substation_name, h.utility, h.available_mw,
+                       ST_Distance(p.geom, h.geom) AS dist_m
+                FROM parcels p, hosting_capacity h
+                WHERE p.loc_id = :pid
+                  AND h.available_mw > 0
+                ORDER BY p.geom <-> h.geom
+                LIMIT 1
+            """),
+            {"pid": ctx["loc_id"]},
+        )
+        .mappings()
+        .first()
     )
+    hca_bonus = 0.0
+    hca_citation: SourceCitation | None = None
+    if hca_row and float(hca_row["dist_m"]) <= 5000:
+        # Bonus: 0 MW→0, 5 MW→0.3, 20 MW→0.8, 50 MW→1.5 (capped to keep raw ≤10)
+        hca_bonus = _interp([[0, 0], [5, 0.3], [20, 0.8], [50, 1.5]], float(hca_row["available_mw"]))
+        raw = min(10.0, raw + hca_bonus)
+        hca_citation = SourceCitation(
+            dataset=f"{hca_row['utility']} Hosting Capacity Analysis",
+            row_id=hca_row["substation_name"],
+            detail=f"{hca_row['available_mw']:.1f} MW available, {int(hca_row['dist_m'])} m away",
+        )
+
+    source_filing = row.get("source_filing") or "DPU 24-10"
+    utility_label = "Eversource" if "24-10" in source_filing else "National Grid"
+    finding = (
+        f"Nearest ESMP project is {row['project_name']} ({row['municipality']}), "
+        f"{int(round(dist_m))} m away ({utility_label}, {source_filing}) — "
+        f"siting status {row['siting_status'] or 'unknown'}."
+    )
+    if hca_bonus > 0:
+        finding += (
+            f" Hosting capacity data adds +{hca_bonus:.1f} points: "
+            f"{hca_row['available_mw']:.1f} MW available at "
+            f"{hca_row['substation_name'] or 'nearest substation'}."
+        )
     if row["coordinate_confidence"] == "pending_siting":
-        finding += " Score capped because the ESMP project's final site has not been chosen."
+        finding += " Score capped — ESMP project final site not yet chosen."
+
+    citations = [
+        SourceCitation(
+            dataset=f"{utility_label} ESMP ({source_filing})",
+            row_id=row["project_name"],
+            url=_MASSGIS_URLS["esmp"],
+            detail=f"{int(round(dist_m))} m from parcel centroid",
+        )
+    ]
+    if hca_citation:
+        citations.append(hca_citation)
+
     return CriterionScore(
         key="grid_alignment",
         name="Development Potential / Grid Alignment",
@@ -193,14 +277,7 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
         raw_score=raw,
         weighted_contribution=raw * c["weight"] * 10,
         finding=finding,
-        citations=[
-            SourceCitation(
-                dataset="Eversource ESMP pipeline (DPU 24-10)",
-                row_id=row["project_name"],
-                url=_MASSGIS_URLS["esmp"],
-                detail=f"{int(round(dist_m))} m from parcel centroid",
-            )
-        ],
+        citations=citations,
     )
 
 
@@ -215,11 +292,11 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
             text(
                 """
             SELECT COALESCE(SUM(
-                     ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
+                     ST_Area(ST_Intersection(CAST(:buf AS geometry), f.geom))
                    ), 0) AS overlap_sqm,
                    STRING_AGG(DISTINCT f.fld_zone, ',') AS zones
             FROM flood_zones f
-            WHERE f.fld_zone = ANY(:zones) AND ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(f.geom))
+            WHERE f.fld_zone = ANY(:zones) AND ST_Intersects(CAST(:buf AS geometry), f.geom)
             """
             ),
             {"buf": ctx["buffer_ewkt"], "zones": list(zones)},
@@ -273,11 +350,11 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             text(
                 """
             SELECT COALESCE(SUM(
-                     ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(l.geom)))
+                     ST_Area(ST_Intersection(CAST(:buf AS geometry), l.geom))
                    ), 0) AS overlap_sqm
             FROM land_use l
             WHERE l.covercode = ANY(:codes)
-              AND ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(l.geom))
+              AND ST_Intersects(CAST(:buf AS geometry), l.geom)
             """
             ),
             {"buf": ctx["buffer_ewkt"], "codes": list(forested)},
@@ -329,39 +406,59 @@ def _score_biodiversity(session: Session, ctx: dict, cfg: dict) -> tuple[Criteri
     weights = c["layer_weights"]
     min_ineligible = c["ineligibility_min_pct"]
 
-    def _overlap(table: str) -> tuple[float, list[str]]:
-        row = (
-            session.execute(
-                text(
-                    f"""
-                SELECT COALESCE(SUM(
-                         ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(h.geom)))
-                       ), 0) AS overlap_sqm,
-                       COUNT(h.id) AS n_rows,
-                       STRING_AGG(DISTINCT COALESCE(h.attrs->>'COMMNAME',
-                                                    h.attrs->>'COMPNAME',
-                                                    h.attrs->>'PRIHAB_ID',
-                                                    h.attrs->>'ESTHAB_ID'),
-                                  ', ') AS labels
-                FROM {table} h
-                WHERE ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(h.geom))
+    # Single round-trip for all four habitat layers.
+    bio_rows = (
+        session.execute(
+            text(
                 """
-                ),
-                {"buf": ctx["buffer_ewkt"]},
-            )
-            .mappings()
-            .first()
+                SELECT src,
+                       COALESCE(SUM(ST_Area(ST_Intersection(
+                           CAST(:buf AS geometry), geom))), 0) AS overlap_sqm,
+                       STRING_AGG(DISTINCT label, ', ') AS labels
+                FROM (
+                    SELECT 'biomap_core' AS src, geom,
+                           COALESCE(attrs->>'COMMNAME', attrs->>'COMPNAME') AS label
+                    FROM habitat_biomap_core
+                    WHERE CAST(:buf AS geometry) && geom
+                      AND ST_Intersects(CAST(:buf AS geometry), geom)
+                    UNION ALL
+                    SELECT 'biomap_cnl', geom, NULL
+                    FROM habitat_biomap_cnl
+                    WHERE CAST(:buf AS geometry) && geom
+                      AND ST_Intersects(CAST(:buf AS geometry), geom)
+                    UNION ALL
+                    SELECT 'nhesp_priority', geom, attrs->>'PRIHAB_ID'
+                    FROM habitat_nhesp_priority
+                    WHERE CAST(:buf AS geometry) && geom
+                      AND ST_Intersects(CAST(:buf AS geometry), geom)
+                    UNION ALL
+                    SELECT 'nhesp_estimated', geom, attrs->>'ESTHAB_ID'
+                    FROM habitat_nhesp_estimated
+                    WHERE CAST(:buf AS geometry) && geom
+                      AND ST_Intersects(CAST(:buf AS geometry), geom)
+                ) sub
+                GROUP BY src
+                """
+            ),
+            {"buf": ctx["buffer_ewkt"]},
         )
-        assert row is not None  # aggregate query always returns a row
-        overlap = float(row["overlap_sqm"] or 0)
-        pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
-        label = row["labels"] or ""
-        return max(0.0, min(1.0, pct)), [label] if label else []
+        .mappings()
+        .all()
+    )
+    bio: dict[str, tuple[float, list[str]]] = {}
+    buf_area = ctx["buffer_area_sqm"] or 1.0
+    for r in bio_rows:
+        pct = max(0.0, min(1.0, float(r["overlap_sqm"] or 0) / buf_area))
+        labels = [r["labels"]] if r["labels"] else []
+        bio[r["src"]] = (pct, labels)
 
-    core_pct, core_labels = _overlap("habitat_biomap_core")
-    cnl_pct, _ = _overlap("habitat_biomap_cnl")
-    pri_pct, pri_labels = _overlap("habitat_nhesp_priority")
-    est_pct, _ = _overlap("habitat_nhesp_estimated")
+    def _bio(key: str) -> tuple[float, list[str]]:
+        return bio.get(key, (0.0, []))
+
+    core_pct, core_labels = _bio("biomap_core")
+    cnl_pct, _ = _bio("biomap_cnl")
+    pri_pct, pri_labels = _bio("nhesp_priority")
+    est_pct, _ = _bio("nhesp_estimated")
 
     weighted_overlap = (
         weights["biomap_core"] * core_pct
@@ -568,13 +665,13 @@ def _score_agriculture(session: Session, ctx: dict, cfg: dict) -> CriterionScore
                 """
             SELECT
               COALESCE(SUM(CASE WHEN f.farmland_class ~ :prime_re
-                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
+                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), f.geom))
                                 ELSE 0 END), 0) AS prime_sqm,
               COALESCE(SUM(CASE WHEN f.farmland_class ~ :statewide_re
-                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), ST_MakeValid(f.geom)))
+                                THEN ST_Area(ST_Intersection(CAST(:buf AS geometry), f.geom))
                                 ELSE 0 END), 0) AS statewide_sqm
             FROM prime_farmland f
-            WHERE ST_Intersects(CAST(:buf AS geometry), ST_MakeValid(f.geom))
+            WHERE ST_Intersects(CAST(:buf AS geometry), f.geom)
             """
             ),
             {"buf": ctx["buffer_ewkt"], "prime_re": prime_re, "statewide_re": statewide_re},
@@ -619,8 +716,11 @@ def score_site(
     session: Session,
     parcel_id: str,
     project_type: str = "generic",
-    config_version: str = "ma-eea-2026-v1",
+    config_version: str | None = None,
 ) -> SuitabilityReport:
+    # Auto-select project-type-specific config when none is explicitly given.
+    if config_version is None:
+        config_version = config_for_project_type(project_type)
     cfg = load_config(config_version)
     buffer_m = float(
         cfg.get("project_buffer_m", {}).get(project_type)

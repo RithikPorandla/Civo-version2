@@ -133,3 +133,24 @@ export const IconArrowDownRight = ({ size = 12, className }: IconProps) => (
     <path d="M17 8v9H8" />
   </svg>
 );
+
+export const IconLayers = ({ size, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </svg>
+);
+
+export const IconPlus = ({ size, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+export const IconFilter = ({ size, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);

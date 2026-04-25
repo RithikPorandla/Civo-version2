@@ -18,7 +18,8 @@ import {
 import { MapView } from '../components/MapView';
 import PermittingPanel from '../components/PermittingPanel';
 import ExemptionChip from '../components/ExemptionChip';
-import { IconArrowUpRight, IconChevronDown } from '../components/Icon';
+import SiteAnalysisPanel from '../components/SiteAnalysisPanel';
+import { IconArrowUpRight } from '../components/Icon';
 
 const CRITERION_NAME: Record<string, string> = {
   biodiversity: 'Biodiversity',
@@ -30,18 +31,18 @@ const CRITERION_NAME: Record<string, string> = {
   agriculture: 'Agricultural production',
 };
 
-const STAT_BG = {
-  blue: '#e3ebf5',
-  lavender: '#eeedf2',
-  mint: '#dbe8cc',
-  peach: '#f8e8d6',
-};
+const STAT_TILE = {
+  paper: 'tile-paper',
+  stone: 'tile-stone',
+  sage: 'tile-sage',
+  rust: 'tile-rust',
+} as const;
 
 const STATUS = {
-  good: { c: '#1f8a3d', bg: '#e4f3e7', label: 'OK' },
-  warn: { c: '#b6781c', bg: '#fbecd6', label: 'Caution' },
-  bad: { c: '#c0392b', bg: '#f9e3df', label: 'Risk' },
-  pending: { c: '#8a8a8a', bg: '#f1f2f4', label: 'Pending' },
+  good: { c: 'var(--good)', bg: 'var(--sage-soft, #eaf2e7)', label: 'OK' },
+  warn: { c: 'var(--gold, #c08a3e)', bg: 'var(--gold-soft, #f7efe0)', label: 'Caution' },
+  bad: { c: 'var(--bad)', bg: 'var(--bad-soft, #f5e8e4)', label: 'Risk' },
+  pending: { c: 'var(--text-dim)', bg: 'var(--surface-alt)', label: 'Pending' },
 };
 
 const bucketTone = (b: Bucket) =>
@@ -178,7 +179,15 @@ export default function Report() {
 
 function Loading() {
   return (
-    <div style={{ padding: '120px 28px', color: '#8a8a8a', textAlign: 'center' }}>
+    <div
+      style={{
+        padding: '120px 28px',
+        color: 'var(--text-dim)',
+        textAlign: 'center',
+        fontFamily: "'Fraunces', Georgia, serif",
+        fontStyle: 'italic',
+      }}
+    >
       Loading report…
     </div>
   );
@@ -186,12 +195,12 @@ function Loading() {
 
 function ErrorState({ err }: { err: string }) {
   return (
-    <div style={{ padding: '80px 28px', color: '#c0392b', maxWidth: 720 }}>
+    <div style={{ padding: '80px 28px', color: 'var(--bad)', maxWidth: 720 }}>
       <div className="label" style={{ marginBottom: 10 }}>
         Something went wrong
       </div>
       <p style={{ fontSize: 14, lineHeight: 1.55 }}>{err}</p>
-      <Link to="/" style={{ fontSize: 13, color: '#2563eb' }}>
+      <Link to="/app" className="link-accent" style={{ fontSize: 13 }}>
         ← Back
       </Link>
     </div>
@@ -221,6 +230,7 @@ function ReportView({
 }) {
   const tone = bucketTone(report.bucket);
   const address = report.address || report.parcel_id;
+  const fullAddress = report.resolution?.formatted_address || address;
   const mitigation = useMemo(
     () => mitigationFor(report.primary_constraint, address),
     [report.primary_constraint, address]
@@ -231,66 +241,51 @@ function ReportView({
     ? CRITERION_NAME[report.primary_constraint] ?? report.primary_constraint
     : '—';
 
-  const stats = [
-    {
-      label: 'Total score',
-      value: Math.round(report.total_score),
-      suffix: '/ 100',
-      bg: STAT_BG.blue,
-    },
-    {
-      label: 'Assessment',
-      value: tone.label,
-      suffix: '',
-      bg: STAT_BG.lavender,
-    },
-    {
-      label: 'Primary constraint',
-      value: primaryName,
-      suffix: '',
-      bg: STAT_BG.blue,
-    },
-    {
-      label: 'Project type',
-      value: report.project_type.replace(/_/g, ' '),
-      suffix: '',
-      bg: STAT_BG.mint,
-    },
-  ];
 
   return (
-    <div style={{ padding: '24px 28px 40px' }}>
+    <div style={{ padding: '36px 40px 80px', maxWidth: 1280 }}>
       {/* Header row: title + action buttons */}
       <div
         style={{
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          marginBottom: 20,
+          gap: 24,
+          marginBottom: 14,
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Today</span>
-            <IconChevronDown size={14} className="text-textDim" />
+        <div style={{ minWidth: 0 }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
+            Suitability Report
           </div>
           <h1
+            className="display"
             style={{
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: -0.3,
-              margin: '4px 0 0',
+              fontSize: 26,
+              margin: 0,
+              letterSpacing: '-0.016em',
+              lineHeight: 1.2,
+              wordBreak: 'break-word',
             }}
           >
-            {address}
+            {fullAddress}
           </h1>
           <div
-            className="text-textDim"
-            style={{ fontSize: 12, marginTop: 6, display: 'flex', gap: 10 }}
+            className="tnum"
+            style={{
+              fontSize: 12,
+              marginTop: 8,
+              display: 'flex',
+              gap: 10,
+              color: 'var(--text-dim)',
+              flexWrap: 'wrap',
+            }}
           >
-            <span>{report.parcel_id}</span>
+            <span title="MassGIS assessor parcel ID — used in EFSB filings and town assessor cross-reference">
+              Parcel {report.parcel_id}
+            </span>
             <span>·</span>
-            <span>{report.config_version}</span>
+            <span>225 CMR 29</span>
             <span>·</span>
             <span>{new Date(report.computed_at).toISOString().slice(0, 10)}</span>
           </div>
@@ -299,11 +294,14 @@ function ReportView({
           <button className="btn btn-ghost" onClick={() => window.print()}>
             Export PDF
           </button>
-          <Link to="/lookup" style={{ textDecoration: 'none' }}>
-            <button className="btn btn-primary">New analysis</button>
+          <Link to="/app/lookup" style={{ textDecoration: 'none' }}>
+            <button className="btn btn-primary">
+              New analysis <span className="arr">→</span>
+            </button>
           </Link>
         </div>
       </div>
+      <hr className="rule" style={{ margin: '20px 0 24px' }} />
 
       {/* Resolver transparency banner — shown whenever the resolver had to
           snap from the typed address to a different parcel. If the resolution
@@ -315,41 +313,47 @@ function ReportView({
           `municipalities.moratoriums` as { project_type: {dates, source} }. */}
       <MoratoriumBanner moratoriums={moratoriums} projectType={projectType} />
 
-      {/* Stat tiles */}
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
-        {stats.map((s) => (
-          <div key={s.label} className="stat-tile" style={{ background: s.bg }}>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>{s.label}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-              <div
-                style={{
-                  fontSize: 30,
-                  fontWeight: 600,
-                  letterSpacing: -0.5,
-                  lineHeight: 1.05,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {s.value}
-              </div>
-              {s.suffix && (
-                <div className="text-textMid" style={{ fontSize: 13 }}>
-                  {s.suffix}
-                </div>
-              )}
-            </div>
+      {/* Stat tiles — four fixed-height cards, each typed to its content */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+
+        {/* 1 — Score */}
+        <div className="stat-tile tile-paper" style={{ height: 88 }}>
+          <span className="stat-tile-label">Total score</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+            <span className="tnum" style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 400, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--text)' }}>
+              {Math.round(report.total_score)}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>/ 100</span>
           </div>
-        ))}
+        </div>
+
+        {/* 2 — Assessment */}
+        <div className="stat-tile tile-stone" style={{ height: 88 }}>
+          <span className="stat-tile-label">Assessment</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: tone.c, flexShrink: 0 }} />
+            <span style={{ fontSize: 15, fontWeight: 600, color: tone.c, letterSpacing: '-0.01em' }}>
+              {tone.label}
+            </span>
+          </div>
+        </div>
+
+        {/* 3 — Primary constraint */}
+        <div className="stat-tile tile-sage" style={{ height: 88 }}>
+          <span className="stat-tile-label">Primary constraint</span>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3, textTransform: 'capitalize' }}>
+            {primaryName}
+          </div>
+        </div>
+
+        {/* 4 — Project type */}
+        <div className="stat-tile tile-rust" style={{ height: 88 }}>
+          <span className="stat-tile-label">Project type</span>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3, textTransform: 'capitalize' }}>
+            {report.project_type.replace(/_/g, ' ')}
+          </div>
+        </div>
+
       </section>
 
       {/* Exemption chip row */}
@@ -363,22 +367,32 @@ function ReportView({
         />
       </div>
 
-      {/* Findings + narrative */}
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.6fr 1fr',
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
-        <Panel title="Findings" right={<span className="chip">{report.bucket}</span>}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3, margin: 0 }}>
+      {/* Findings — full width. The Recommended sidecar was removed because
+          it duplicated the narrative without adding information a consultant
+          would act on. */}
+      <section style={{ marginBottom: 20 }}>
+        <Panel title="Findings" right={<span className="chip plain">{report.bucket}</span>}>
+          <h2
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: 24,
+              fontWeight: 500,
+              letterSpacing: '-0.015em',
+              margin: 0,
+              color: 'var(--text)',
+              lineHeight: 1.2,
+            }}
+          >
             {summary.verdict}
           </h2>
           <p
-            className="text-textMid"
-            style={{ fontSize: 14, lineHeight: 1.6, margin: '10px 0 18px', maxWidth: 680 }}
+            style={{
+              fontSize: 14,
+              lineHeight: 1.65,
+              margin: '10px 0 18px',
+              maxWidth: 680,
+              color: 'var(--text-mid)',
+            }}
           >
             {summary.narrative}
           </p>
@@ -404,12 +418,6 @@ function ReportView({
             )}
           </div>
         </Panel>
-
-        <Panel title="Recommended">
-          <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-            {summary.recommendation ?? 'Continue through the sections below.'}
-          </p>
-        </Panel>
       </section>
 
       {/* Site map */}
@@ -425,12 +433,15 @@ function ReportView({
             borderRadius: 12,
             overflow: 'hidden',
             height: 500,
-            border: '1px solid #e8eaed',
+            border: '1px solid var(--border-soft)',
           }}
         >
           <MapView parcelId={report.parcel_id} address={address} />
         </div>
       </Panel>
+
+      {/* AI site characterization (Claude vision on the aerial, lazy + cached) */}
+      <SiteAnalysisPanel parcelId={report.parcel_id} />
 
       {/* Criteria */}
       <Panel title="Criteria — how the score breaks down" className="mb-5">
@@ -440,7 +451,7 @@ function ReportView({
         >
           Seven weighted criteria. Click any row for the finding and sources.
         </p>
-        <div style={{ borderTop: '1px solid #e8eaed' }}>
+        <div style={{ borderTop: '1px solid var(--border-soft)' }}>
           {report.criteria.map((c, i) => (
             <CriterionRow
               key={c.key}
@@ -466,8 +477,8 @@ function ReportView({
               <article
                 key={i}
                 style={{
-                  background: '#fafbfc',
-                  border: '1px solid #e8eaed',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border-soft)',
                   borderRadius: 10,
                   padding: '12px 14px',
                 }}
@@ -479,7 +490,7 @@ function ReportView({
                     gap: 8,
                     fontSize: 11,
                     fontWeight: 500,
-                    color: '#1a1a1a',
+                    color: 'var(--text)',
                     letterSpacing: 0.3,
                     textTransform: 'uppercase',
                     marginBottom: 6,
@@ -520,8 +531,8 @@ function ReportView({
                   rel="noreferrer"
                   style={{
                     textDecoration: 'none',
-                    background: '#fafbfc',
-                    border: '1px solid #e8eaed',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-soft)',
                     borderRadius: 10,
                     padding: '12px 14px',
                     color: 'inherit',
@@ -584,17 +595,32 @@ function Panel({
   return (
     <section
       className={`card ${className ?? ''}`}
-      style={{ padding: '20px 22px', marginBottom: className?.includes('mb-5') ? 20 : undefined }}
+      style={{
+        padding: '22px 22px',
+        marginBottom: className?.includes('mb-5') ? 20 : undefined,
+      }}
     >
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'baseline',
           justifyContent: 'space-between',
           marginBottom: 14,
+          gap: 12,
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+        <h3
+          style={{
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontSize: 18,
+            fontWeight: 500,
+            letterSpacing: '-0.012em',
+            margin: 0,
+            color: 'var(--text)',
+          }}
+        >
+          {title}
+        </h3>
         {right}
       </div>
       {children}
@@ -605,6 +631,7 @@ function Panel({
 interface SummaryItem {
   name: string;
   detail: string;
+  score: number;
 }
 interface FindingsSummary {
   verdict: string;
@@ -615,24 +642,44 @@ interface FindingsSummary {
   recommendation: string | null;
 }
 
+function firstSentence(text: string): string {
+  const dot = text.indexOf('. ');
+  const s = dot > 20 ? text.slice(0, dot + 1) : text.split('\n')[0];
+  return s.length > 115 ? s.slice(0, 115).replace(/\s+\S*$/, '') + '…' : s;
+}
+
 function buildSummary(report: SuitabilityReport): FindingsSummary {
   const score = Math.round(report.total_score);
   const criteria = report.criteria.filter((c) => c.status !== 'data_unavailable');
   const sorted = [...criteria].sort(
     (a, b) => b.weighted_contribution - a.weighted_contribution
   );
+
   const strengths = sorted
     .filter((c) => c.status === 'ok' && c.raw_score >= 6)
     .slice(0, 3)
-    .map((c) => ({ name: CRITERION_NAME[c.key] ?? c.name, detail: c.finding }));
+    .map((c) => ({
+      name: CRITERION_NAME[c.key] ?? c.name,
+      detail: firstSentence(c.finding),
+      score: c.raw_score,
+    }));
   const constraintCriteria = [...criteria]
     .filter((c) => c.status === 'flagged' || c.status === 'ineligible' || c.raw_score < 5)
     .sort((a, b) => a.raw_score - b.raw_score)
     .slice(0, 3);
   const constraints = constraintCriteria.map((c) => ({
     name: CRITERION_NAME[c.key] ?? c.name,
-    detail: c.finding,
+    detail: firstSentence(c.finding),
+    score: c.raw_score,
   }));
+
+  const primaryCriterion = report.primary_constraint
+    ? criteria.find((c) => c.key === report.primary_constraint)
+    : null;
+  const primaryScore = primaryCriterion?.raw_score;
+  const primary = report.primary_constraint
+    ? CRITERION_NAME[report.primary_constraint] ?? report.primary_constraint
+    : null;
 
   let verdict: string;
   if (report.bucket === 'SUITABLE') verdict = 'Clears the 225 CMR 29 threshold.';
@@ -640,25 +687,25 @@ function buildSummary(report: SuitabilityReport): FindingsSummary {
     verdict = 'Developable with targeted mitigation.';
   else verdict = 'Significant constraints — alternate siting advised.';
 
-  const primary = report.primary_constraint
-    ? CRITERION_NAME[report.primary_constraint] ?? report.primary_constraint
-    : null;
-
   let narrative: string;
   if (report.bucket === 'SUITABLE') {
-    narrative = `Scored ${score}/100. ${
-      primary
-        ? `${primary} is the lowest-scoring criterion but stays within acceptable range.`
-        : 'All criteria are within acceptable range.'
+    narrative = `At ${score}/100, this site meets the 225 CMR 29 suitability threshold.${
+      primary && primaryScore != null
+        ? ` ${primary} is the lowest-scoring factor at ${primaryScore.toFixed(1)}/10, but remains within the acceptable range.`
+        : ' All seven criteria are within the acceptable range.'
     }`;
   } else if (report.bucket === 'CONDITIONALLY SUITABLE') {
-    narrative = `Scored ${score}/100. ${
-      primary ? `${primary} is the binding constraint.` : 'Multiple criteria are close to the threshold.'
-    } Expect conditions in the permit; see mitigation + precedents below.`;
+    narrative = `At ${score}/100, this site is permittable subject to conditions.${
+      primary && primaryScore != null
+        ? ` ${primary} (${primaryScore.toFixed(1)}/10) is the binding factor — expect permit conditions and likely mitigation obligations.`
+        : ' Multiple criteria approach the threshold; permit conditions are probable.'
+    }`;
   } else {
-    narrative = `Scored ${score}/100. ${
-      primary ? `${primary} is driving the constrained rating.` : 'Multiple criteria are failing.'
-    } Consider an alternate parcel or a significantly reduced footprint.`;
+    narrative = `At ${score}/100, this site has constraints that preclude straightforward permitting.${
+      primary && primaryScore != null
+        ? ` ${primary} scores ${primaryScore.toFixed(1)}/10 and is the primary driver.`
+        : ' Multiple criteria fall below the acceptable range.'
+    } An alternate parcel or a substantially reduced footprint is advisable before advancing.`;
   }
 
   const hasIneligible = report.criteria.some((c) => c.status === 'ineligible');
@@ -670,12 +717,11 @@ function buildSummary(report: SuitabilityReport): FindingsSummary {
 
   let recommendation: string | null = null;
   if (hasIneligible) {
-    recommendation = `Begin with ${primary ?? 'the flagged criterion'} — the Avoid tier in the mitigation hierarchy below is the first lever.`;
+    recommendation = `Begin with ${primary ?? 'the flagged criterion'} — the Avoid tier in the mitigation hierarchy is the first lever.`;
   } else if (report.bucket === 'CONDITIONALLY SUITABLE' && primary) {
-    recommendation = `Open the ${primary} row to see the finding and citations, then review town precedents.`;
+    recommendation = `Expand the ${primary} row below for the full finding and citations, then review town precedents.`;
   } else if (report.bucket === 'SUITABLE') {
-    recommendation =
-      'Proceed to the municipal permitting panel to confirm the by-right or special-permit path.';
+    recommendation = 'Proceed to the municipal permitting panel to confirm the by-right or special-permit path.';
   }
 
   return { verdict, narrative, strengths, constraints, constraintsTone, recommendation };
@@ -700,8 +746,8 @@ function FindingsBlock({
   return (
     <div
       style={{
-        background: '#fafbfc',
-        border: '1px solid #e8eaed',
+        background: 'var(--surface)',
+        border: '1px solid var(--border-soft)',
         borderRadius: 12,
         padding: '14px 16px',
       }}
@@ -725,11 +771,16 @@ function FindingsBlock({
       >
         {items.map((it, i) => (
           <li key={i}>
-            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{it.name}</div>
-            <div
-              className="text-textMid"
-              style={{ fontSize: 12, lineHeight: 1.55 }}
-            >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{it.name}</span>
+              <span
+                className="tnum"
+                style={{ fontSize: 11, color: 'var(--text-dim)', flexShrink: 0 }}
+              >
+                {it.score.toFixed(1)}/10
+              </span>
+            </div>
+            <div className="text-textMid" style={{ fontSize: 12, lineHeight: 1.55 }}>
               {it.detail}
             </div>
           </li>
@@ -781,23 +832,23 @@ function CriterionRow({
       onClick={onToggle}
       style={{
         cursor: 'pointer',
-        borderBottom: '1px solid #e8eaed',
+        borderBottom: '1px solid var(--border-soft)',
       }}
     >
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '28px 1fr 64px 180px 92px 24px',
-          gap: 16,
+          gridTemplateColumns: '22px minmax(0,1fr) 44px minmax(80px,150px) 74px 18px',
+          gap: 12,
           alignItems: 'center',
-          padding: '14px 4px',
+          padding: '12px 4px',
         }}
       >
-        <span className="text-textDim" style={{ fontSize: 12 }}>
+        <span className="text-textDim" style={{ fontSize: 11 }}>
           {String(idx).padStart(2, '0')}
         </span>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>{c.name}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
         </div>
         <span className="text-textDim" style={{ fontSize: 12, textAlign: 'right' }}>
           {Math.round(c.weight * 100)}%
@@ -875,9 +926,9 @@ function CitationChip({ s }: { s: SourceCitation }) {
       <span
         style={{
           fontSize: 12,
-          color: '#525252',
+          color: 'var(--text-mid)',
           padding: '3px 10px',
-          background: '#f1f2f4',
+          background: 'var(--surface-alt)',
           borderRadius: 100,
         }}
       >
@@ -895,10 +946,10 @@ function CitationChip({ s }: { s: SourceCitation }) {
         title={`Original URL returns ${s.health?.status_code ?? '???'}. Showing Wayback snapshot.`}
         style={{
           fontSize: 12,
-          color: '#525252',
+          color: 'var(--text-mid)',
           padding: '3px 10px',
-          background: '#fafbfc',
-          border: '1px dashed #d7dae0',
+          background: 'var(--surface)',
+          border: '1px dashed var(--border)',
           borderRadius: 100,
           textDecoration: 'none',
         }}
@@ -917,9 +968,9 @@ function CitationChip({ s }: { s: SourceCitation }) {
         title={`Original URL returns ${s.health?.status_code ?? '???'}. No archive available.`}
         style={{
           fontSize: 12,
-          color: '#8a8a8a',
+          color: 'var(--text-dim)',
           padding: '3px 10px',
-          background: '#f1f2f4',
+          background: 'var(--surface-alt)',
           borderRadius: 100,
           textDecoration: 'line-through',
         }}
@@ -936,9 +987,9 @@ function CitationChip({ s }: { s: SourceCitation }) {
       rel="noreferrer"
       style={{
         fontSize: 12,
-        color: '#2563eb',
+        color: 'var(--accent)',
         padding: '3px 10px',
-        background: '#e8efff',
+        background: 'var(--accent-soft)',
         borderRadius: 100,
         textDecoration: 'none',
         display: 'inline-flex',
@@ -977,8 +1028,8 @@ function MoratoriumBanner({
   return (
     <div
       style={{
-        background: '#f9e3df',
-        border: '1px solid #f1b6ad',
+        background: 'var(--bad-soft, #f5e8e4)',
+        border: '1px solid var(--bad, #a85a4a)',
         borderRadius: 12,
         padding: '14px 18px',
         marginBottom: 20,
@@ -993,16 +1044,16 @@ function MoratoriumBanner({
           width: 8,
           height: 8,
           borderRadius: 100,
-          background: '#c0392b',
+          background: 'var(--bad)',
           marginTop: 6,
           flexShrink: 0,
         }}
       />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#c0392b' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bad)' }}>
           Active moratorium on {key.replace(/_/g, ' ')} in this town
         </div>
-        <div style={{ fontSize: 12, color: '#525252', marginTop: 4, lineHeight: 1.55 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 4, lineHeight: 1.55 }}>
           {start && `Effective ${start}`}
           {start && end && ' · '}
           {end && `through ${end}`}
@@ -1013,13 +1064,13 @@ function MoratoriumBanner({
                 href={detail.source_url as string}
                 target="_blank"
                 rel="noreferrer"
-                style={{ color: '#c0392b' }}
+                style={{ color: 'var(--bad)' }}
               >
                 source ↗
               </a>
             </>
           )}
-          <div style={{ marginTop: 4, color: '#8a8a8a' }}>
+          <div style={{ marginTop: 4, color: 'var(--text-dim)' }}>
             MA AG has historically rejected overly-broad moratoria; verify current
             enforceability with town counsel before advancing this site.
           </div>
@@ -1065,8 +1116,8 @@ function MitigationCostBlock({ mitigation }: { mitigation: MitigationCostEstimat
   return (
     <div
       style={{
-        background: '#fafbfc',
-        border: '1px solid #e8eaed',
+        background: 'var(--surface)',
+        border: '1px solid var(--border-soft)',
         borderRadius: 10,
         padding: '14px 16px',
         marginBottom: 14,
@@ -1163,8 +1214,8 @@ function MitigationRow({ item }: { item: MitigationItem }) {
                   rel="noreferrer"
                   style={{
                     fontSize: 10,
-                    color: '#2563eb',
-                    background: '#e8efff',
+                    color: 'var(--accent)',
+                    background: 'var(--accent-soft)',
                     padding: '2px 8px',
                     borderRadius: 100,
                     textDecoration: 'none',
@@ -1177,8 +1228,8 @@ function MitigationRow({ item }: { item: MitigationItem }) {
                   key={i}
                   style={{
                     fontSize: 10,
-                    color: '#525252',
-                    background: '#f1f2f4',
+                    color: 'var(--text-mid)',
+                    background: 'var(--surface-alt)',
                     padding: '2px 8px',
                     borderRadius: 100,
                   }}
@@ -1194,7 +1245,7 @@ function MitigationRow({ item }: { item: MitigationItem }) {
         style={{
           fontSize: 13,
           fontWeight: 600,
-          color: '#1a1a1a',
+          color: 'var(--text)',
           textAlign: 'right',
           whiteSpace: 'nowrap',
         }}
@@ -1214,7 +1265,7 @@ function HcaRow({ hca }: { hca: HcaInfo }) {
         gap: 12,
         alignItems: 'baseline',
         paddingTop: 8,
-        borderTop: '1px solid #e8eaed',
+        borderTop: '1px solid var(--border-soft)',
       }}
     >
       <div>
@@ -1224,8 +1275,8 @@ function HcaRow({ hca }: { hca: HcaInfo }) {
             style={{
               fontSize: 10,
               fontWeight: 500,
-              color: '#b6781c',
-              background: '#fbecd6',
+              color: 'var(--gold, #c08a3e)',
+              background: 'var(--gold-soft, #f7efe0)',
               padding: '2px 8px',
               borderRadius: 100,
               marginLeft: 4,
@@ -1285,8 +1336,8 @@ function ResolutionBanner({ resolution }: { resolution: ResolutionInfo | null })
   return (
     <div
       style={{
-        background: '#fbecd6',
-        border: '1px solid #ecc58a',
+        background: 'var(--gold-soft, #f7efe0)',
+        border: '1px solid var(--gold, #c08a3e)',
         borderRadius: 12,
         padding: '14px 18px',
         marginBottom: 16,
@@ -1301,16 +1352,16 @@ function ResolutionBanner({ resolution }: { resolution: ResolutionInfo | null })
           width: 8,
           height: 8,
           borderRadius: 100,
-          background: '#b6781c',
+          background: 'var(--gold, #c08a3e)',
           marginTop: 6,
           flexShrink: 0,
         }}
       />
       <div style={{ flex: 1, fontSize: 13, lineHeight: 1.55 }}>
-        <div style={{ fontWeight: 600, color: '#8a5a0f', marginBottom: 4 }}>
+        <div style={{ fontWeight: 600, color: 'var(--gold, #c08a3e)', marginBottom: 4 }}>
           {modeCopy.title}
         </div>
-        <div style={{ color: '#525252' }}>{modeCopy.body}</div>
+        <div style={{ color: 'var(--text-mid)' }}>{modeCopy.body}</div>
         <div
           style={{
             display: 'grid',

@@ -1,0 +1,16 @@
+project_name,sub_region,isd,mw,project_type,status,municipality,source_filing,notes
+Gardner Substation Upgrade,EMA-North,2027,40,substation,planned,Gardner,NG EGMP DPU 24-EL-01,Voltage upgrade 115kV; serves north-central MA
+Worcester Area Reliability,WMA,2027,80,substation,in_permitting,Worcester,NG EGMP DPU 24-EL-01,New 115/13.8kV station; area load relief
+Fitchburg Distribution Upgrade,EMA-North,2028,25,substation_expansion,planned,Fitchburg,NG EGMP DPU 24-EL-01,Capacity expansion for distributed solar interconnection
+Springfield Bulk Power,WMA,2027,120,substation,in_permitting,Springfield,NG EGMP DPU 24-EL-01,345kV/115kV transformer addition; WMA reliability
+Brockton Circuit Expansion,EMA-South,2028,35,substation_expansion,planned,Brockton,NG EGMP DPU 24-EL-01,13.8kV circuit upgrades for distributed energy resources
+Lawrence Grid Modernization,EMA-Merrimack-Valley,2027,30,substation,planned,Lawrence,NG EGMP DPU 24-EL-01,Aging infrastructure replacement; EJ community priority
+Lowell Distribution Reliability,EMA-Merrimack-Valley,2028,45,substation_expansion,planned,Lowell,NG EGMP DPU 24-EL-01,New switching station; supports BESS interconnection
+Fall River Distribution,EMA-South,2028,30,substation,planned,Fall River,NG EGMP DPU 24-EL-01,115kV line reconfiguration
+New Bedford South Substation,EMA-South,2027,50,new_substation,planned,New Bedford,NG EGMP DPU 24-EL-01,New substation to support offshore wind interconnection
+Plymouth Area Reliability,EMA-South,2028,40,substation_expansion,planned,Plymouth,NG EGMP DPU 24-EL-01,115kV upgrade serving Plymouth and Carver
+Holyoke Circuit Modernization,WMA,2027,35,substation,planned,Holyoke,NG EGMP DPU 24-EL-01,Smart grid upgrade; EJ community
+Northampton Storage Hub,WMA,2028,20,substation_expansion,planned,Northampton,NG EGMP DPU 24-EL-01,BESS-ready 13.8kV switch gear addition
+Pittsfield Substation Rebuild,WMA,2028,60,substation_rebuild,in_permitting,Pittsfield,NG EGMP DPU 24-EL-01,Full 115kV rebuild; life-end equipment replacement
+Leominster Feeder Upgrade,EMA-North,2028,25,substation_expansion,planned,Leominster,NG EGMP DPU 24-EL-01,DER interconnection queues cleared
+Taunton Area Reliability,EMA-South,2027,40,substation,planned,Taunton,NG EGMP DPU 24-EL-01,Area transmission reliability; near Taunton Muni Airport

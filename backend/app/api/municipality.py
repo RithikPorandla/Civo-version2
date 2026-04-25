@@ -13,6 +13,7 @@ solar_ground_mount | bess | substation | wind | transmission
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,11 +37,32 @@ ProjectTypeCode = Literal[
 ]
 
 
+def _moratorium_active(moratoriums: dict | None) -> bool:
+    if not moratoriums:
+        return False
+    for m in moratoriums.values():
+        if m.get("active") is True:
+            return True
+        start = m.get("start_date")
+        end = m.get("end_date")
+        if start and not end:
+            return True
+        if start and end:
+            try:
+                if date.fromisoformat(str(end)) > date.today():
+                    return True
+            except ValueError:
+                pass
+    return False
+
+
 class MunicipalitySummary(BaseModel):
     town_id: int
     town_name: str
     project_types: list[str]
     last_refreshed_at: str | None = None
+    moratorium_active: bool = False
+    moratoriums: dict | None = None
 
 
 class MunicipalityDetail(BaseModel):
@@ -49,6 +71,8 @@ class MunicipalityDetail(BaseModel):
     county: str | None = None
     project_type_bylaws: dict
     last_refreshed_at: str | None = None
+    moratorium_active: bool = False
+    moratoriums: dict | None = None
 
 
 @router.get("/municipalities", response_model=list[MunicipalitySummary])
@@ -57,7 +81,7 @@ def list_municipalities(session: Session = Depends(get_session)) -> list[Municip
         session.execute(
             text(
                 """
-                SELECT town_id, town_name, project_type_bylaws, last_refreshed_at
+                SELECT town_id, town_name, project_type_bylaws, last_refreshed_at, moratoriums
                 FROM municipalities
                 WHERE project_type_bylaws <> '{}'::jsonb
                 ORDER BY town_name
@@ -73,6 +97,8 @@ def list_municipalities(session: Session = Depends(get_session)) -> list[Municip
             town_name=r["town_name"],
             project_types=sorted((r["project_type_bylaws"] or {}).keys()),
             last_refreshed_at=r["last_refreshed_at"].isoformat() if r["last_refreshed_at"] else None,
+            moratorium_active=_moratorium_active(r["moratoriums"]),
+            moratoriums=r["moratoriums"],
         )
         for r in rows
     ]
@@ -86,7 +112,8 @@ def get_municipality(
         session.execute(
             text(
                 """
-                SELECT town_id, town_name, county, project_type_bylaws, last_refreshed_at
+                SELECT town_id, town_name, county, project_type_bylaws,
+                       last_refreshed_at, moratoriums
                 FROM municipalities
                 WHERE town_id = :tid
                 """
@@ -103,9 +130,9 @@ def get_municipality(
         town_name=row["town_name"],
         county=row["county"],
         project_type_bylaws=row["project_type_bylaws"] or {},
-        last_refreshed_at=row["last_refreshed_at"].isoformat()
-        if row["last_refreshed_at"]
-        else None,
+        last_refreshed_at=row["last_refreshed_at"].isoformat() if row["last_refreshed_at"] else None,
+        moratorium_active=_moratorium_active(row["moratoriums"]),
+        moratoriums=row["moratoriums"],
     )
 
 

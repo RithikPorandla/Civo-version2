@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { IconArrowUpRight } from '../components/Icon';
 
 const EXAMPLES = [
   { id: 1, address: 'Kendall Square, Cambridge, MA', score: 92.5, bucket: 'SUITABLE' },
@@ -8,9 +7,13 @@ const EXAMPLES = [
 ];
 
 const bucketTone: Record<string, { c: string; bg: string; label: string }> = {
-  SUITABLE: { c: '#1f8a3d', bg: '#e4f3e7', label: 'Suitable' },
-  'CONDITIONALLY SUITABLE': { c: '#b6781c', bg: '#fbecd6', label: 'Conditional' },
-  CONSTRAINED: { c: '#c0392b', bg: '#f9e3df', label: 'Constrained' },
+  SUITABLE: { c: 'var(--good)', bg: 'var(--sage-soft, #eaf2e7)', label: 'Suitable' },
+  'CONDITIONALLY SUITABLE': {
+    c: 'var(--gold, #c08a3e)',
+    bg: 'var(--gold-soft, #f7efe0)',
+    label: 'Conditional',
+  },
+  CONSTRAINED: { c: 'var(--bad)', bg: 'var(--bad-soft, #f5e8e4)', label: 'Constrained' },
 };
 
 export default function SiteSuitability() {
@@ -19,119 +22,137 @@ export default function SiteSuitability() {
     return acc;
   }, {});
 
-  const stats = [
-    { label: 'Total reports', value: String(EXAMPLES.length), delta: '+3', bg: '#e3ebf5' },
-    { label: 'Suitable', value: String(bucketCounts.SUITABLE || 0), delta: '33%', bg: '#dbe8cc' },
+  const stats: Array<{
+    label: string;
+    value: string;
+    delta: string;
+    tile: 'tile-paper' | 'tile-stone' | 'tile-sage' | 'tile-rust';
+  }> = [
+    { label: 'Total reports', value: String(EXAMPLES.length), delta: '+3', tile: 'tile-paper' },
+    {
+      label: 'Suitable',
+      value: String(bucketCounts.SUITABLE || 0),
+      delta: '33%',
+      tile: 'tile-sage',
+    },
     {
       label: 'Conditional',
       value: String(bucketCounts['CONDITIONALLY SUITABLE'] || 0),
       delta: '33%',
-      bg: '#fbecd6',
+      tile: 'tile-stone',
     },
     {
       label: 'Constrained',
       value: String(bucketCounts.CONSTRAINED || 0),
       delta: '33%',
-      bg: '#f9e3df',
+      tile: 'tile-rust',
     },
   ];
 
   return (
-    <div style={{ padding: '24px 28px 40px' }}>
+    <div style={{ padding: '36px 40px 80px', maxWidth: 1280 }}>
       <div
         style={{
           display: 'flex',
+          alignItems: 'flex-end',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
+          gap: 24,
+          marginBottom: 10,
         }}
       >
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.3, margin: 0 }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
             Site Suitability
+          </div>
+          <h1
+            className="display"
+            style={{ fontSize: 34, margin: 0, letterSpacing: '-0.018em', lineHeight: 1.05 }}
+          >
+            Every parcel, scored.
           </h1>
-          <p className="text-textMid" style={{ fontSize: 13, margin: '4px 0 0' }}>
-            Every parcel scored against 225 CMR 29.00.
+          <p
+            style={{
+              fontSize: 15,
+              lineHeight: 1.6,
+              color: 'var(--text-mid)',
+              maxWidth: 560,
+              margin: '14px 0 0',
+            }}
+          >
+            Scoring runs against 225 CMR 29.00 and town-level bylaws. Every criterion cites its
+            source — nothing is inferred without a reference.
           </p>
         </div>
-        <Link to="/lookup" className="btn btn-primary">
-          Run a new report →
+        <Link to="/app/lookup" className="btn btn-primary">
+          Run a new report <span className="arr">→</span>
         </Link>
       </div>
+      <hr className="rule" style={{ margin: '28px 0 18px' }} />
 
-      {/* Stats */}
       <section
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 16,
+          gap: 14,
           marginBottom: 20,
         }}
       >
         {stats.map((s) => (
-          <div key={s.label} className="stat-tile" style={{ background: s.bg }}>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>{s.label}</div>
+          <div key={s.label} className={`stat-tile ${s.tile}`}>
+            <div style={{ fontSize: 12, color: 'var(--text-mid)', fontWeight: 500 }}>
+              {s.label}
+            </div>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'baseline',
                 justifyContent: 'space-between',
+                gap: 8,
+                marginTop: 10,
               }}
             >
-              <div
-                style={{
-                  fontSize: 30,
-                  fontWeight: 600,
-                  letterSpacing: -0.5,
-                  lineHeight: 1.05,
-                }}
-              >
-                {s.value}
-              </div>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: 12,
-                }}
-              >
+              <div className="tile-num tnum">{s.value}</div>
+              <div className="tnum" style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                 {s.delta}
-                <IconArrowUpRight size={12} />
               </div>
             </div>
           </div>
         ))}
       </section>
 
-      {/* Reference parcels table */}
       <section className="card" style={{ overflow: 'hidden' }}>
-        <div
+        <header
           style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #e8eaed',
+            padding: '18px 22px 14px',
             display: 'flex',
+            alignItems: 'baseline',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            borderBottom: '1px solid var(--border-soft)',
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600 }}>Reference parcels</div>
-          <span className="text-textDim" style={{ fontSize: 12 }}>
+          <h3
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: 18,
+              fontWeight: 500,
+              letterSpacing: '-0.012em',
+              margin: 0,
+            }}
+          >
+            Reference parcels
+          </h3>
+          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
             Three canonical examples
           </span>
-        </div>
+        </header>
         <div
+          className="label"
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 100px 160px 80px',
-            padding: '10px 20px',
-            fontSize: 11,
-            color: '#8a8a8a',
-            letterSpacing: 0.3,
-            textTransform: 'uppercase',
-            fontWeight: 500,
-            background: '#fafbfc',
-            borderBottom: '1px solid #e8eaed',
+            padding: '10px 22px',
+            background: 'var(--surface)',
+            borderBottom: '1px solid var(--border-soft)',
           }}
         >
           <div>Address</div>
@@ -148,12 +169,20 @@ export default function SiteSuitability() {
                 display: 'grid',
                 gridTemplateColumns: '1fr 100px 160px 80px',
                 alignItems: 'center',
-                padding: '16px 20px',
-                borderTop: i === 0 ? 'none' : '1px solid #e8eaed',
+                padding: '16px 22px',
+                borderTop: i === 0 ? 'none' : '1px solid var(--border-soft)',
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 500 }}>{e.address}</div>
-              <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.4 }}>
+              <div
+                className="tnum"
+                style={{
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: 22,
+                  fontWeight: 400,
+                  letterSpacing: '-0.018em',
+                }}
+              >
                 {e.score}
               </div>
               <div>
@@ -163,7 +192,7 @@ export default function SiteSuitability() {
                     color: tone.c,
                     background: tone.bg,
                     padding: '4px 10px',
-                    borderRadius: 100,
+                    borderRadius: 999,
                     fontWeight: 500,
                   }}
                 >
@@ -171,11 +200,7 @@ export default function SiteSuitability() {
                 </span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <Link
-                  to={`/report/${e.id}`}
-                  className="text-accent"
-                  style={{ fontSize: 13, textDecoration: 'none' }}
-                >
+                <Link to={`/report/${e.id}`} className="link-accent" style={{ fontSize: 13 }}>
                   Open →
                 </Link>
               </div>
@@ -183,7 +208,15 @@ export default function SiteSuitability() {
           );
         })}
       </section>
-      <p className="text-textDim" style={{ fontSize: 12, margin: '10px 4px 0' }}>
+      <p
+        style={{
+          fontSize: 12,
+          color: 'var(--text-dim)',
+          margin: '12px 4px 0',
+          fontStyle: 'italic',
+          fontFamily: "'Fraunces', Georgia, serif",
+        }}
+      >
         Reference rows assume report IDs 1–3 exist in your local database.
       </p>
     </div>
