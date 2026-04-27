@@ -31,12 +31,6 @@ const CRITERION_NAME: Record<string, string> = {
   agriculture: 'Agricultural production',
 };
 
-const STAT_TILE = {
-  paper: 'tile-paper',
-  stone: 'tile-stone',
-  sage: 'tile-sage',
-  rust: 'tile-rust',
-} as const;
 
 const STATUS = {
   good: { c: 'var(--good)', bg: 'var(--sage-soft, #eaf2e7)', label: 'OK' },
