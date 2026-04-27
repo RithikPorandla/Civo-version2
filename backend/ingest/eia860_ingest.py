@@ -75,10 +75,18 @@ STATUS_MAP = {
 
 def _download_eia860(year: int) -> Path:
     """Download EIA 860 zip for given year and extract to data/eia860/."""
-    url = f"{EIA860_BASE}/eia8602{year}.zip"
-    print(f"  Downloading {url} ...")
-    resp = httpx.get(url, timeout=120, follow_redirects=True)
-    resp.raise_for_status()
+    # Current year lives at xls/; prior years are under archive/xls/
+    candidates = [
+        f"{EIA860_BASE}/eia860{year}.zip",
+        f"https://www.eia.gov/electricity/data/eia860/archive/xls/eia860{year}.zip",
+    ]
+    for url in candidates:
+        print(f"  Trying {url} ...")
+        resp = httpx.get(url, timeout=120, follow_redirects=True)
+        if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("application"):
+            break
+    else:
+        raise RuntimeError(f"Could not download EIA 860 for year {year}")
     zf = zipfile.ZipFile(io.BytesIO(resp.content))
     zf.extractall(DATA_DIR)
     print(f"  Extracted to {DATA_DIR}")
@@ -138,9 +146,7 @@ _UPSERT = text("""
              ELSE NULL END,
         :now
     )
-    ON CONFLICT (docket) WHERE docket IS NOT NULL DO UPDATE SET
-        decision      = EXCLUDED.decision,
-        decision_date = EXCLUDED.decision_date
+    ON CONFLICT DO NOTHING
 """)
 
 

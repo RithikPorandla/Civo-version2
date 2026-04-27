@@ -36,15 +36,16 @@ FLAG_QUERIES = {
 # Processing in batches of 500 keeps memory and lock duration small.
 _UPDATE_BATCH = text("""
     UPDATE parcels p SET
-        flag_biomap_core    = EXISTS(SELECT 1 FROM habitat_biomap_core    WHERE ST_Intersects(geom, p.geom) LIMIT 1),
-        flag_nhesp_priority = EXISTS(SELECT 1 FROM habitat_nhesp_priority WHERE ST_Intersects(geom, p.geom) LIMIT 1),
-        flag_flood_zone     = EXISTS(SELECT 1 FROM flood_zones             WHERE ST_Intersects(geom, p.geom) LIMIT 1),
-        flag_wetlands       = EXISTS(SELECT 1 FROM wetlands                WHERE ST_Intersects(geom, p.geom) LIMIT 1),
-        flag_article97      = EXISTS(SELECT 1 FROM article97               WHERE ST_Intersects(geom, p.geom) LIMIT 1),
-        flag_prime_farmland = EXISTS(SELECT 1 FROM prime_farmland          WHERE ST_Intersects(geom, p.geom) LIMIT 1),
+        flag_biomap_core    = EXISTS(SELECT 1 FROM habitat_biomap_core    WHERE ST_Intersects(ST_MakeValid(geom), ST_MakeValid(p.geom)) LIMIT 1),
+        flag_nhesp_priority = EXISTS(SELECT 1 FROM habitat_nhesp_priority WHERE ST_Intersects(ST_MakeValid(geom), ST_MakeValid(p.geom)) LIMIT 1),
+        flag_flood_zone     = EXISTS(SELECT 1 FROM flood_zones             WHERE ST_Intersects(ST_MakeValid(geom), ST_MakeValid(p.geom)) LIMIT 1),
+        flag_wetlands       = EXISTS(SELECT 1 FROM wetlands                WHERE ST_Intersects(ST_MakeValid(geom), ST_MakeValid(p.geom)) LIMIT 1),
+        flag_article97      = EXISTS(SELECT 1 FROM article97               WHERE ST_Intersects(ST_MakeValid(geom), ST_MakeValid(p.geom)) LIMIT 1),
+        flag_prime_farmland = EXISTS(SELECT 1 FROM prime_farmland          WHERE ST_Intersects(ST_MakeValid(geom), ST_MakeValid(p.geom)) LIMIT 1),
         flags_computed_at   = :now
     WHERE p.town_name = :town
       AND p.shape_area >= :min_area
+      AND p.geom IS NOT NULL
 """)
 
 # MA DOR use codes that represent potentially developable land for solar/BESS.
@@ -114,7 +115,7 @@ def main() -> None:
             towns = [args.town]
         else:
             towns = session.execute(
-                text("SELECT town_name FROM municipalities ORDER BY town_name")
+                text("SELECT DISTINCT town_name FROM parcels WHERE town_name IS NOT NULL ORDER BY town_name")
             ).scalars().all()
 
     print(f"Pre-computing constraint flags for {len(towns)} town(s) "

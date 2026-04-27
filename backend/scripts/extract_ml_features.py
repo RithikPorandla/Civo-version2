@@ -46,46 +46,20 @@ WITH parcel_base AS (
       AND p.shape_area >= :min_area
 ),
 
--- Constraint coverage percentages via LATERAL aggregation
+-- Constraint flags — use precomputed boolean columns (avoids ST_Intersection cost)
 constraint_pcts AS (
     SELECT
-        pb.loc_id,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(bmc.geom, pb.geom)))
-            FROM habitat_biomap_core bmc
-            WHERE ST_Intersects(bmc.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_biomap_core,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(nhesp.geom, pb.geom)))
-            FROM habitat_nhesp_priority nhesp
-            WHERE ST_Intersects(nhesp.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_nhesp_priority,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(nhest.geom, pb.geom)))
-            FROM habitat_nhesp_estimated nhest
-            WHERE ST_Intersects(nhest.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_nhesp_estimated,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(fz.geom, pb.geom)))
-            FROM flood_zones fz
-            WHERE ST_Intersects(fz.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_flood_zone,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(wet.geom, pb.geom)))
-            FROM wetlands wet
-            WHERE ST_Intersects(wet.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_wetlands,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(a97.geom, pb.geom)))
-            FROM article97 a97
-            WHERE ST_Intersects(a97.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_article97,
-        COALESCE((
-            SELECT SUM(ST_Area(ST_Intersection(pfarm.geom, pb.geom)))
-            FROM prime_farmland pfarm
-            WHERE ST_Intersects(pfarm.geom, pb.geom)
-        ) / NULLIF(pb.area_m2, 0), 0)                      AS pct_prime_farmland
-    FROM parcel_base pb
+        p.loc_id,
+        CASE WHEN p.flag_biomap_core    THEN 1.0 ELSE 0.0 END AS pct_biomap_core,
+        CASE WHEN p.flag_nhesp_priority THEN 1.0 ELSE 0.0 END AS pct_nhesp_priority,
+        0.0                                                    AS pct_nhesp_estimated,
+        CASE WHEN p.flag_flood_zone     THEN 1.0 ELSE 0.0 END AS pct_flood_zone,
+        CASE WHEN p.flag_wetlands       THEN 1.0 ELSE 0.0 END AS pct_wetlands,
+        CASE WHEN p.flag_article97      THEN 1.0 ELSE 0.0 END AS pct_article97,
+        CASE WHEN p.flag_prime_farmland THEN 1.0 ELSE 0.0 END AS pct_prime_farmland
+    FROM parcels p
+    WHERE p.town_name = :town
+      AND p.shape_area >= :min_area
 ),
 
 -- Nearest ESMP project (grid infrastructure proxy)
@@ -148,15 +122,17 @@ precedent_proximity AS (
     GROUP BY pb.loc_id
 ),
 
--- Average score of nearby parcels (neighborhood quality signal)
+-- Average score of nearby scored parcels (same town, 5km radius)
 score_neighborhood AS (
     SELECT
         pb.loc_id,
         AVG(sh.total_score)                                 AS avg_neighbor_score_5km,
         COUNT(sh.total_score)                               AS n_scored_neighbors_5km
     FROM parcel_base pb
-    LEFT JOIN parcels p2 ON p2.loc_id != pb.loc_id
-        AND ST_DWithin(pb.geom, p2.geom, 5000)
+    LEFT JOIN parcels p2
+        ON p2.town_name = :town
+       AND p2.loc_id != pb.loc_id
+       AND ST_DWithin(pb.geom, p2.geom, 5000)
     LEFT JOIN LATERAL (
         SELECT total_score FROM score_history
         WHERE parcel_loc_id = p2.loc_id

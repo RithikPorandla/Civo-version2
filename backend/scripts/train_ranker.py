@@ -64,47 +64,42 @@ FEATURE_COLS = [
 
 
 def _load_data(project_type: str) -> pd.DataFrame:
-    """Load features + labels. Direct parcel labels take priority over town-level."""
-    doer_col = "doer_bess" if "bess" in project_type else "doer_solar"
-
+    """Load features + labels from score_history as weak labels (score >= 65 = approved)."""
     with SessionLocal() as session:
-        # Direct labels: parcels with a linked precedent decision
-        direct = pd.DataFrame(session.execute(text(f"""
-            SELECT
-                f.*,
-                p.decision,
-                'direct'                            AS label_source,
-                CONCAT(m.town_name, '_{project_type}') AS query_group
+        # Direct labels: precedents matched to specific parcels
+        direct = pd.DataFrame(session.execute(text("""
+            SELECT f.*, p.decision, 'direct' AS label_source,
+                   par.town_name AS query_group
             FROM parcel_ml_features f
             JOIN precedents p ON p.parcel_loc_id = f.parcel_loc_id
-            JOIN municipalities m
-                ON m.town_name = (
-                    SELECT town_name FROM parcels WHERE loc_id = f.parcel_loc_id LIMIT 1
-                )
+            JOIN parcels par ON par.loc_id = f.parcel_loc_id
             WHERE p.project_type ILIKE :pt_pattern
               AND p.decision IN ('approved', 'denied')
-        """).bindparams(pt_pattern=f"%{doer_col.split('_')[1]}%")).mappings().all())
+        """), {"pt_pattern": f"%{'bess' if 'bess' in project_type else 'solar'}%"}).mappings().all())
 
-        # Weak labels: all parcels in towns with precedent data (town approval rate as target)
-        weak = pd.DataFrame(session.execute(text("""
-            SELECT
-                f.*,
-                CASE WHEN tjr.concom_approval_rate >= 0.6 THEN 'approved' ELSE 'denied' END AS decision,
-                'weak'                                          AS label_source,
-                CONCAT(p.town_name, '_', :pt)                  AS query_group
+        # Score-based weak labels: use rule-based score as proxy for viability
+        # score >= 65 → parcel is likely approvable; score < 45 → unlikely
+        score_labels = pd.DataFrame(session.execute(text("""
+            SELECT f.*,
+                   CASE WHEN sh.total_score >= 65 THEN 'approved' ELSE 'denied' END AS decision,
+                   'score_weak' AS label_source,
+                   par.town_name AS query_group
             FROM parcel_ml_features f
-            JOIN parcels p ON p.loc_id = f.parcel_loc_id
-            JOIN town_jurisdiction_risk tjr
-                ON tjr.town_name = p.town_name
-               AND tjr.project_type = :pt
-            WHERE tjr.total_precedents >= 3
-              AND f.parcel_loc_id NOT IN (
-                  SELECT pr.parcel_loc_id FROM precedents pr
-                  WHERE pr.parcel_loc_id IS NOT NULL
-              )
+            JOIN parcels par ON par.loc_id = f.parcel_loc_id
+            JOIN LATERAL (
+                SELECT total_score FROM score_history
+                WHERE parcel_loc_id = f.parcel_loc_id
+                  AND report->>'project_type' = :pt
+                ORDER BY computed_at DESC LIMIT 1
+            ) sh ON true
+            WHERE sh.total_score IS NOT NULL
+              AND (sh.total_score >= 65 OR sh.total_score < 45)
         """), {"pt": project_type}).mappings().all())
 
-    df = pd.concat([direct, weak], ignore_index=True) if not direct.empty else weak
+    frames = [df for df in [direct, score_labels] if not df.empty]
+    if not frames:
+        return pd.DataFrame()
+    df = pd.concat(frames, ignore_index=True)
     df = df.drop_duplicates(subset=["parcel_loc_id"])
     return df
 
@@ -128,6 +123,9 @@ def _fill_nulls(df: pd.DataFrame) -> pd.DataFrame:
 def train(project_type: str, min_samples: int = 10, dry_run: bool = False) -> None:
     print(f"\n=== Training ranker for {project_type} ===")
     df = _load_data(project_type)
+    if df.empty or 'decision' not in df.columns:
+        print(f"  No training data — run extract_ml_features first. Skipping.")
+        return
     print(f"  Loaded {len(df)} samples ({len(df[df.decision=='approved'])} approved, "
           f"{len(df[df.decision=='denied'])} denied)")
 
