@@ -77,6 +77,8 @@ def refresh_all(session: Session) -> int:
 
     Returns the number of rows upserted. Returns 0 silently if the
     town_jurisdiction_risk table hasn't been created yet (migration 0010).
+    Skips precedent-based signals if the precedents table doesn't exist yet
+    (migration 0015 / fresh DB with no ingested data).
     """
     table_exists = session.execute(
         text("""
@@ -88,6 +90,14 @@ def refresh_all(session: Session) -> int:
     if not table_exists:
         return 0
 
+    has_precedents = bool(session.execute(
+        text("""
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'precedents'
+            LIMIT 1
+        """)
+    ).fetchone())
+
     towns = session.execute(
         text("SELECT town_name FROM municipalities ORDER BY town_name")
     ).scalars().all()
@@ -95,7 +105,7 @@ def refresh_all(session: Session) -> int:
     count = 0
     for town_name in towns:
         for project_type in TRACKED_PROJECT_TYPES:
-            _upsert_town_project(session, town_name, project_type)
+            _upsert_town_project(session, town_name, project_type, has_precedents)
             count += 1
 
     session.commit()
@@ -109,7 +119,7 @@ def refresh_town(session: Session, town_name: str) -> None:
     session.commit()
 
 
-def _upsert_town_project(session: Session, town_name: str, project_type: str) -> None:
+def _upsert_town_project(session: Session, town_name: str, project_type: str, has_precedents: bool = True) -> None:
     doer_project = _DOER_PROJECT_MAP.get(project_type, "solar")
 
     # 1. Moratorium flag from municipalities.moratoriums JSONB
@@ -149,32 +159,37 @@ def _upsert_town_project(session: Session, town_name: str, project_type: str) ->
     doer_status: str | None = doer_row[0] if doer_row else None
 
     # 3. ConCom/Planning Board approval stats from precedents
-    stats_row = session.execute(
-        text("""
-            SELECT
-                COUNT(*)                                          AS total,
-                AVG(CASE WHEN decision = 'approved' THEN 1.0
-                         WHEN decision = 'denied'   THEN 0.0
-                    END)                                          AS approval_rate,
-                PERCENTILE_CONT(0.5) WITHIN GROUP (
-                    ORDER BY (decision_date - filing_date)
-                ) FILTER (WHERE decision_date IS NOT NULL
-                            AND filing_date  IS NOT NULL)         AS median_days
-            FROM  precedents p
-            JOIN  municipalities m ON m.town_id = p.town_id
-            WHERE m.town_name   = :town
-              AND p.project_type ILIKE :pt_pattern
-              AND p.decision IN ('approved', 'denied')
-        """),
-        {
-            "town": town_name,
-            "pt_pattern": "%" + (doer_project) + "%",
-        },
-    ).fetchone()
+    total_precedents = 0
+    concom_approval_rate: float | None = None
+    median_permit_days: int | None = None
 
-    total_precedents = int(stats_row[0]) if stats_row else 0
-    concom_approval_rate = float(stats_row[1]) if stats_row and stats_row[1] is not None else None
-    median_permit_days = int(stats_row[2]) if stats_row and stats_row[2] is not None else None
+    if has_precedents:
+        stats_row = session.execute(
+            text("""
+                SELECT
+                    COUNT(*)                                          AS total,
+                    AVG(CASE WHEN decision = 'approved' THEN 1.0
+                             WHEN decision = 'denied'   THEN 0.0
+                        END)                                          AS approval_rate,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (
+                        ORDER BY (decision_date - filing_date)
+                    ) FILTER (WHERE decision_date IS NOT NULL
+                                AND filing_date  IS NOT NULL)         AS median_days
+                FROM  precedents p
+                JOIN  municipalities m ON m.town_id = p.town_id
+                WHERE m.town_name   = :town
+                  AND p.project_type ILIKE :pt_pattern
+                  AND p.decision IN ('approved', 'denied')
+            """),
+            {
+                "town": town_name,
+                "pt_pattern": "%" + (doer_project) + "%",
+            },
+        ).fetchone()
+
+        total_precedents = int(stats_row[0]) if stats_row else 0
+        concom_approval_rate = float(stats_row[1]) if stats_row and stats_row[1] is not None else None
+        median_permit_days = int(stats_row[2]) if stats_row and stats_row[2] is not None else None
 
     multiplier = _compute_multiplier(
         moratorium_active, doer_status, concom_approval_rate, total_precedents
