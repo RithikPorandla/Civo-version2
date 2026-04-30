@@ -41,7 +41,7 @@ router = APIRouter()
 BATCH_MAX = 50
 DEFAULT_CONFIG = "ma-eea-2026-v1"
 
-ResolutionMode = Literal["contains", "nearest", "esmp_anchored"]
+ResolutionMode = Literal["contains", "nearest", "esmp_anchored", "addr_match"]
 
 
 # ---------------------------------------------------------------------------

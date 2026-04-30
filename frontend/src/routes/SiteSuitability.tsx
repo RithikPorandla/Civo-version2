@@ -1,224 +1,254 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const EXAMPLES = [
-  { id: 1, address: 'Kendall Square, Cambridge, MA', score: 92.5, bucket: 'SUITABLE' },
-  { id: 2, address: '50 Nagog Park, Acton, MA', score: 64.1, bucket: 'CONDITIONALLY SUITABLE' },
-  { id: 3, address: 'East Freetown, MA', score: 35.4, bucket: 'CONSTRAINED' },
+interface Report {
+  id: number;
+  address: string;
+  town: string;
+  score: number;
+  bucket: 'SUITABLE' | 'CONDITIONALLY SUITABLE' | 'CONSTRAINED';
+  date: string;
+  factors: { label: string; flag: 'ok' | 'warn' | 'block' }[];
+  acreage: number;
+  projectType: string;
+}
+
+const REPORTS: Report[] = [
+  {
+    id: 1,
+    address: 'Kendall Square, Cambridge, MA',
+    town: 'Cambridge',
+    score: 92.5,
+    bucket: 'SUITABLE',
+    date: 'Apr 28',
+    acreage: 14.2,
+    projectType: 'BESS Standalone',
+    factors: [
+      { label: 'Grid within 0.4 mi',     flag: 'ok'   },
+      { label: 'No wetland buffer',       flag: 'ok'   },
+      { label: 'By-right zoning',         flag: 'ok'   },
+    ],
+  },
+  {
+    id: 2,
+    address: '50 Nagog Park, Acton, MA',
+    town: 'Acton',
+    score: 64.1,
+    bucket: 'CONDITIONALLY SUITABLE',
+    date: 'Apr 26',
+    acreage: 8.7,
+    projectType: 'BESS Standalone',
+    factors: [
+      { label: 'ConCom jurisdiction',     flag: 'warn' },
+      { label: '150 ft wetland setback',  flag: 'warn' },
+      { label: 'Site plan review req.',   flag: 'warn' },
+    ],
+  },
+  {
+    id: 3,
+    address: 'East Freetown, MA',
+    town: 'Freetown',
+    score: 35.4,
+    bucket: 'CONSTRAINED',
+    date: 'Apr 24',
+    acreage: 22.1,
+    projectType: 'Solar Ground-Mount',
+    factors: [
+      { label: 'Moratorium active',       flag: 'block' },
+      { label: 'ACEC overlay',            flag: 'block' },
+      { label: 'Grid capacity limited',   flag: 'block' },
+    ],
+  },
 ];
 
-const bucketTone: Record<string, { c: string; bg: string; label: string }> = {
-  SUITABLE: { c: 'var(--good)', bg: 'var(--sage-soft, #eaf2e7)', label: 'Suitable' },
-  'CONDITIONALLY SUITABLE': {
-    c: 'var(--gold, #c08a3e)',
-    bg: 'var(--gold-soft, #f7efe0)',
-    label: 'Conditional',
-  },
-  CONSTRAINED: { c: 'var(--bad)', bg: 'var(--bad-soft, #f5e8e4)', label: 'Constrained' },
+const FLAG_COLOR = { ok: '#6b7e5a', warn: '#b07e30', block: '#a85a4a' };
+const FLAG_BG    = { ok: 'rgba(107,126,90,0.10)', warn: 'rgba(176,126,48,0.10)', block: 'rgba(168,90,74,0.10)' };
+
+const CHIP_CLASS: Record<Report['bucket'], string> = {
+  'SUITABLE':               'chip suit',
+  'CONDITIONALLY SUITABLE': 'chip cond',
+  'CONSTRAINED':            'chip cons',
+};
+const CHIP_LABEL: Record<Report['bucket'], string> = {
+  'SUITABLE':               'Suitable',
+  'CONDITIONALLY SUITABLE': 'Conditional',
+  'CONSTRAINED':            'Constrained',
 };
 
-export default function SiteSuitability() {
-  const bucketCounts = EXAMPLES.reduce<Record<string, number>>((acc, e) => {
-    acc[e.bucket] = (acc[e.bucket] || 0) + 1;
-    return acc;
-  }, {});
+function scoreClass(s: number) {
+  if (s >= 75) return 's-high';
+  if (s >= 50) return 's-mid';
+  return 's-low';
+}
 
-  const stats: Array<{
-    label: string;
-    value: string;
-    delta: string;
-    tile: 'tile-paper' | 'tile-stone' | 'tile-sage' | 'tile-rust';
-  }> = [
-    { label: 'Total reports', value: String(EXAMPLES.length), delta: '+3', tile: 'tile-paper' },
-    {
-      label: 'Suitable',
-      value: String(bucketCounts.SUITABLE || 0),
-      delta: '33%',
-      tile: 'tile-sage',
-    },
-    {
-      label: 'Conditional',
-      value: String(bucketCounts['CONDITIONALLY SUITABLE'] || 0),
-      delta: '33%',
-      tile: 'tile-stone',
-    },
-    {
-      label: 'Constrained',
-      value: String(bucketCounts.CONSTRAINED || 0),
-      delta: '33%',
-      tile: 'tile-rust',
-    },
-  ];
+// Mini horizontal score bar — shows 0–100 position
+function ScoreBar({ score }: { score: number }) {
+  const color = score >= 75 ? '#6b7e5a' : score >= 50 ? '#c9a464' : '#a85a4a';
+  return (
+    <div style={{ width: '100%', height: 3, background: 'var(--border-soft)', borderRadius: 999, marginTop: 5 }}>
+      <div style={{ width: `${score}%`, height: 3, background: color, borderRadius: 999, opacity: 0.75 }} />
+    </div>
+  );
+}
+
+export default function SiteSuitability() {
+  const [query, setQuery] = useState('');
+
+  const suitable    = REPORTS.filter((r) => r.bucket === 'SUITABLE').length;
+  const conditional = REPORTS.filter((r) => r.bucket === 'CONDITIONALLY SUITABLE').length;
+  const constrained = REPORTS.filter((r) => r.bucket === 'CONSTRAINED').length;
+  const avgScore    = Math.round(REPORTS.reduce((s, r) => s + r.score, 0) / REPORTS.length);
+
+  const filtered = REPORTS.filter((r) =>
+    r.address.toLowerCase().includes(query.toLowerCase()) ||
+    r.town.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
-    <div style={{ padding: '36px 40px 80px', maxWidth: 1280 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 24,
-          marginBottom: 10,
-        }}
-      >
+    <div className="page" style={{ fontFamily: 'var(--sans)' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, marginBottom: 20 }}>
         <div>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Site Suitability
-          </div>
-          <h1
-            className="display"
-            style={{ fontSize: 34, margin: 0, letterSpacing: '-0.018em', lineHeight: 1.05 }}
-          >
-            Every parcel, scored.
-          </h1>
-          <p
-            style={{
-              fontSize: 15,
-              lineHeight: 1.6,
-              color: 'var(--text-mid)',
-              maxWidth: 560,
-              margin: '14px 0 0',
-            }}
-          >
-            Scoring runs against 225 CMR 29.00 and town-level bylaws. Every criterion cites its
-            source — nothing is inferred without a reference.
+          <div className="page-eyebrow">Suitability</div>
+          <h1 className="page-h1">Reports</h1>
+          <p className="page-sub">
+            {REPORTS.length} sites scored · avg {avgScore}/100 · {suitable} suitable · {conditional} conditional · {constrained} constrained
           </p>
         </div>
-        <Link to="/app/lookup" className="btn btn-primary">
-          Run a new report <span className="arr">→</span>
+        <Link to="/app/lookup" className="btn btn-primary" style={{ marginTop: 24, flexShrink: 0 }}>
+          New report →
         </Link>
       </div>
-      <hr className="rule" style={{ margin: '28px 0 18px' }} />
 
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 14,
-          marginBottom: 20,
-        }}
+      {/* Top constraint summary strip */}
+      <div
+        className="card"
+        style={{ padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}
       >
-        {stats.map((s) => (
-          <div key={s.label} className={`stat-tile ${s.tile}`}>
-            <div style={{ fontSize: 12, color: 'var(--text-mid)', fontWeight: 500 }}>
-              {s.label}
-            </div>
-            <div
+        <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-soft)', flexShrink: 0 }}>
+          Top constraints
+        </div>
+        {[
+          { label: 'ConCom jurisdiction',   count: 2 },
+          { label: 'Wetland setback',       count: 2 },
+          { label: 'Moratorium',            count: 1 },
+          { label: 'ACEC overlay',          count: 1 },
+          { label: 'Grid capacity',         count: 1 },
+        ].map((c) => (
+          <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12.5, color: 'var(--text-mid)', fontWeight: 500 }}>{c.label}</span>
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: 8,
-                marginTop: 10,
+                fontSize: 10.5,
+                fontWeight: 600,
+                background: 'var(--surface-alt)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                padding: '1px 6px',
+                color: 'var(--text-soft)',
               }}
             >
-              <div className="tile-num tnum">{s.value}</div>
-              <div className="tnum" style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                {s.delta}
-              </div>
-            </div>
+              {c.count}
+            </span>
           </div>
         ))}
-      </section>
+      </div>
 
-      <section className="card" style={{ overflow: 'hidden' }}>
-        <header
+      {/* Filter + count */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 10 }}>
+        <input
+          type="text"
+          placeholder="Filter by address or town…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           style={{
-            padding: '18px 22px 14px',
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid var(--border-soft)',
+            width: 260, height: 32,
+            paddingLeft: 12, paddingRight: 12,
+            borderRadius: 7, border: '1px solid var(--border)',
+            background: 'var(--surface)', fontSize: 13,
+            color: 'var(--text)', fontFamily: 'var(--sans)',
+            outline: 'none', boxSizing: 'border-box',
           }}
-        >
-          <h3
+          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+          onBlur={(e)  => (e.currentTarget.style.borderColor = 'var(--border)')}
+        />
+        <div style={{ fontSize: 12, color: 'var(--text-soft)' }}>{filtered.length} of {REPORTS.length}</div>
+      </div>
+
+      {/* Report rows */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        {filtered.length === 0 && (
+          <div style={{ padding: '20px 16px', fontSize: 13, color: 'var(--text-soft)' }}>
+            No reports match "{query}"
+          </div>
+        )}
+        {filtered.map((r, idx) => (
+          <Link
+            key={r.id}
+            to={`/report/${r.id}`}
             style={{
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: 18,
-              fontWeight: 500,
-              letterSpacing: '-0.012em',
-              margin: 0,
+              display: 'grid',
+              gridTemplateColumns: '64px 1fr auto 80px 28px',
+              gap: 16,
+              alignItems: 'start',
+              padding: '12px 16px',
+              textDecoration: 'none',
+              color: 'var(--text)',
+              borderBottom: idx < filtered.length - 1 ? '1px solid var(--border-soft)' : 'none',
+              transition: 'background 100ms ease',
             }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface)')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'transparent')}
           >
-            Reference parcels
-          </h3>
-          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-            Three canonical examples
-          </span>
-        </header>
-        <div
-          className="label"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px 160px 80px',
-            padding: '10px 22px',
-            background: 'var(--surface)',
-            borderBottom: '1px solid var(--border-soft)',
-          }}
-        >
-          <div>Address</div>
-          <div>Score</div>
-          <div>Status</div>
-          <div />
-        </div>
-        {EXAMPLES.map((e, i) => {
-          const tone = bucketTone[e.bucket];
-          return (
-            <div
-              key={e.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 100px 160px 80px',
-                alignItems: 'center',
-                padding: '16px 22px',
-                borderTop: i === 0 ? 'none' : '1px solid var(--border-soft)',
-              }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 500 }}>{e.address}</div>
-              <div
-                className="tnum"
-                style={{
-                  fontFamily: "'Fraunces', Georgia, serif",
-                  fontSize: 22,
-                  fontWeight: 400,
-                  letterSpacing: '-0.018em',
-                }}
-              >
-                {e.score}
+            {/* Score + bar */}
+            <div>
+              <div className={`score ${scoreClass(r.score)}`} style={{ fontSize: 14, width: 44, height: 44 }}>
+                {r.score}
               </div>
-              <div>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: tone.c,
-                    background: tone.bg,
-                    padding: '4px 10px',
-                    borderRadius: 999,
-                    fontWeight: 500,
-                  }}
-                >
-                  {tone.label}
-                </span>
+              <ScoreBar score={r.score} />
+            </div>
+
+            {/* Address + constraint factors */}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text)', lineHeight: 1.3 }}>
+                {r.address}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <Link to={`/report/${e.id}`} className="link-accent" style={{ fontSize: 13 }}>
-                  Open →
-                </Link>
+              <div style={{ fontSize: 11.5, color: 'var(--text-soft)', marginTop: 2, marginBottom: 7 }}>
+                {r.projectType} · {r.acreage} ac
+              </div>
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                {r.factors.map((f) => (
+                  <span
+                    key={f.label}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 500,
+                      padding: '2px 7px',
+                      borderRadius: 4,
+                      background: FLAG_BG[f.flag],
+                      color: FLAG_COLOR[f.flag],
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {f.label}
+                  </span>
+                ))}
               </div>
             </div>
-          );
-        })}
-      </section>
-      <p
-        style={{
-          fontSize: 12,
-          color: 'var(--text-dim)',
-          margin: '12px 4px 0',
-          fontStyle: 'italic',
-          fontFamily: "'Fraunces', Georgia, serif",
-        }}
-      >
-        Reference rows assume report IDs 1–3 exist in your local database.
-      </p>
+
+            {/* Status chip + date */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, paddingTop: 2 }}>
+              <span className={CHIP_CLASS[r.bucket]}>{CHIP_LABEL[r.bucket]}</span>
+              <span style={{ fontSize: 11.5, color: 'var(--text-soft)' }}>{r.date}</span>
+            </div>
+
+            {/* Arrow */}
+            <div style={{ display: 'none' }} /> {/* placeholder for grid alignment */}
+            <div style={{ fontSize: 13, color: 'var(--text-soft)', paddingTop: 2 }}>→</div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
