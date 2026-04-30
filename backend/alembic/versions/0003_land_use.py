@@ -21,6 +21,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='land_use'"
+    )).fetchone():
+        return
+
     op.create_table(
         "land_use",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),

@@ -78,6 +78,7 @@ export function MapView({ parcelId, address }: Props) {
   const [parcelProps, setParcelProps] = useState<Record<string, unknown> | null>(null);
   const [satellite, setSatellite] = useState(true);
   const [showParcelGrid, setShowParcelGrid] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
 
   useEffect(() => {
     api.parcelOverlays(parcelId, 2000).then(setOverlay).catch(console.error);
@@ -156,7 +157,7 @@ export function MapView({ parcelId, address }: Props) {
         <NavigationControl position="top-right" showCompass={false} showZoom />
 
 
-        {Object.entries(polygons).map(([layer, feats]) => {
+        {showLayers && Object.entries(polygons).map(([layer, feats]) => {
           if (layer === 'parcel') return null;
           const style = LAYER_STYLE[layer];
           if (!style) return null;
@@ -224,7 +225,7 @@ export function MapView({ parcelId, address }: Props) {
           </Source>
         )}
 
-        {esmpPoints.features.length > 0 && (
+        {showLayers && esmpPoints.features.length > 0 && (
           <Source id="src-esmp" type="geojson" data={esmpPoints}>
             <Layer
               id="pt-esmp-halo"
@@ -269,12 +270,36 @@ export function MapView({ parcelId, address }: Props) {
         {satellite ? 'Map' : 'Satellite'}
       </button>
 
+      {/* Environmental layers toggle — habitat, flood, NHESP, ESMP */}
+      <button
+        onClick={() => setShowLayers((v) => !v)}
+        style={{
+          position: 'absolute',
+          top: 122,
+          right: 10,
+          background: showLayers ? 'var(--ink)' : 'var(--bg)',
+          color: showLayers ? 'var(--bg)' : 'var(--text)',
+          border: '1px solid var(--border)',
+          borderRadius: 6,
+          padding: '5px 10px',
+          fontSize: 11,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'var(--sans)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          letterSpacing: '0.03em',
+        }}
+        title="Show environmental constraint layers (habitat, flood, NHESP)"
+      >
+        Layers
+      </button>
+
       {/* All-parcels context grid toggle — shows MassGIS L3 boundary tiles for all nearby lots */}
       <button
         onClick={() => setShowParcelGrid((v) => !v)}
         style={{
           position: 'absolute',
-          top: 122,
+          top: 158,
           right: 10,
           background: showParcelGrid ? 'var(--ink)' : 'var(--bg)',
           color: showParcelGrid ? 'var(--bg)' : 'var(--text)',
@@ -320,7 +345,7 @@ export function MapView({ parcelId, address }: Props) {
         </div>
       )}
 
-      {/* Legend chip — bottom-left */}
+      {/* Legend chip — bottom-left, only when environmental layers are active */}
       <div
         style={{
           position: 'absolute',
@@ -339,11 +364,13 @@ export function MapView({ parcelId, address }: Props) {
         }}
       >
         <LegendSwatch color={parcelStroke} label="Parcel" />
-        <LegendSwatch color="#b5a07a" label="Parks · Art. 97" fill />
-        <LegendSwatch color="#4a7c4f" label="Habitat" fill />
-        <LegendSwatch color="#a85a4a" label="NHESP" fill />
-        <LegendSwatch color="#3f6b9c" label="Flood" fill />
-        <LegendSwatch color="#525252" label="Wetlands" fill />
+        {showLayers && <>
+          <LegendSwatch color="#b5a07a" label="Parks · Art. 97" fill />
+          <LegendSwatch color="#4a7c4f" label="Habitat" fill />
+          <LegendSwatch color="#a85a4a" label="NHESP" fill />
+          <LegendSwatch color="#3f6b9c" label="Flood" fill />
+          <LegendSwatch color="#525252" label="Wetlands" fill />
+        </>}
       </div>
     </div>
   );

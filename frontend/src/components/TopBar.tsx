@@ -1,10 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { IconBell } from './Icon';
 
-/**
- * Warm dashboard top bar — breadcrumb on the left, notifications on the right.
- * Sticky so it stays visible as the main content scrolls.
- */
 export default function TopBar() {
   const { pathname } = useLocation();
   const segments = pathname.split('/').filter((s) => s && s !== 'app');
@@ -23,48 +19,49 @@ export default function TopBar() {
         position: 'sticky',
         top: 0,
         zIndex: 20,
+        flexShrink: 0,
       }}
     >
-      {/* Left: breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <nav
-          aria-label="Breadcrumb"
-          style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}
-        >
-          {crumbs.map((c, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-              <span
-                style={{
-                  color: i === crumbs.length - 1 ? 'var(--text)' : 'var(--text-mid)',
-                  fontWeight: i === crumbs.length - 1 ? 500 : 400,
-                }}
-              >
-                {c}
-              </span>
-              {i < crumbs.length - 1 && <span style={{ color: 'var(--text-faint)' }}>/</span>}
+      {/* Breadcrumb */}
+      <nav
+        aria-label="Breadcrumb"
+        style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}
+      >
+        {crumbs.map((c, i) => (
+          <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                color: i === crumbs.length - 1 ? 'var(--text)' : 'var(--text-soft)',
+                fontWeight: i === crumbs.length - 1 ? 500 : 400,
+              }}
+            >
+              {c}
             </span>
-          ))}
-        </nav>
-      </div>
+            {i < crumbs.length - 1 && (
+              <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>/</span>
+            )}
+          </span>
+        ))}
+      </nav>
 
       {/* Right: notifications */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <IconButton aria-label="Notifications">
-          <IconBell size={14} />
-        </IconButton>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <TopBarIconBtn aria-label="Notifications">
+          <IconBell size={13} />
+        </TopBarIconBtn>
       </div>
     </header>
   );
 }
 
-function IconButton({ children, ...rest }: React.ComponentProps<'button'>) {
+function TopBarIconBtn({ children, ...rest }: React.ComponentProps<'button'>) {
   return (
     <button
       {...rest}
       style={{
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 30,
+        height: 30,
+        borderRadius: 7,
         border: '1px solid transparent',
         background: 'transparent',
         color: 'var(--text-mid)',

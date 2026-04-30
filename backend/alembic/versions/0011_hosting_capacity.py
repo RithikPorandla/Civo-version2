@@ -23,6 +23,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='hosting_capacity'"
+    )).fetchone():
+        return
+
     op.create_table(
         "hosting_capacity",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
@@ -51,14 +57,9 @@ def upgrade() -> None:
             name="ck_hca_technology",
         ),
     )
-    op.create_index("ix_hca_utility", "hosting_capacity", ["utility"])
-    op.create_index("ix_hca_technology", "hosting_capacity", ["technology"])
-    op.create_index(
-        "ix_hca_geom",
-        "hosting_capacity",
-        ["geom"],
-        postgresql_using="gist",
-    )
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_hca_utility ON hosting_capacity (utility)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_hca_technology ON hosting_capacity (technology)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_hca_geom ON hosting_capacity USING gist (geom)"))
 
 
 def downgrade() -> None:

@@ -29,6 +29,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='link_health'"
+    )).fetchone():
+        return
+
     op.create_table(
         "link_health",
         sa.Column("url", sa.Text, primary_key=True),
@@ -49,7 +55,7 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_index("ix_link_health_healthy", "link_health", ["healthy"])
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_link_health_healthy ON link_health (healthy)"))
 
 
 def downgrade() -> None:

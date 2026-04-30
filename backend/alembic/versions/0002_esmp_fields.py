@@ -19,31 +19,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("esmp_projects") as b:
-        b.add_column(sa.Column("municipality", sa.String(), nullable=True))
-        b.add_column(
-            sa.Column(
-                "coordinate_confidence",
-                sa.String(),
-                nullable=True,
-            )
-        )
-        b.add_column(sa.Column("siting_status", sa.String(), nullable=True))
-        b.add_column(
-            sa.Column(
-                "source_filing",
-                sa.String(),
-                nullable=False,
-                server_default="DPU 24-10",
-            )
-        )
-        b.drop_column("source_docket")
+    bind = op.get_bind()
 
-    op.create_index("ix_esmp_municipality", "esmp_projects", ["municipality"])
-    op.create_index("ix_esmp_siting_status", "esmp_projects", ["siting_status"])
-    op.create_unique_constraint(
-        "esmp_project_name_uq", "esmp_projects", ["project_name"]
-    )
+    op.execute(sa.text("ALTER TABLE esmp_projects ADD COLUMN IF NOT EXISTS municipality VARCHAR"))
+    op.execute(sa.text("ALTER TABLE esmp_projects ADD COLUMN IF NOT EXISTS coordinate_confidence VARCHAR"))
+    op.execute(sa.text("ALTER TABLE esmp_projects ADD COLUMN IF NOT EXISTS siting_status VARCHAR"))
+    op.execute(sa.text("ALTER TABLE esmp_projects ADD COLUMN IF NOT EXISTS source_filing VARCHAR NOT NULL DEFAULT 'DPU 24-10'"))
+
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name='esmp_projects' AND column_name='source_docket'"
+    )).fetchone():
+        op.execute(sa.text("ALTER TABLE esmp_projects DROP COLUMN source_docket"))
+
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_esmp_municipality ON esmp_projects (municipality)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_esmp_siting_status ON esmp_projects (siting_status)"))
+
+    if not bind.execute(sa.text(
+        "SELECT 1 FROM pg_constraint WHERE conname='esmp_project_name_uq'"
+    )).fetchone():
+        op.create_unique_constraint("esmp_project_name_uq", "esmp_projects", ["project_name"])
 
 
 def downgrade() -> None:

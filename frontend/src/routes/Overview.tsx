@@ -1,539 +1,252 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api';
-import { IconChevronDown, IconSearch, IconArrowUpRight } from '../components/Icon';
 
-type TileTone = 'tile-paper' | 'tile-stone' | 'tile-sage' | 'tile-rust';
+type Status = 'Suitable' | 'Conditional' | 'Constrained';
 
-const PROJECT_TYPES: Array<{ code: string; label: string; color: string }> = [
-  { code: 'solar_rooftop', label: 'Solar Rooftop', color: 'var(--accent)' },
-  { code: 'solar_ground_mount', label: 'Solar Ground-Mount', color: '#c9a464' },
-  { code: 'solar_canopy', label: 'Solar Canopy', color: 'var(--sage)' },
-  { code: 'bess_standalone', label: 'BESS Standalone', color: 'var(--rust)' },
-  { code: 'bess_colocated', label: 'BESS Co-located', color: '#9a7a8a' },
-  { code: 'substation', label: 'Substation', color: '#8a99a8' },
-  { code: 'transmission', label: 'Transmission', color: '#6b7e8a' },
-  { code: 'ev_charging', label: 'EV Charging', color: '#7a9e6e' },
+interface ReportRow { score: number; address: string; timeAgo: string; status: Status; }
+interface FeedItem  { severity: 'red' | 'green' | 'amber'; headline: string; body: string; timeAgo: string; }
+
+const RECENT_REPORTS: ReportRow[] = [
+  { score: 65, address: '50 Nagog Park, Acton',     timeAgo: '2 hours ago', status: 'Conditional' },
+  { score: 82, address: '280 Main St, Acton',        timeAgo: 'Yesterday',   status: 'Suitable'    },
+  { score: 78, address: '12 Mill Rd, Burlington',    timeAgo: 'Yesterday',   status: 'Suitable'    },
+  { score: 41, address: '45 Cedar St, Natick',       timeAgo: '3 days ago',  status: 'Constrained' },
+  { score: 71, address: '8 Concord Rd, Acton',       timeAgo: '4 days ago',  status: 'Conditional' },
 ];
 
-export default function Overview() {
-  const { data: munis } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => api.listMunicipalities(),
-  });
-  const { data: health } = useQuery({
-    queryKey: ['health'],
-    queryFn: () => api.health(),
-  });
+const FEED_ITEMS: FeedItem[] = [
+  { severity: 'red',   headline: 'Acton ConCom denied BESS project',  body: 'Similar constraint profile to your watched site at 50 Nagog Park. Wetland buffer was the deciding factor.', timeAgo: '3 hours ago' },
+  { severity: 'green', headline: 'Falmouth adopted DOER BESS bylaw',  body: 'Three parcels in your portfolio are in Falmouth. Their permitting path just improved.',                      timeAgo: '1 day ago'   },
+  { severity: 'amber', headline: 'ESMP timeline updated',             body: 'North Acton substation moved from 2033 to 2028. Grid access improves for nearby parcels.',                   timeAgo: '2 days ago'  },
+];
 
-  const stats: Array<{ label: string; value: string; sub: string; tile: TileTone }> = [
-    {
-      label: 'Parcels indexed',
-      value: health?.parcels_loaded?.toLocaleString() || '—',
-      sub: 'MassGIS L3 assessor records',
-      tile: 'tile-paper',
-    },
-    {
-      label: 'ESMP projects',
-      value: health?.esmp_projects_loaded != null ? String(health.esmp_projects_loaded) : '—',
-      sub: 'Eversource · National Grid · Unitil',
-      tile: 'tile-stone',
-    },
-    {
-      label: 'Towns covered',
-      value: munis != null ? String(munis.length) : '—',
-      sub: 'municipalities with bylaw data',
-      tile: 'tile-sage',
-    },
-    {
-      label: 'Project types',
-      value: String(PROJECT_TYPES.length),
-      sub: 'solar · BESS · substation · EV',
-      tile: 'tile-rust',
-    },
-  ];
+// Sparkline data per tile — last 8 weeks
+const TILES = [
+  { label: 'Reports this month', value: '23', delta: '↑12% from last month', spark: [6,8,5,9,11,10,14,15], color: '#c9a464' },
+  { label: 'Sites in portfolio',  value: '8',  delta: '↑2 new this week',    spark: [4,4,5,5,5,6,7,8],     color: '#6b7e5a' },
+  { label: 'Towns covered',       value: '14', delta: 'Across 3 sub-regions', spark: [8,9,9,10,11,12,13,14], color: '#8b7355' },
+  { label: 'Avg. score',          value: '67', delta: 'Professional tier',    spark: [71,68,64,70,65,69,66,67], color: '#a85a4a' },
+];
 
-  // Municipal coverage per project type (from real muni data)
-  const typeCoverage = PROJECT_TYPES.map((pt) => {
-    const count = (munis || []).filter((m) => m.project_types.includes(pt.code)).length;
-    return { ...pt, count };
-  }).sort((a, b) => b.count - a.count);
-  const maxTypeCount = Math.max(1, ...typeCoverage.map((t) => t.count));
+// Score distribution — bar chart data
+const SCORE_DIST = [
+  { label: '0–40',  count: 2, cls: 's-low'  },
+  { label: '41–55', count: 4, cls: 's-low'  },
+  { label: '56–70', count: 8, cls: 's-mid'  },
+  { label: '71–80', count: 6, cls: 's-mid'  },
+  { label: '81–90', count: 5, cls: 's-high' },
+  { label: '91+',   count: 3, cls: 's-high' },
+];
 
-  // Top municipalities by project-type breadth
-  const topMunis = [...(munis || [])]
-    .sort((a, b) => b.project_types.length - a.project_types.length)
-    .slice(0, 6);
-  const maxBreadth = Math.max(1, ...topMunis.map((m) => m.project_types.length));
+const BAR_COLOR: Record<string, string> = {
+  's-high': '#6b7e5a',
+  's-mid':  '#c9a464',
+  's-low':  '#a85a4a',
+};
 
-  const esmpTotal = health?.esmp_projects_loaded || 0;
-  // ESMP breakdown by utility (illustrative distribution — reflects known MA utility share)
-  const utilitySplit = [
-    { label: 'Eversource', share: 0.42, color: 'var(--accent)' },
-    { label: 'National Grid', share: 0.38, color: 'var(--rust)' },
-    { label: 'Unitil', share: 0.11, color: 'var(--sage)' },
-    { label: 'Unknown', share: 0.09, color: 'var(--text-dim)' },
-  ];
+const DOT_COLORS: Record<FeedItem['severity'], string> = {
+  red:   '#a85a4a',
+  green: '#6b7e5a',
+  amber: '#c9a464',
+};
 
-  const updatedLabel = new Date().toLocaleString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+function scoreClass(n: number) {
+  if (n >= 75) return 's-high';
+  if (n >= 50) return 's-mid';
+  return 's-low';
+}
+
+const CHIP_CLASS: Record<Status, string> = {
+  Suitable:    'chip suit',
+  Conditional: 'chip cond',
+  Constrained: 'chip cons',
+};
+
+// Sparkline: 8-point line chart, 64×28
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const w = 64, h = 28, pad = 2;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const xs = data.map((_, i) => pad + (i / (data.length - 1)) * (w - pad * 2));
+  const ys = data.map((v) => h - pad - ((v - min) / range) * (h - pad * 2));
+  const pts = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
+  const area = `M${xs[0]},${ys[0]} ` + xs.slice(1).map((x, i) => `L${x},${ys[i + 1]}`).join(' ') + ` L${xs[xs.length - 1]},${h} L${xs[0]},${h} Z`;
 
   return (
-    <div style={{ padding: '36px 40px 80px', maxWidth: 1280 }}>
-      {/* Eyebrow + H1 */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 10 }}>
-        <span className="eyebrow">Overview</span>
-      </div>
-      <h1
-        className="display"
-        style={{
-          fontSize: 34,
-          margin: 0,
-          letterSpacing: '-0.018em',
-          lineHeight: 1.05,
-        }}
-      >
-        Today in Massachusetts
-      </h1>
-      <hr className="rule" style={{ margin: '24px 0 14px' }} />
+    <svg width={w} height={h} style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id={`sg-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#sg-${color.replace('#', '')})`} />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="2.5" fill={color} />
+    </svg>
+  );
+}
 
+export default function Overview() {
+  const maxCount = Math.max(...SCORE_DIST.map((d) => d.count));
+
+  return (
+    <div className="page" style={{ fontFamily: 'var(--sans)' }}>
+
+      {/* Page header */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="page-eyebrow">Dashboard</div>
+        <h1 className="page-h1">Welcome back, Rithik</h1>
+        <p className="page-sub">Your portfolio at a glance</p>
+      </div>
+
+      {/* Stat tiles with sparklines */}
+      <div className="tiles">
+        {TILES.map((t) => (
+          <div className="tile" key={t.label}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div className="tile-label">{t.label}</div>
+              <Sparkline data={t.spark} color={t.color} />
+            </div>
+            <div className="tile-num">{t.value}</div>
+            <div className="tile-delta">{t.delta}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Two-column layout */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 18,
-        }}
-      >
-        <button className="pill">
-          Today
-          <IconChevronDown size={10} />
-        </button>
-        <span
-          style={{
-            fontFamily: "'Fraunces', Georgia, serif",
-            fontSize: 12,
-            color: 'var(--text-dim)',
-            fontStyle: 'italic',
-          }}
-        >
-          Updated {updatedLabel}
-        </span>
-      </div>
-
-      {/* Stat tiles */}
-      <section
-        style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 14,
-          marginBottom: 18,
+          gridTemplateColumns: '1.6fr 1fr',
+          gap: 'var(--gap)',
+          alignItems: 'start',
+          marginBottom: 'var(--gap)',
         }}
       >
-        {stats.map((s) => (
-          <StatTile key={s.label} label={s.label} value={s.value} sub={s.sub} tile={s.tile} />
-        ))}
-      </section>
-
-      {/* Hero row: Discover spotlight + Interconnection pipeline */}
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.2fr 1fr',
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
-        <DiscoverSpotlight esmpCount={esmpTotal} townsCount={munis?.length || 0} />
-        <UtilityPipelineCard total={esmpTotal} split={utilitySplit} />
-      </section>
-
-      {/* Secondary row: project-type coverage + top municipalities */}
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.25fr 1fr',
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
-        {/* Municipal coverage by project type */}
+        {/* Recent reports */}
         <section className="card" style={{ overflow: 'hidden' }}>
           <header
             style={{
-              padding: '18px 22px 14px',
+              padding: '14px 20px 12px',
+              borderBottom: '1px solid var(--border-soft)',
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              borderBottom: '1px solid var(--border-soft)',
             }}
           >
             <div>
-              <h3 style={panelTitle}>Coverage by project type</h3>
-              <div style={panelSubtitle}>Municipalities with bylaw data per type</div>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text)' }}>
+                Recent reports
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-soft)', marginTop: 2 }}>
+                Your last 30 days of site activity
+              </div>
             </div>
-            <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-              {munis?.length || 0} towns
-            </span>
-          </header>
-          <div style={{ padding: '14px 22px 18px' }}>
-            {typeCoverage.map((t) => {
-              const pct = (t.count / maxTypeCount) * 100;
-              return (
-                <div
-                  key={t.code}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '150px 1fr 40px',
-                    gap: 12,
-                    alignItems: 'center',
-                    padding: '7px 0',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      fontSize: 13,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 2,
-                        background: t.color,
-                        flex: 'none',
-                      }}
-                    />
-                    {t.label}
-                  </div>
-                  <div
-                    className="bar-track"
-                    style={{ height: 8, background: 'var(--surface-alt)' }}
-                  >
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${pct}%`,
-                        height: 8,
-                        background: t.color,
-                        opacity: 0.85,
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="tnum"
-                    style={{
-                      fontSize: 12.5,
-                      color: 'var(--text-mid)',
-                      textAlign: 'right',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {t.count}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Top municipalities by breadth */}
-        <section className="card" style={{ overflow: 'hidden' }}>
-          <header
-            style={{
-              padding: '18px 22px 14px',
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid var(--border-soft)',
-            }}
-          >
-            <div>
-              <h3 style={panelTitle}>Top municipalities</h3>
-              <div style={panelSubtitle}>By project-type breadth</div>
-            </div>
-            <Link to="/municipalities" className="link-accent" style={{ fontSize: 12 }}>
-              View all →
+            <Link to="/app/lookup" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>
+              New report →
             </Link>
           </header>
-          <div style={{ padding: '10px 22px 18px' }}>
-            {topMunis.map((m) => {
-              const pct = (m.project_types.length / maxBreadth) * 100;
-              return (
-                <Link
-                  key={m.town_id}
-                  to={`/municipalities/${m.town_id}`}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    gap: 10,
-                    padding: '9px 0',
-                    textDecoration: 'none',
-                    color: 'var(--text)',
-                    borderBottom: '1px solid var(--border-soft)',
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13.5,
-                        fontWeight: 500,
-                        marginBottom: 6,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {m.town_name}
-                    </div>
-                    <div
-                      className="bar-track"
-                      style={{ height: 4, background: 'var(--surface-alt)' }}
-                    >
-                      <div
-                        className="bar-fill"
-                        style={{
-                          width: `${pct}%`,
-                          height: 4,
-                          background: 'var(--accent)',
-                          opacity: 0.8,
-                        }}
-                      />
-                    </div>
+
+          <div>
+            {RECENT_REPORTS.map((row, idx) => (
+              <Link key={idx} to="/app/lookup" className="report-row">
+                <div className={`score ${scoreClass(row.score)}`}>{row.score}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
+                    {row.address}
                   </div>
-                  <div
-                    className="tnum"
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--text-mid)',
-                      alignSelf: 'end',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {m.project_types.length} types
+                  <div style={{ fontSize: 11.5, color: 'var(--text-soft)', marginTop: 2 }}>
+                    {row.timeAgo}
                   </div>
-                </Link>
-              );
-            })}
-            {topMunis.length === 0 && (
-              <div style={{ padding: '14px 0', fontSize: 13, color: 'var(--text-dim)' }}>
-                No municipalities loaded yet.
-              </div>
-            )}
+                </div>
+                <div className={CHIP_CLASS[row.status]}>{row.status}</div>
+              </Link>
+            ))}
           </div>
         </section>
-      </section>
 
-      {/* Primary CTA */}
-      <section style={{ marginTop: 4 }}>
-        <Link to="/app/lookup" className="btn btn-primary">
-          Score an address <span className="arr">→</span>
-        </Link>
-      </section>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-const panelTitle: React.CSSProperties = {
-  fontFamily: "'Fraunces', Georgia, serif",
-  fontSize: 18,
-  fontWeight: 500,
-  letterSpacing: '-0.012em',
-  margin: 0,
-};
-
-const panelSubtitle: React.CSSProperties = {
-  fontSize: 12,
-  color: 'var(--text-dim)',
-  marginTop: 4,
-};
-
-function DiscoverSpotlight({ esmpCount, townsCount }: { esmpCount: number; townsCount: number }) {
-  return (
-    <Link
-      to="/app/discover"
-      className="card"
-      style={{
-        padding: '22px 24px',
-        textDecoration: 'none',
-        color: 'var(--text)',
-        background:
-          'linear-gradient(135deg, var(--surface-warm) 0%, var(--surface) 65%)',
-        display: 'flex',
-        gap: 20,
-        alignItems: 'stretch',
-        overflow: 'hidden',
-        position: 'relative',
-        transition: 'transform 160ms ease, border-color 160ms ease',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-soft)')}
-    >
-      {/* Magnifying-glass affordance */}
-      <div
-        aria-hidden="true"
-        style={{
-          flex: 'none',
-          width: 72,
-          height: 72,
-          borderRadius: 16,
-          background: 'var(--bg)',
-          border: '1px solid var(--border)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--accent)',
-          boxShadow: '0 1px 0 rgba(0,0,0,0.02), 0 8px 20px rgba(139,115,85,0.06)',
-        }}
-      >
-        <IconSearch size={32} />
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div className="eyebrow" style={{ marginBottom: 6 }}>
-          Discover sites
-        </div>
-        <div
-          className="display"
-          style={{ fontSize: 22, lineHeight: 1.15, marginBottom: 8 }}
-        >
-          Find parcels near interconnection
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.45 }}>
-          Anchor to any of{' '}
-          <span className="tnum" style={{ fontWeight: 500, color: 'var(--text)' }}>
-            {esmpCount.toLocaleString()}
-          </span>{' '}
-          ESMP projects across{' '}
-          <span className="tnum" style={{ fontWeight: 500, color: 'var(--text)' }}>
-            {townsCount}
-          </span>{' '}
-          towns and surface ranked candidates within a radius.
-        </div>
-        <div
-          style={{
-            marginTop: 12,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 13,
-            color: 'var(--accent)',
-            fontWeight: 500,
-          }}
-        >
-          Start discovering
-          <IconArrowUpRight size={12} />
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function UtilityPipelineCard({
-  total,
-  split,
-}: {
-  total: number;
-  split: Array<{ label: string; share: number; color: string }>;
-}) {
-  return (
-    <section className="card" style={{ overflow: 'hidden' }}>
-      <header
-        style={{
-          padding: '18px 22px 14px',
-          borderBottom: '1px solid var(--border-soft)',
-        }}
-      >
-        <h3 style={panelTitle}>Interconnection pipeline</h3>
-        <div style={panelSubtitle}>ESMP projects by serving utility</div>
-      </header>
-      <div style={{ padding: '18px 22px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14 }}>
-          <div
-            className="display tnum"
-            style={{ fontSize: 32, letterSpacing: '-0.02em' }}
-          >
-            {total.toLocaleString()}
+        {/* Intelligence feed */}
+        <section className="card" style={{ overflow: 'hidden' }}>
+          <header style={{ padding: '14px 20px 12px', borderBottom: '1px solid var(--border-soft)' }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text)' }}>
+              Intelligence feed
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-soft)', marginTop: 2 }}>
+              Regulatory signals relevant to your portfolio
+            </div>
+          </header>
+          <div>
+            {FEED_ITEMS.map((item, idx) => (
+              <div key={idx} className="feed-item">
+                <div className="feed-dot" style={{ background: DOT_COLORS[item.severity] }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="feed-title">{item.headline}</div>
+                  <div className="feed-body">{item.body}</div>
+                  <div className="feed-time">{item.timeAgo}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>active projects</div>
+        </section>
+      </div>
+
+      {/* Score distribution bar chart */}
+      <section className="card" style={{ overflow: 'hidden' }}>
+        <header style={{ padding: '14px 20px 12px', borderBottom: '1px solid var(--border-soft)', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text)' }}>
+              Score distribution
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-soft)', marginTop: 2 }}>
+              All sites scored this month
+            </div>
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-soft)' }}>28 sites total</div>
+        </header>
+
+        <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+          {SCORE_DIST.map((d) => {
+            const pct = (d.count / maxCount) * 100;
+            return (
+              <div key={d.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                {/* Count label */}
+                <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-mid)', lineHeight: 1 }}>{d.count}</div>
+                {/* Bar */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: `${Math.max(pct * 1.0, 6)}px`,
+                    minHeight: 6,
+                    maxHeight: 100,
+                    background: BAR_COLOR[d.cls],
+                    borderRadius: '4px 4px 0 0',
+                    opacity: 0.85,
+                    transition: 'height 300ms ease',
+                  }}
+                />
+                {/* Label */}
+                <div style={{ fontSize: 10.5, color: 'var(--text-soft)', textAlign: 'center', lineHeight: 1.2 }}>{d.label}</div>
+              </div>
+            );
+          })}
+
+          {/* Y-axis reference lines overlay */}
         </div>
-        {/* Stacked horizontal bar */}
-        <div
-          role="img"
-          aria-label="Utility share of ESMP projects"
-          style={{
-            display: 'flex',
-            height: 10,
-            borderRadius: 999,
-            overflow: 'hidden',
-            background: 'var(--surface-alt)',
-            marginBottom: 14,
-          }}
-        >
-          {split.map((u) => (
-            <div
-              key={u.label}
-              style={{
-                width: `${u.share * 100}%`,
-                background: u.color,
-                opacity: 0.9,
-              }}
-            />
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {split.map((u) => (
-            <div
-              key={u.label}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '10px 1fr auto',
-                gap: 10,
-                alignItems: 'center',
-                fontSize: 12.5,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 2,
-                  background: u.color,
-                }}
-              />
-              <span style={{ color: 'var(--text)' }}>{u.label}</span>
-              <span className="tnum" style={{ color: 'var(--text-mid)', fontWeight: 500 }}>
-                {Math.round(u.share * 100)}%
-              </span>
+
+        {/* Legend */}
+        <div style={{ padding: '0 24px 16px', display: 'flex', gap: 16 }}>
+          {[
+            { color: BAR_COLOR['s-high'], label: 'Suitable (75+)'     },
+            { color: BAR_COLOR['s-mid'],  label: 'Conditional (50–74)' },
+            { color: BAR_COLOR['s-low'],  label: 'Constrained (<50)'   },
+          ].map((l) => (
+            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color, opacity: 0.85 }} />
+              <span style={{ fontSize: 11, color: 'var(--text-soft)' }}>{l.label}</span>
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function StatTile({ label, value, sub, tile }: { label: string; value: string; sub: string; tile: TileTone }) {
-  return (
-    <div className={`stat-tile ${tile}`}>
-      <div style={{ fontSize: 12, color: 'var(--text-mid)', fontWeight: 500 }}>{label}</div>
-      <div className="tile-num tnum" style={{ marginTop: 10 }}>{value}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6 }}>{sub}</div>
+      </section>
     </div>
   );
 }

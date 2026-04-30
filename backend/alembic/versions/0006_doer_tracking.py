@@ -47,114 +47,113 @@ DOER_JSON_DIR = Path(__file__).resolve().parents[3] / "data" / "processed" / "do
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+
     # -------------------------------------------------------------------
     # doer_model_bylaws — canonical reference documents
     # -------------------------------------------------------------------
-    op.create_table(
-        "doer_model_bylaws",
-        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("state", sa.Text, nullable=False, server_default="MA"),
-        sa.Column("project_type", sa.Text, nullable=False),
-        sa.Column("version", sa.Text, nullable=False),
-        sa.Column("parsed_data", JSONB, nullable=False),
-        sa.Column("source_url", sa.Text, nullable=False),
-        sa.Column("source_pdf_hash", sa.Text, nullable=False),
-        sa.Column(
-            "parsed_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.func.now(),
-            nullable=False,
-        ),
-        sa.UniqueConstraint("state", "project_type", "version", name="uq_doer_model_bylaws"),
-    )
-    op.create_check_constraint(
-        "ck_doer_model_bylaws_project_type",
-        "doer_model_bylaws",
-        "project_type IN ('solar', 'bess')",
-    )
+    if not bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='doer_model_bylaws'"
+    )).fetchone():
+        op.create_table(
+            "doer_model_bylaws",
+            sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+            sa.Column("state", sa.Text, nullable=False, server_default="MA"),
+            sa.Column("project_type", sa.Text, nullable=False),
+            sa.Column("version", sa.Text, nullable=False),
+            sa.Column("parsed_data", JSONB, nullable=False),
+            sa.Column("source_url", sa.Text, nullable=False),
+            sa.Column("source_pdf_hash", sa.Text, nullable=False),
+            sa.Column(
+                "parsed_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.func.now(),
+                nullable=False,
+            ),
+            sa.UniqueConstraint("state", "project_type", "version", name="uq_doer_model_bylaws"),
+        )
+        op.create_check_constraint(
+            "ck_doer_model_bylaws_project_type",
+            "doer_model_bylaws",
+            "project_type IN ('solar', 'bess')",
+        )
 
     # -------------------------------------------------------------------
     # municipal_doer_adoption — one row per (town, project_type)
     # -------------------------------------------------------------------
-    op.create_table(
-        "municipal_doer_adoption",
-        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("state", sa.Text, nullable=False, server_default="MA"),
-        sa.Column(
-            "municipality_id",
-            sa.Integer,
-            sa.ForeignKey("municipalities.town_id", ondelete="CASCADE"),
-            nullable=False,
-        ),
-        sa.Column("project_type", sa.Text, nullable=False),
-        sa.Column("adoption_status", sa.Text, nullable=False),
-        sa.Column("adopted_date", sa.Date, nullable=True),
-        sa.Column("town_meeting_article", sa.Text, nullable=True),
-        sa.Column("local_modifications", JSONB, nullable=True),
-        sa.Column("modification_summary", sa.Text, nullable=True),
-        sa.Column("current_local_bylaw_url", sa.Text, nullable=True),
-        sa.Column("doer_circuit_rider", sa.Text, nullable=True),
-        sa.Column("doer_version_ref", sa.Text, nullable=True),
-        sa.Column("source_url", sa.Text, nullable=False),
-        sa.Column("source_type", sa.Text, nullable=False),
-        sa.Column("confidence", sa.Numeric, nullable=True),
-        sa.Column(
-            "extracted_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.func.now(),
-            nullable=False,
-        ),
-        sa.Column(
-            "reviewed_by_human",
-            sa.Boolean,
-            nullable=False,
-            server_default=sa.text("false"),
-        ),
-        sa.UniqueConstraint(
-            "municipality_id", "project_type", name="uq_municipal_doer_adoption"
-        ),
-    )
-    op.create_check_constraint(
-        "ck_mda_project_type",
-        "municipal_doer_adoption",
-        "project_type IN ('solar', 'bess')",
-    )
-    op.create_check_constraint(
-        "ck_mda_adoption_status",
-        "municipal_doer_adoption",
-        "adoption_status IN ('adopted', 'in_progress', 'not_started', 'unknown')",
-    )
-    op.create_check_constraint(
-        "ck_mda_source_type",
-        "municipal_doer_adoption",
-        "source_type IN ('town_website', 'town_meeting_warrant', 'agent_extraction', 'manual_entry')",
-    )
-    op.create_check_constraint(
-        "ck_mda_confidence",
-        "municipal_doer_adoption",
-        "confidence IS NULL OR (confidence BETWEEN 0 AND 1)",
-    )
-    op.create_index(
-        "ix_mda_state_status",
-        "municipal_doer_adoption",
-        ["state", "adoption_status"],
-    )
+    if not bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='municipal_doer_adoption'"
+    )).fetchone():
+        op.create_table(
+            "municipal_doer_adoption",
+            sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+            sa.Column("state", sa.Text, nullable=False, server_default="MA"),
+            sa.Column(
+                "municipality_id",
+                sa.Integer,
+                sa.ForeignKey("municipalities.town_id", ondelete="CASCADE"),
+                nullable=False,
+            ),
+            sa.Column("project_type", sa.Text, nullable=False),
+            sa.Column("adoption_status", sa.Text, nullable=False),
+            sa.Column("adopted_date", sa.Date, nullable=True),
+            sa.Column("town_meeting_article", sa.Text, nullable=True),
+            sa.Column("local_modifications", JSONB, nullable=True),
+            sa.Column("modification_summary", sa.Text, nullable=True),
+            sa.Column("current_local_bylaw_url", sa.Text, nullable=True),
+            sa.Column("doer_circuit_rider", sa.Text, nullable=True),
+            sa.Column("doer_version_ref", sa.Text, nullable=True),
+            sa.Column("source_url", sa.Text, nullable=False),
+            sa.Column("source_type", sa.Text, nullable=False),
+            sa.Column("confidence", sa.Numeric, nullable=True),
+            sa.Column(
+                "extracted_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.func.now(),
+                nullable=False,
+            ),
+            sa.Column(
+                "reviewed_by_human",
+                sa.Boolean,
+                nullable=False,
+                server_default=sa.text("false"),
+            ),
+            sa.UniqueConstraint(
+                "municipality_id", "project_type", name="uq_municipal_doer_adoption"
+            ),
+        )
+        op.create_check_constraint(
+            "ck_mda_project_type",
+            "municipal_doer_adoption",
+            "project_type IN ('solar', 'bess')",
+        )
+        op.create_check_constraint(
+            "ck_mda_adoption_status",
+            "municipal_doer_adoption",
+            "adoption_status IN ('adopted', 'in_progress', 'not_started', 'unknown')",
+        )
+        op.create_check_constraint(
+            "ck_mda_source_type",
+            "municipal_doer_adoption",
+            "source_type IN ('town_website', 'town_meeting_warrant', 'agent_extraction', 'manual_entry')",
+        )
+        op.create_check_constraint(
+            "ck_mda_confidence",
+            "municipal_doer_adoption",
+            "confidence IS NULL OR (confidence BETWEEN 0 AND 1)",
+        )
+        op.create_index(
+            "ix_mda_state_status",
+            "municipal_doer_adoption",
+            ["state", "adoption_status"],
+        )
 
     # -------------------------------------------------------------------
     # municipalities: DOER alignment cache columns
     # -------------------------------------------------------------------
-    op.add_column(
-        "municipalities",
-        sa.Column("doer_model_aligned", JSONB, nullable=True),
-    )
-    op.add_column(
-        "municipalities",
-        sa.Column("doer_deviation_count", JSONB, nullable=True),
-    )
-    op.add_column(
-        "municipalities",
-        sa.Column("doer_deviation_details", JSONB, nullable=True),
-    )
+    op.execute(sa.text("ALTER TABLE municipalities ADD COLUMN IF NOT EXISTS doer_model_aligned JSONB"))
+    op.execute(sa.text("ALTER TABLE municipalities ADD COLUMN IF NOT EXISTS doer_deviation_count JSONB"))
+    op.execute(sa.text("ALTER TABLE municipalities ADD COLUMN IF NOT EXISTS doer_deviation_details JSONB"))
 
     # -------------------------------------------------------------------
     # Seed canonical DOER bylaws from parsed JSON

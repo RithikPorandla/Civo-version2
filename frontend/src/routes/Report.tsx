@@ -430,7 +430,7 @@ function ReportView({
             border: '1px solid var(--border-soft)',
           }}
         >
-          <MapView parcelId={report.parcel_id} address={address} />
+          <MapView parcelId={report.parcel_id} address={fullAddress} />
         </div>
       </Panel>
 
@@ -1303,7 +1303,7 @@ function HcaRow({ hca }: { hca: HcaInfo }) {
 // address to a different parcel. Silent when mode === 'contains'.
 // ---------------------------------------------------------------------------
 function ResolutionBanner({ resolution }: { resolution: ResolutionInfo | null }) {
-  if (!resolution || resolution.mode === 'contains') return null;
+  if (!resolution || resolution.mode === 'contains' || resolution.mode === 'addr_match') return null;
 
   const distDisplay =
     resolution.distance_m < 1000

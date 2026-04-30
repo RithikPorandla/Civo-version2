@@ -15,11 +15,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Solar irradiance on parcel_ml_features
-    op.add_column("parcel_ml_features",
-        sa.Column("solar_ghi_kwh_m2_yr", sa.Float(), nullable=True))
+    op.execute(sa.text(
+        "ALTER TABLE parcel_ml_features ADD COLUMN IF NOT EXISTS solar_ghi_kwh_m2_yr FLOAT"
+    ))
 
-    # ISO-NE interconnection queue
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='isone_queue'"
+    )).fetchone():
+        return
+
     op.create_table(
         "isone_queue",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -28,16 +33,16 @@ def upgrade() -> None:
         sa.Column("town_name", sa.Text()),
         sa.Column("county", sa.Text()),
         sa.Column("state", sa.Text(), default="MA"),
-        sa.Column("project_type", sa.Text()),   # solar, bess, wind, etc.
+        sa.Column("project_type", sa.Text()),
         sa.Column("capacity_mw", sa.Float()),
         sa.Column("queue_date", sa.Date()),
-        sa.Column("status", sa.Text()),         # active, withdrawn, completed
+        sa.Column("status", sa.Text()),
         sa.Column("in_service_date", sa.Date(), nullable=True),
         sa.Column("geom", Geometry("POINT", srid=26986), nullable=True),
         sa.Column("ingested_at", sa.DateTime(timezone=True)),
     )
-    op.create_index("idx_isone_queue_town", "isone_queue", ["town_name"])
-    op.create_index("idx_isone_queue_type", "isone_queue", ["project_type"])
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_isone_queue_town ON isone_queue (town_name)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_isone_queue_type ON isone_queue (project_type)"))
 
 
 def downgrade() -> None:

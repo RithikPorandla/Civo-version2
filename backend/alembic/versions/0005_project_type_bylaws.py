@@ -39,15 +39,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "municipalities",
-        sa.Column(
-            "project_type_bylaws",
-            JSONB,
-            nullable=False,
-            server_default=sa.text("'{}'::jsonb"),
-        ),
-    )
+    op.execute(sa.text(
+        "ALTER TABLE municipalities ADD COLUMN IF NOT EXISTS "
+        "project_type_bylaws JSONB NOT NULL DEFAULT '{}'::jsonb"
+    ))
 
 
 def downgrade() -> None:

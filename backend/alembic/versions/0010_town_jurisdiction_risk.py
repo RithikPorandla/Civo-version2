@@ -22,6 +22,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='town_jurisdiction_risk'"
+    )).fetchone():
+        return
+
     op.create_table(
         "town_jurisdiction_risk",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
@@ -41,12 +47,8 @@ def upgrade() -> None:
         ),
         sa.UniqueConstraint("town_name", "project_type", name="uq_tjr_town_project"),
     )
-    op.create_index(
-        "ix_tjr_town_name", "town_jurisdiction_risk", ["town_name"]
-    )
-    op.create_index(
-        "ix_tjr_project_type", "town_jurisdiction_risk", ["project_type"]
-    )
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_tjr_town_name ON town_jurisdiction_risk (town_name)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_tjr_project_type ON town_jurisdiction_risk (project_type)"))
 
 
 def downgrade() -> None:

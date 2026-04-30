@@ -25,6 +25,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='parcel_characterizations'"
+    )).fetchone():
+        return
+
     op.create_table(
         "parcel_characterizations",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
@@ -51,11 +57,9 @@ def upgrade() -> None:
             "parcel_loc_id", "vision_version", name="uq_parcel_char_version"
         ),
     )
-    op.create_index(
-        "ix_parcel_char_lookup",
-        "parcel_characterizations",
-        ["parcel_loc_id", "vision_version"],
-    )
+    op.execute(sa.text(
+        "CREATE INDEX IF NOT EXISTS ix_parcel_char_lookup ON parcel_characterizations (parcel_loc_id, vision_version)"
+    ))
 
 
 def downgrade() -> None:

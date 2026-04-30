@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,6 +50,12 @@ ESMP_ANCHOR_ELIGIBLE_TYPES = {"substation", "transmission"}
 
 class ResolveError(Exception):
     pass
+
+
+def _street_number(text: str) -> str | None:
+    """Extract the leading street number from an address string, e.g. '100 Main St' → '100'."""
+    m = re.match(r"^\s*(\d+)", text.strip())
+    return m.group(1) if m else None
 
 
 @dataclass
@@ -175,6 +182,51 @@ def resolve_parcel_detailed(
         .first()
     )
     if contains:
+        # If the geocoded point landed in an unnamed parcel (parking lot,
+        # ROW, common area — site_addr is null/empty), try to find the
+        # nearest named parcel whose address starts with the same street
+        # number within 200 m. This recovers the common case where Google
+        # Places pins the entrance curb rather than the building centroid.
+        if not (contains["site_addr"] or "").strip():
+            street_num = _street_number(formatted or address)
+            if street_num:
+                addr_match = (
+                    session.execute(
+                        text(
+                            """
+                            SELECT loc_id, site_addr, town_name,
+                                   ST_Distance(
+                                     geom,
+                                     ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 26986)
+                                   ) AS dist
+                            FROM parcels
+                            WHERE site_addr IS NOT NULL AND site_addr <> ''
+                              AND site_addr ILIKE :num || ' %'
+                              AND ST_DWithin(
+                                    geom,
+                                    ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 26986),
+                                    200
+                                  )
+                            ORDER BY geom <->
+                                ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 26986)
+                            LIMIT 1
+                            """
+                        ),
+                        {**params, "num": street_num},
+                    )
+                    .mappings()
+                    .first()
+                )
+                if addr_match:
+                    return ResolvedParcel(
+                        loc_id=addr_match["loc_id"],
+                        resolution_mode="addr_match",
+                        original_query=address,
+                        formatted_address=formatted,
+                        resolved_site_addr=addr_match["site_addr"],
+                        resolved_town=addr_match["town_name"],
+                        distance_m=float(addr_match["dist"] or 0.0),
+                    )
         return ResolvedParcel(
             loc_id=contains["loc_id"],
             resolution_mode="contains",

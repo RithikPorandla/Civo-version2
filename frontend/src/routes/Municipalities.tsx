@@ -15,7 +15,17 @@ const PROJECT_TYPES: Array<{ code: ProjectTypeCode; label: string }> = [
   { code: 'ev_charging', label: 'EV Charging' },
 ];
 
-const TILE_CLASSES = ['tile-paper', 'tile-stone', 'tile-sage', 'tile-rust'] as const;
+// Short labels for the project type pills shown in each row
+const TYPE_SHORT: Partial<Record<ProjectTypeCode, string>> = {
+  solar_rooftop:     'Rooftop',
+  solar_ground_mount:'Ground',
+  solar_canopy:      'Canopy',
+  bess_standalone:   'BESS',
+  bess_colocated:    'BESS+',
+  substation:        'Sub.',
+  transmission:      'Trans.',
+  ev_charging:       'EV',
+};
 
 export default function MunicipalitiesRoute() {
   const { townId } = useParams();
@@ -24,168 +34,224 @@ export default function MunicipalitiesRoute() {
 }
 
 function MunicipalityIndex() {
+  const [query, setQuery] = useState('');
+
   const { data, isPending, isError, error } = useQuery({
     queryKey: ['municipalities'],
     queryFn: () => api.listMunicipalities(),
   });
+
   if (isPending)
-    return (
-      <div style={{ padding: 36, color: 'var(--text-dim)', fontSize: 13 }}>Loading…</div>
-    );
+    return <div style={{ padding: 36, color: 'var(--text-soft)', fontSize: 13 }}>Loading…</div>;
+
   if (isError)
     return (
       <div style={{ padding: 36, maxWidth: 560 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--bad)', marginBottom: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--rust)', marginBottom: 6 }}>
           Could not load municipalities
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6 }}>
-          {String(error)}
-        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-soft)', lineHeight: 1.6 }}>{String(error)}</div>
       </div>
     );
 
-  const refreshedCount = (data || []).filter((m) => m.last_refreshed_at).length;
-  const latestRefresh = (data || [])
-    .map((m) => m.last_refreshed_at)
-    .filter(Boolean)
-    .sort()
-    .at(-1);
-  const stats = [
-    { label: 'Towns indexed', value: String(data?.length || 0) },
-    {
-      label: 'Project types',
-      value: String(new Set((data || []).flatMap((m) => m.project_types)).size),
-    },
-    {
-      label: 'Last refreshed',
-      value: latestRefresh ? new Date(latestRefresh).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—',
-    },
-    { label: 'With bylaw data', value: String(refreshedCount) },
-  ];
+  const towns = data || [];
+  const moratoriumCount = towns.filter((m) => m.moratorium_active).length;
+  const filtered = towns.filter((m) =>
+    m.town_name.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
-    <div style={{ padding: '36px 40px 80px', maxWidth: 1280 }}>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>
-        Coverage
+    <div className="page" style={{ fontFamily: 'var(--sans)' }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="page-eyebrow">Coverage</div>
+        <h1 className="page-h1">Municipalities</h1>
+        <p className="page-sub">
+          {towns.length} towns indexed · {moratoriumCount} active moratoriums
+        </p>
       </div>
-      <h1
-        className="display"
-        style={{ fontSize: 34, margin: 0, letterSpacing: '-0.018em', lineHeight: 1.05 }}
-      >
-        Municipalities
-      </h1>
-      <p
+
+      {/* Search + count row */}
+      <div
         style={{
-          fontSize: 15,
-          lineHeight: 1.6,
-          color: 'var(--text-mid)',
-          maxWidth: 620,
-          margin: '14px 0 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          marginBottom: 12,
         }}
       >
-        Zoning and permitting posture for every MA town in the corpus — refreshed nightly, cited
-        to the source bylaw.
-      </p>
-      <hr className="rule" style={{ margin: '28px 0 18px' }} />
-
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 14,
-          marginBottom: 20,
-        }}
-      >
-        {stats.map((s, i) => (
-          <div key={s.label} className={`stat-tile ${TILE_CLASSES[i % TILE_CLASSES.length]}`}>
-            <div style={{ fontSize: 12, color: 'var(--text-mid)', fontWeight: 500 }}>
-              {s.label}
-            </div>
-            <div className="tile-num tnum" style={{ marginTop: 8 }}>{s.value}</div>
-          </div>
-        ))}
-      </section>
-
-      {data?.length === 0 && (
-        <div style={{ fontSize: 13, color: 'var(--text-dim)', padding: '14px 0' }}>
-          No municipalities seeded yet — run <code>python ingest/seed_municipalities.py</code> to add towns.
+        <div style={{ position: 'relative', width: 260 }}>
+          <input
+            type="text"
+            placeholder="Filter towns…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              width: '100%',
+              height: 32,
+              paddingLeft: 12,
+              paddingRight: 12,
+              borderRadius: 7,
+              border: '1px solid var(--border)',
+              background: 'var(--surface)',
+              fontSize: 13,
+              color: 'var(--text)',
+              fontFamily: 'var(--sans)',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+          />
         </div>
-      )}
+        <div style={{ fontSize: 12, color: 'var(--text-soft)' }}>
+          {filtered.length} of {towns.length}
+        </div>
+      </div>
 
+      {/* Column headers */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 14,
+          gridTemplateColumns: '1fr 220px 110px 90px 28px',
+          gap: 12,
+          padding: '0 16px 8px',
+          borderBottom: '1px solid var(--border-soft)',
         }}
       >
-        {(data || []).map((m) => (
+        {['Town', 'Project types', 'Status', 'Refreshed', ''].map((h) => (
+          <div
+            key={h}
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'var(--text-soft)',
+            }}
+          >
+            {h}
+          </div>
+        ))}
+      </div>
+
+      {/* Rows */}
+      <div className="card" style={{ overflow: 'hidden', marginTop: 4 }}>
+        {filtered.length === 0 && (
+          <div style={{ padding: '20px 16px', fontSize: 13, color: 'var(--text-soft)' }}>
+            No towns match "{query}"
+          </div>
+        )}
+        {filtered.map((m, idx) => (
           <Link
             key={m.town_id}
             to={`/municipalities/${m.town_id}`}
-            className="card muni-card"
             style={{
-              padding: '20px 22px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 220px 110px 90px 28px',
+              gap: 12,
+              alignItems: 'center',
+              padding: '11px 16px',
               textDecoration: 'none',
-              color: 'inherit',
-              display: 'block',
-              transition: 'border-color 120ms ease, background 120ms ease',
-              borderColor: m.moratorium_active ? 'var(--bad)' : undefined,
+              color: 'var(--text)',
+              borderBottom: idx < filtered.length - 1 ? '1px solid var(--border-soft)' : 'none',
+              transition: 'background 100ms ease',
             }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface)')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'transparent')}
           >
+            {/* Town name */}
             <div
               style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: 12,
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 15,
+                fontWeight: 500,
+                letterSpacing: '-0.01em',
+                color: 'var(--text)',
+                lineHeight: 1.2,
               }}
             >
-              <h3
-                style={{
-                  fontFamily: "'Fraunces', Georgia, serif",
-                  fontSize: 20,
-                  fontWeight: 500,
-                  letterSpacing: '-0.015em',
-                  margin: 0,
-                  color: 'var(--text)',
-                }}
-              >
-                {m.town_name}
-              </h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {m.moratorium_active && (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: '0.04em',
-                      color: 'var(--bad)',
-                      background: 'color-mix(in srgb, var(--bad) 10%, transparent)',
-                      border: '1px solid color-mix(in srgb, var(--bad) 25%, transparent)',
-                      borderRadius: 4,
-                      padding: '2px 6px',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Moratorium
-                  </span>
-                )}
-                <span className="chip">{m.project_types.length} types</span>
-              </div>
+              {m.town_name}
             </div>
-            <div
-              className="tnum"
-              style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 8 }}
-            >
-              Refreshed{' '}
+
+            {/* Project type pills — show first 3, then +N */}
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {m.project_types.slice(0, 3).map((pt) => (
+                <span
+                  key={pt}
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 500,
+                    padding: '2px 7px',
+                    borderRadius: 4,
+                    background: 'var(--surface-alt)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-mid)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {TYPE_SHORT[pt as ProjectTypeCode] ?? pt}
+                </span>
+              ))}
+              {m.project_types.length > 3 && (
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 500,
+                    padding: '2px 7px',
+                    borderRadius: 4,
+                    background: 'transparent',
+                    color: 'var(--text-soft)',
+                  }}
+                >
+                  +{m.project_types.length - 3}
+                </span>
+              )}
+            </div>
+
+            {/* Status */}
+            <div>
+              {m.moratorium_active ? (
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                    color: 'var(--rust)',
+                    background: 'rgba(168,90,74,0.10)',
+                    border: '1px solid rgba(168,90,74,0.25)',
+                    borderRadius: 4,
+                    padding: '2px 7px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Moratorium
+                </span>
+              ) : (
+                <span style={{ fontSize: 11, color: 'var(--text-soft)' }}>—</span>
+              )}
+            </div>
+
+            {/* Refresh date */}
+            <div style={{ fontSize: 12, color: 'var(--text-soft)' }} className="tnum">
               {m.last_refreshed_at
-                ? new Date(m.last_refreshed_at).toLocaleDateString()
+                ? new Date(m.last_refreshed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                 : '—'}
             </div>
+
+            {/* Arrow */}
+            <div style={{ fontSize: 13, color: 'var(--text-soft)', textAlign: 'right' }}>→</div>
           </Link>
         ))}
       </div>
+
+      {towns.length === 0 && (
+        <div style={{ fontSize: 12, color: 'var(--text-soft)', marginTop: 16, lineHeight: 1.6 }}>
+          No municipalities seeded yet — run <code>python ingest/seed_municipalities.py</code>
+        </div>
+      )}
     </div>
   );
 }

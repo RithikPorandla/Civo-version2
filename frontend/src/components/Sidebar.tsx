@@ -5,7 +5,10 @@ import {
   IconSearch,
   IconChart,
   IconBuilding,
+  IconFolder,
   IconSidebar,
+  IconSettings,
+  IconHelpCircle,
 } from './Icon';
 import BrandMark from './BrandMark';
 
@@ -14,54 +17,73 @@ interface Props {
   onToggle: () => void;
 }
 
+const SIDEBAR_BG = '#8b7355';
+const INACTIVE_COLOR = 'rgba(255,255,255,0.68)';
+const ACTIVE_BG = 'rgba(255,255,255,0.14)';
+const DIVIDER = 'rgba(255,255,255,0.12)';
+
 const NAV_ITEMS: Array<{ to: string; label: string; Icon: typeof IconHome; end?: boolean }> = [
-  { to: '/app', label: 'Overview', Icon: IconHome, end: true },
-  { to: '/app/lookup', label: 'Address Lookup', Icon: IconMap },
-  { to: '/app/discover', label: 'Discover Sites', Icon: IconSearch },
-  { to: '/app/suitability', label: 'Site Suitability', Icon: IconChart },
-  { to: '/municipalities', label: 'Municipalities', Icon: IconBuilding },
+  { to: '/app',             label: 'Dashboard',        Icon: IconHome,     end: true },
+  { to: '/app/lookup',      label: 'Address Lookup',   Icon: IconMap               },
+  { to: '/app/suitability', label: 'Suitability',      Icon: IconChart             },
+  { to: '/app/discover',    label: 'Discover Sites',   Icon: IconSearch            },
+  { to: '/municipalities',  label: 'Municipalities',   Icon: IconBuilding          },
+  { to: '/app/portfolio',   label: 'Portfolio',        Icon: IconFolder            },
+];
+
+const BOTTOM_ITEMS: Array<{ label: string; Icon: typeof IconHome }> = [
+  { label: 'Settings', Icon: IconSettings  },
+  { label: 'Help',     Icon: IconHelpCircle },
 ];
 
 export default function Sidebar({ collapsed, onToggle }: Props) {
-  const width = collapsed ? 72 : 248;
+  const width = collapsed ? 64 : 236;
 
   return (
     <aside
-      className="border-r hairline"
       style={{
         width,
-        minHeight: '100vh',
+        height: '100vh',
         position: 'sticky',
         top: 0,
-        transition: 'width 180ms ease',
+        flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        background: 'var(--surface)',
+        background: SIDEBAR_BG,
+        borderRight: '1px solid rgba(0,0,0,0.14)',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        transition: 'width 180ms ease',
+        zIndex: 30,
       }}
     >
-      {/* Brand row */}
+      {/* Brand row — same height as TopBar (56px) */}
       <NavLink
         to="/app"
         end
         style={{
-          padding: collapsed ? '20px 0' : '22px 22px 20px',
+          height: 56,
+          flexShrink: 0,
+          padding: collapsed ? '0' : '0 20px',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
           justifyContent: collapsed ? 'center' : 'flex-start',
           textDecoration: 'none',
-          color: 'var(--text)',
+          color: '#ffffff',
+          borderBottom: `1px solid ${DIVIDER}`,
         }}
       >
-        <BrandMark size={collapsed ? 22 : 24} />
+        <BrandMark size={22} color="#ffffff" />
         {!collapsed && (
           <span
             style={{
               fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: 500,
               letterSpacing: '-0.025em',
               lineHeight: 1,
+              color: '#ffffff',
             }}
           >
             Civo
@@ -69,53 +91,157 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
         )}
       </NavLink>
 
-      <nav style={{ padding: collapsed ? '6px 12px' : '4px 12px 8px' }}>
-        {NAV_ITEMS.map((i) => (
+      {/* Primary nav */}
+      <nav style={{ padding: '8px 8px', flex: 1 }}>
+        {NAV_ITEMS.map((item) => (
           <NavLink
-            key={i.to}
-            to={i.to}
-            end={i.end}
-            title={collapsed ? i.label : undefined}
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            title={collapsed ? item.label : undefined}
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 9,
               padding: collapsed ? '8px 0' : '8px 10px',
-              borderRadius: 8,
+              borderRadius: 7,
               textDecoration: 'none',
-              color: 'var(--text)',
-              background: isActive ? 'var(--bg)' : 'transparent',
-              boxShadow: isActive
-                ? '0 1px 0 var(--border) inset, 0 1px 2px rgba(0,0,0,0.03)'
-                : 'none',
-              fontSize: 13,
+              color: isActive ? '#ffffff' : INACTIVE_COLOR,
+              background: isActive ? ACTIVE_BG : 'transparent',
+              boxShadow: isActive && !collapsed ? 'inset 2px 0 0 var(--gold)' : 'none',
+              fontSize: 12.5,
               fontWeight: isActive ? 500 : 400,
               justifyContent: collapsed ? 'center' : 'flex-start',
               lineHeight: 1.3,
-              marginBottom: 2,
-              transition: 'background 120ms ease',
+              marginBottom: 1,
+              transition: 'background 120ms ease, color 120ms ease, box-shadow 120ms ease',
             })}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLAnchorElement;
+              if (el.getAttribute('aria-current') !== 'page') {
+                el.style.background = 'rgba(255,255,255,0.08)';
+                el.style.color = '#ffffff';
+              }
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLAnchorElement;
+              if (el.getAttribute('aria-current') !== 'page') {
+                el.style.background = 'transparent';
+                el.style.color = INACTIVE_COLOR;
+              }
+            }}
           >
-            {({ isActive }) => (
+            {({ isActive: _ }) => (
               <>
-                <i.Icon size={14} className={isActive ? 'text-accent' : 'text-textMid'} />
-                {!collapsed && (
-                  <span style={{ flex: 1 }}>{i.label}</span>
-                )}
+                <item.Icon size={14} />
+                {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Collapse toggle — pinned bottom */}
+      {/* Bottom utility */}
+      <div style={{ borderTop: `1px solid ${DIVIDER}`, padding: '8px 8px' }}>
+        {BOTTOM_ITEMS.map((item) => (
+          <button
+            key={item.label}
+            title={collapsed ? item.label : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 9,
+              width: '100%',
+              padding: collapsed ? '8px 0' : '8px 10px',
+              borderRadius: 7,
+              border: 'none',
+              background: 'transparent',
+              color: INACTIVE_COLOR,
+              fontSize: 12.5,
+              fontWeight: 400,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              cursor: 'pointer',
+              marginBottom: 1,
+              fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
+              transition: 'background 120ms ease, color 120ms ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)';
+              (e.currentTarget as HTMLButtonElement).style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              (e.currentTarget as HTMLButtonElement).style.color = INACTIVE_COLOR;
+            }}
+          >
+            <item.Icon size={14} />
+            {!collapsed && <span>{item.label}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* User avatar */}
       <div
         style={{
-          marginTop: 'auto',
-          padding: '10px',
-          borderTop: '1px solid var(--border-soft)',
+          borderTop: `1px solid ${DIVIDER}`,
+          padding: collapsed ? '12px 0' : '12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 9,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          aria-label="User: Rithik P."
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            background: 'var(--gold)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent-deep)',
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: '0.02em',
+            flexShrink: 0,
+            fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
+          }}
+        >
+          RP
+        </div>
+        {!collapsed && (
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 12.5,
+                fontWeight: 500,
+                color: '#ffffff',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                lineHeight: 1.3,
+              }}
+            >
+              Rithik P.
+            </div>
+            <div style={{ fontSize: 11, color: INACTIVE_COLOR, marginTop: 1 }}>
+              Professional
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Collapse toggle */}
+      <div
+        style={{
+          padding: '6px 8px',
+          borderTop: `1px solid ${DIVIDER}`,
           display: 'flex',
           justifyContent: collapsed ? 'center' : 'flex-end',
+          flexShrink: 0,
         }}
       >
         <button
@@ -123,22 +249,28 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand' : 'Collapse'}
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
+            width: 30,
+            height: 30,
+            borderRadius: 7,
             border: 'none',
             background: 'transparent',
-            color: 'var(--text-dim)',
+            color: INACTIVE_COLOR,
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'background 120ms ease',
+            transition: 'background 120ms ease, color 120ms ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-alt)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.10)';
+            (e.currentTarget as HTMLButtonElement).style.color = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+            (e.currentTarget as HTMLButtonElement).style.color = INACTIVE_COLOR;
+          }}
         >
-          <IconSidebar size={18} />
+          <IconSidebar size={16} />
         </button>
       </div>
     </aside>

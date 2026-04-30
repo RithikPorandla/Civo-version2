@@ -29,7 +29,7 @@ export interface CriterionScore {
 }
 
 export interface ResolutionInfo {
-  mode: 'contains' | 'esmp_anchored' | 'nearest';
+  mode: 'contains' | 'esmp_anchored' | 'nearest' | 'addr_match';
   original_query: string;
   formatted_address?: string | null;
   resolved_site_addr?: string | null;
@@ -56,7 +56,7 @@ export interface SuitabilityReport {
 export interface ScoreEnvelope {
   report_id: number;
   address: string;
-  resolution_mode: 'contains' | 'nearest' | 'esmp_anchored';
+  resolution_mode: 'contains' | 'nearest' | 'esmp_anchored' | 'addr_match';
   report: SuitabilityReport;
 }
 

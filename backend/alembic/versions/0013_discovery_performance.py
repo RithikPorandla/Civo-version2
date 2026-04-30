@@ -27,25 +27,17 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # ── Critical query indexes ────────────────────────────────────────────────
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_parcels_town_area ON parcels (town_name, shape_area)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_score_history_parcel ON score_history (parcel_loc_id, computed_at DESC)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_parcels_use_code ON parcels (use_code)"))
 
-    # Eliminates full sequential scan on parcels (was reading 206k rows to find ~1k)
-    op.create_index("idx_parcels_town_area", "parcels", ["town_name", "shape_area"])
-
-    # Eliminates 994-loop inner seq scan — single most impactful change
-    op.create_index("idx_score_history_parcel", "score_history", ["parcel_loc_id", sa.text("computed_at DESC")])
-
-    # Land use pre-filter
-    op.create_index("idx_parcels_use_code", "parcels", ["use_code"])
-
-    # ── Pre-computed constraint flag columns ──────────────────────────────────
-    op.add_column("parcels", sa.Column("flag_biomap_core",    sa.Boolean, nullable=True))
-    op.add_column("parcels", sa.Column("flag_nhesp_priority", sa.Boolean, nullable=True))
-    op.add_column("parcels", sa.Column("flag_flood_zone",     sa.Boolean, nullable=True))
-    op.add_column("parcels", sa.Column("flag_wetlands",       sa.Boolean, nullable=True))
-    op.add_column("parcels", sa.Column("flag_article97",      sa.Boolean, nullable=True))
-    op.add_column("parcels", sa.Column("flag_prime_farmland", sa.Boolean, nullable=True))
-    op.add_column("parcels", sa.Column("flags_computed_at",   sa.DateTime(timezone=True), nullable=True))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flag_biomap_core BOOLEAN"))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flag_nhesp_priority BOOLEAN"))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flag_flood_zone BOOLEAN"))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flag_wetlands BOOLEAN"))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flag_article97 BOOLEAN"))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flag_prime_farmland BOOLEAN"))
+    op.execute(sa.text("ALTER TABLE parcels ADD COLUMN IF NOT EXISTS flags_computed_at TIMESTAMPTZ"))
 
 
 def downgrade() -> None:

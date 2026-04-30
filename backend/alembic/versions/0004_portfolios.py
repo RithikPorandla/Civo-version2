@@ -20,6 +20,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.execute(sa.text(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='portfolios'"
+    )).fetchone():
+        return
+
     op.create_table(
         "portfolios",
         sa.Column("id", sa.Text, primary_key=True),
@@ -38,9 +44,7 @@ def upgrade() -> None:
         sa.Column("config_version", sa.Text, nullable=False),
         sa.Column("scored_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index(
-        "portfolios_created_at_idx", "portfolios", [sa.text("created_at DESC")]
-    )
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS portfolios_created_at_idx ON portfolios (created_at DESC)"))
 
 
 def downgrade() -> None:

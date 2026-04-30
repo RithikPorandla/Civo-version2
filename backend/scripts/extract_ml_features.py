@@ -330,7 +330,7 @@ def main() -> None:
             towns = [args.town]
         else:
             towns = session.execute(
-                text("SELECT town_name FROM municipalities ORDER BY town_name")
+                text("SELECT DISTINCT town_name FROM parcels WHERE town_name IS NOT NULL ORDER BY town_name")
             ).scalars().all()
 
     print(f"Extracting features for {len(towns)} town(s) with {args.workers} workers ...")
