@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import threading
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -20,6 +22,16 @@ from app.db import SessionLocal, get_session
 from app.services.jurisdiction_risk import refresh_all
 
 app = FastAPI(title="Civo API", version="0.1.0")
+
+_allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(score_router)
 app.include_router(pdf_router)
 app.include_router(portfolio_router)
