@@ -15,6 +15,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Ensure extensions exist — Railway Postgres may not have run migration 0001
+    # on this specific DB instance, so we re-create them here idempotently.
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
     op.execute("""
         CREATE TABLE IF NOT EXISTS precedents (
             id              SERIAL PRIMARY KEY,
