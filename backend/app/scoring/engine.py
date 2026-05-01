@@ -34,7 +34,7 @@ from app.scoring.models import (
     SuitabilityReport,
 )
 
-CONFIG_ROOT = Path(__file__).resolve().parents[3] / "config" / "scoring"
+CONFIG_ROOT = Path(__file__).resolve().parents[2] / "config" / "scoring"
 
 # MassGIS dataset URLs (for citations).
 _MASSGIS_URLS = {
