@@ -269,7 +269,8 @@ def get_parcel_geojson(parcel_id: str, session: Session = Depends(get_session)) 
         session.execute(
             text(
                 """
-            SELECT loc_id, site_addr, town_name, city, total_val, lot_size,
+            SELECT loc_id, site_addr, town_name, city, zip, owner1, use_code, fy,
+                   total_val, lot_size, raw,
                    ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geom
             FROM parcels
             WHERE loc_id = :pid
@@ -283,6 +284,7 @@ def get_parcel_geojson(parcel_id: str, session: Session = Depends(get_session)) 
     if not row:
         raise HTTPException(404, f"parcel {parcel_id!r} not found")
 
+    raw = row["raw"] or {}
     return {
         "type": "Feature",
         "geometry": json.loads(row["geom"]),
@@ -291,8 +293,21 @@ def get_parcel_geojson(parcel_id: str, session: Session = Depends(get_session)) 
             "site_addr": row["site_addr"],
             "town_name": row["town_name"],
             "city": row["city"],
+            "zip": row["zip"],
+            "owner1": row["owner1"],
+            "use_code": row["use_code"],
+            "fy": row["fy"],
             "total_val": row["total_val"],
             "lot_size": row["lot_size"],
+            "zoning": raw.get("ZONING"),
+            "style": raw.get("STYLE"),
+            "bldg_val": raw.get("BLDG_VAL"),
+            "land_val": raw.get("LAND_VAL"),
+            "bld_area": raw.get("BLD_AREA"),
+            "year_built": raw.get("YEAR_BUILT"),
+            "ls_price": raw.get("LS_PRICE"),
+            "ls_date": raw.get("LS_DATE"),
+            "stories": raw.get("STORIES"),
         },
     }
 
