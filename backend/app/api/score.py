@@ -238,15 +238,24 @@ async def post_score_batch(req: ScoreBatchRequest) -> ScoreBatchResponse:
 # GET /report/{report_id}
 # ---------------------------------------------------------------------------
 @router.get("/report/{report_id}", response_model=SuitabilityReport)
-def get_report(report_id: int, session: Session = Depends(get_session)) -> SuitabilityReport:
-    row = session.execute(
-        text("SELECT report FROM score_history WHERE id = :rid"),
-        {"rid": report_id},
-    ).scalar()
+def get_report(report_id: str, session: Session = Depends(get_session)) -> SuitabilityReport:
+    # Accept both integer DB id and parcel loc_id (e.g. "F_756553_2967761")
+    if report_id.lstrip("-").isdigit():
+        row = session.execute(
+            text("SELECT report FROM score_history WHERE id = :rid"),
+            {"rid": int(report_id)},
+        ).scalar()
+    else:
+        # Loc_id path — return the most recent report for that parcel
+        row = session.execute(
+            text(
+                "SELECT report FROM score_history WHERE parcel_loc_id = :lid"
+                " ORDER BY id DESC LIMIT 1"
+            ),
+            {"lid": report_id},
+        ).scalar()
     if row is None:
-        raise HTTPException(404, f"report {report_id} not found")
-    # Attach runtime link-health to every citation so the UI can fall back
-    # to a Wayback snapshot when mass.gov restructures a slug.
+        raise HTTPException(404, f"report {report_id!r} not found")
     enrich_citations_in_place(session, row)
     return SuitabilityReport.model_validate(row)
 

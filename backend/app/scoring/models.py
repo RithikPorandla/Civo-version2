@@ -97,7 +97,7 @@ class ResolutionInfo(BaseModel):
     address to a different parcel (nearest-match or ESMP-anchored).
     """
 
-    mode: Literal["contains", "esmp_anchored", "nearest"]
+    mode: Literal["contains", "esmp_anchored", "nearest", "addr_match"]
     original_query: str
     formatted_address: str | None = None
     resolved_site_addr: str | None = None
