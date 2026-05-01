@@ -57,6 +57,40 @@ def _refresh_jurisdiction_risk_on_startup() -> None:
     threading.Thread(target=_run, daemon=True).start()
 
 
+@app.post("/admin/seed-bylaws", tags=["admin"])
+def seed_bylaws_endpoint() -> dict:
+    """Seed project_type_bylaws for all towns that exist in the municipalities table."""
+    import json
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from scripts.seed_bylaws import TOWN_BYLAWS
+
+    seeded, skipped = [], []
+    with SessionLocal() as session:
+        for town_name, bylaws in TOWN_BYLAWS.items():
+            row = session.execute(
+                text("SELECT town_id FROM municipalities WHERE UPPER(town_name) = UPPER(:tn) LIMIT 1"),
+                {"tn": town_name},
+            ).scalar()
+            if row is None:
+                skipped.append(town_name)
+                continue
+            session.execute(
+                text("""
+                    INSERT INTO municipalities (town_id, town_name, project_type_bylaws, last_refreshed_at)
+                    VALUES (:tid, :tn, CAST(:b AS jsonb), NOW())
+                    ON CONFLICT (town_id) DO UPDATE
+                    SET project_type_bylaws = EXCLUDED.project_type_bylaws,
+                        last_refreshed_at   = NOW()
+                """),
+                {"tid": row, "tn": town_name, "b": json.dumps(bylaws)},
+            )
+            seeded.append(town_name)
+        session.commit()
+    return {"seeded": seeded, "skipped": skipped}
+
+
 @app.post("/admin/refresh-jurisdiction-risk", tags=["admin"])
 def refresh_jurisdiction_risk() -> dict:
     """Manually trigger a jurisdiction risk refresh (e.g. after seeding new DOER data)."""
