@@ -749,28 +749,13 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     fire_pct     = float(attrs.get("CLIMpctilFIRE") or 0)
     heat_pct     = float(attrs.get("CLIMpctilHEAT") or 0)
 
-    # Official MA EJ Population 2020 layer — geo area name, muni MHHI, authoritative criteria.
-    ej_pop = (
-        session.execute(
-            text("""
-                SELECT geo_area_name, ej_crit_desc, muni_mhhi, muni_mhhi_pct_ma, total_pop, total_hh
-                FROM ej_populations
-                WHERE ST_Contains(geom, ST_Centroid(
-                    (SELECT geom FROM parcels WHERE loc_id = :pid)
-                ))
-                LIMIT 1
-            """),
-            {"pid": ctx["loc_id"]},
-        )
-        .mappings()
-        .first()
-    )
-    geo_area_name  = (ej_pop or {}).get("geo_area_name")
-    ej_crit_desc   = (ej_pop or {}).get("ej_crit_desc")   # e.g. "Minority and income"
-    muni_mhhi      = (ej_pop or {}).get("muni_mhhi")
-    muni_mhhi_pct  = (ej_pop or {}).get("muni_mhhi_pct_ma")
-    total_pop      = (ej_pop or {}).get("total_pop")
-    total_hh       = (ej_pop or {}).get("total_hh")
+    # ej_populations table not yet ingested — derive everything from attrs.
+    geo_area_name = attrs.get("NAME")
+    ej_crit_desc  = None
+    muni_mhhi     = float(attrs.get("medHHincMUNIE") or 0) or None
+    muni_mhhi_pct = float(attrs.get("medHHincMUNIPCT") or 0) or None
+    total_pop     = int(attrs.get("TotalPopE") or 0) or None
+    total_hh      = int(attrs.get("TotalHHE") or 0) or None
 
     # EJ designation from stored column; fall back to computed criteria.
     is_ej = (row["ej_designation"] or "").lower() in ("yes", "y", "true", "1")
