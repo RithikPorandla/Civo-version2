@@ -5,11 +5,11 @@ Falls back gracefully to None if models aren't present — discovery engine uses
 rule-based score in that case.
 
 Blended score formula:
-    effective_score = 0.6 * ml_prob + 0.4 * (rule_score / 100) * risk_multiplier
+    effective_score = (rule_score / 100) * risk_multiplier
 
-The 0.6/0.4 split weights the learned model more heavily once it's trained,
-but keeps the spatial rule-based score as a floor to prevent obviously
-constrained parcels from ranking high on jurisdiction signal alone.
+ML weight is set to 0 — scoring is fully rule-based using the YAML config
+criteria weights. ML models are still loaded if present but have no influence
+on the output score.
 """
 
 from __future__ import annotations
@@ -50,8 +50,8 @@ FEATURE_DEFAULTS = {
     "moratorium_active": 0,
 }
 
-_ML_WEIGHT = 0.6
-_RULE_WEIGHT = 0.4
+_ML_WEIGHT = 0.0
+_RULE_WEIGHT = 1.0
 
 
 class _ModelPair:

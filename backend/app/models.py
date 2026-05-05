@@ -204,6 +204,46 @@ class MassEnviroScreen(Base):
     cumulative_score: Mapped[float | None] = mapped_column(Float)
     pollution_score: Mapped[float | None] = mapped_column(Float)
     vulnerability_score: Mapped[float | None] = mapped_column(Float)
+    # Median household income for the block group (ACS). Used to evaluate the
+    # 2024 Climate Act Burdened Area income criterion: median HH income ≤ 65%
+    # of MA statewide median ($104,828 ACS 2024) → threshold $68,138.
+    median_hh_income: Mapped[float | None] = mapped_column(Numeric)
+    attrs: Mapped[dict | None] = mapped_column(JSONB)
+    geom = _polygon_column()
+
+
+class DcrPriorityForest(Base):
+    """DCR Priority Forests — top-20% carbon storage forests statewide.
+
+    Overlap with a parcel triggers the carbon_top20 ineligibility flag under
+    225 CMR 29.06 and feeds Criterion 3 (Carbon Storage) in the scoring engine.
+    """
+
+    __tablename__ = "dcr_priority_forests"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    forest_id: Mapped[str | None] = mapped_column(String, index=True)
+    forest_name: Mapped[str | None] = mapped_column(String)
+    carbon_tier: Mapped[str | None] = mapped_column(String)
+    attrs: Mapped[dict | None] = mapped_column(JSONB)
+    geom = _polygon_column()
+
+
+# ---------------------------------------------------------------------------
+# MC-FRM Coastal Flood Risk (2030/2050/2070, 1% and 0.1% AEP)
+# ---------------------------------------------------------------------------
+class CoastalFloodRisk(Base):
+    """MA Coastal Flood Risk Model polygons from EOEEA ResilientMA.
+
+    Columns scenario ('2030', '2050', '2070') and aep ('1pct', '0.1pct')
+    distinguish the six service layers. The scoring engine uses 2050/1pct
+    as the primary constraint and checks 2070/0.1pct for long-horizon flags.
+    """
+
+    __tablename__ = "coastal_flood_risk"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    scenario: Mapped[str] = mapped_column(String(4), nullable=False, index=True)
+    aep: Mapped[str] = mapped_column(String(8), nullable=False, index=True)
+    gridcode: Mapped[int | None] = mapped_column(Integer, nullable=True)
     attrs: Mapped[dict | None] = mapped_column(JSONB)
     geom = _polygon_column()
 

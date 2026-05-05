@@ -104,6 +104,24 @@ sources:
     tables: [massenviroscreen]
     last_refreshed: "2026-03-28"
 
+  - id: dcr-priority-forests
+    name: DCR Priority Forests — Top-20% Carbon Storage Forests
+    agency: MA Department of Conservation and Recreation
+    category: spatial
+    url: https://www.mass.gov/info-details/massgis-data-protected-and-recreational-openspace
+    coverage: Statewide
+    used_by:
+      - "Criterion 3 · Carbon Storage (future upgrade — table exists, awaiting data)"
+      - "Ineligibility flag — carbon_top20 (225 CMR 29.06)"
+    tables: [dcr_priority_forests]
+    last_refreshed: null
+    status: planned
+    notes: >-
+      DCR Priority Forests is not available as a public ArcGIS REST service.
+      Obtain shapefile from DCR Forest Carbon Initiative and load via
+      ingest/dcr_priority_forests.py. Until loaded, Criterion 3 scores
+      against MassGIS 2016 forested cover fraction (massgis-landcover-2016).
+
   - id: massgis-article97
     name: MA Article 97 Protected Open Space
     agency: MassGIS
@@ -126,9 +144,47 @@ sources:
     url: https://www.fema.gov/flood-maps/national-flood-hazard-layer
     coverage: National (MA subset ingested)
     used_by:
-      - "Criterion 2 · Climate Resilience — SFHA overlap percent"
+      - "Criterion 2 · Climate Resilience — SFHA overlap percent (static baseline; superseded by MC-FRM for coastal parcels)"
     tables: [flood_zones]
     last_refreshed: "2026-03-28"
+
+  - id: mcfrm-coastal-flood
+    name: MA Coastal Flood Risk Model (MC-FRM) — 2030/2050/2070
+    agency: MA Executive Office of Energy & Environmental Affairs (EOEEA) — ResilientMA
+    category: spatial
+    url: https://eeaonline.eea.state.ma.us/ResilientMAMapViewer/
+    coverage: MA coastal zone (statewide — 439 polygons across 6 layers)
+    used_by:
+      - "Criterion 2 · Climate Resilience — forward-looking coastal flood constraint"
+      - "Binding over FEMA when MC-FRM 2050 1% AEP overlap > 0%"
+      - "2070 0.1% AEP used for long-horizon asset viability flag"
+    tables: [coastal_flood_risk]
+    last_refreshed: "2026-05-05"
+    status: ingested
+    notes: >-
+      Six layers: 2030/2050/2070 × 1% AEP (100-year event) and 0.1% AEP
+      (1000-year event). Source: EOEEA FeatureServer services from the
+      ResilientMA Map Viewer WebMap (item ID ce7190a0142441d79944c4fc6cdd6573).
+      Scoring engine uses 2050/1pct as the primary constraint; takes
+      min(fema_raw, mcfrm_raw) so inland parcels with 0% MC-FRM overlap
+      are scored by FEMA only.
+
+  - id: tree-canopy-2016
+    name: MassGIS 2016 Tree Canopy Cover
+    agency: MassGIS
+    category: spatial
+    url: https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use
+    coverage: Statewide
+    used_by:
+      - "Criterion 3 · Carbon Storage (planned upgrade from NLCD code proxy)"
+    tables: []
+    last_refreshed: null
+    status: planned
+    notes: >-
+      Tree Canopy 2016 is available in ResilientMA as a raster tile service only
+      (tiles.arcgis.com/7iJyYTjCtKsZS1LR — no queryable FeatureServer exists).
+      Until a vector canopy layer is published, Criterion 3 continues to use
+      MassGIS 2016 Land Cover forested-cover codes as the carbon proxy.
     notes: "SFHA zones A, AE, AO, AH, V, VE are penalized per ma-eea-2026-v1.yaml."
 
   - id: usda-ssurgo

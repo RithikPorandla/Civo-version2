@@ -51,7 +51,7 @@ criteria:
 
   climate_resilience:
     weight: 0.15
-    # Percent of parcel area in FEMA Special Flood Hazard Area (zones A, AE, AO, AH, V, VE).
+    # FEMA NFHL — static flood zones covering all flood types (riverine + coastal).
     # More flood exposure = lower score.
     sfha_zones: ["A", "AE", "AO", "AH", "V", "VE"]
     sfha_anchors_pct:
@@ -60,14 +60,34 @@ criteria:
       - [0.15,  5]
       - [0.30,  2]
       - [0.60,  0]
+    # MC-FRM (MA Coastal Flood Risk Model) — forward-looking coastal inundation.
+    # Primary scenario/AEP used as the binding coastal constraint. The engine
+    # takes min(fema_raw, mcfrm_raw) so inland parcels (0% MC-FRM overlap)
+    # are never penalised by the coastal model.
+    mcfrm_primary_scenario: "2050"
+    mcfrm_primary_aep: "1pct"
+    mcfrm_anchors_pct:
+      - [0.0,   10]
+      - [0.03,   8]   # MC-FRM is spatially precise; even 3% is a real signal
+      - [0.10,   5]
+      - [0.25,   2]
+      - [0.50,   0]
 
   carbon_storage:
     weight: 0.15
-    # Percent of parcel area in forested cover (MassGIS LandCover 2016
-    # cover codes: 9 Deciduous Forest, 10 Evergreen Forest, 13 Palustrine
-    # Forested Wetland). Until the real BioMap / DCR carbon stock layer
-    # ships, this is a proxy: more forest = more carbon loss risk = lower
-    # siting suitability.
+    # PRIMARY: DCR Priority Forests — top-20% carbon storage forests statewide.
+    # Used when the dcr_priority_forests table is populated (run ingest/dcr_priority_forests.py).
+    # More overlap = greater carbon stock loss risk = lower siting suitability.
+    dcr_anchors_pct:
+      - [0.00, 10]
+      - [0.05,  9]
+      - [0.10,  7]
+      - [0.25,  4]
+      - [0.50,  1]
+      - [0.75,  0]
+    ineligibility_min_pct: 0.20   # ≥20% DCR overlap triggers carbon_top20 ineligibility flag
+    # FALLBACK PROXY: MassGIS 2016 Land Cover forested-cover fraction.
+    # Used only when DCR Priority Forests table is empty (not yet ingested).
     forested_cover_codes: [9, 10, 13]
     forest_anchors_pct:
       - [0.0,  10]
@@ -76,9 +96,9 @@ criteria:
       - [0.60,  3]
       - [0.90,  0]
     proxy_note: >-
-      Carbon storage is approximated by forested cover fraction; full
-      DCR biomass/soil carbon layer (Top-20% carbon forests) is a v2
-      dependency and is surfaced as a limitation citation on every report.
+      Carbon storage is scored against DCR Priority Forests (top-20% carbon
+      statewide) when ingested. Until then, forested-cover fraction from
+      MassGIS 2016 is used as a proxy and the criterion is marked data_unavailable.
 
   biodiversity:
     weight: 0.20
@@ -107,20 +127,25 @@ criteria:
   burdens:
     weight: 0.10
     # MassEnviroScreen cumulative burden at the block group containing the
-    # parcel centroid. Higher burden = lower siting score (siting generation
-    # in an already-burdened community adds further burden).
+    # parcel centroid. Higher burden = lower siting score.
     mes_anchors:
       - [0,    10]
       - [20,    9]
       - [40,    6]
       - [60,    4]
-      - [75,    2]    # 75+ percentile = "Burdened Area" threshold in MassEnviroScreen
+      - [75,    2]    # 75th percentile = Burdened Area MES threshold (2024 Climate Act)
       - [90,    1]
       - [100,   0]
     ej_flag_values: ["Yes", "Yes - Income", "Yes - Minority", "Yes - English Isolation",
                      "Yes - Income, Minority", "Yes - Income, English Isolation",
                      "Yes - Minority, English Isolation",
                      "Yes - Income, Minority, English Isolation"]
+    # 2024 Climate Act Burdened Area income criterion (independent of MES score):
+    # block-group median HH income ≤ 65% of MA statewide median.
+    # Source: U.S. Census Bureau ACS 2024 1-year estimate (table B19013).
+    ma_statewide_median_hh_income: 104828
+    burdened_area_income_threshold_pct: 0.65
+    # Derived threshold: 104828 × 0.65 = $68,138
 
   benefits:
     weight: 0.10

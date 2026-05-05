@@ -13,6 +13,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.scoring.parcel_classifier import ParcelClassification  # noqa: F401 — re-exported
+
 CriterionStatus = Literal["ok", "flagged", "ineligible", "data_unavailable"]
 Bucket = Literal["SUITABLE", "CONDITIONALLY SUITABLE", "CONSTRAINED"]
 
@@ -124,6 +126,13 @@ class SuitabilityReport(BaseModel):
     ineligible_flags: list[str] = Field(
         default_factory=list,
         description="225 CMR 29.06 ineligibility layer keys that overlap this parcel",
+    )
+
+    # What kind of parcel this actually is — hospital, park, gov building, etc.
+    # Derived from the MA assessor use_code on the L3 parcel record.
+    parcel_classification: ParcelClassification | None = Field(
+        default=None,
+        description="Assessor use-code classification: what the parcel is and who owns it.",
     )
 
     criteria: list[CriterionScore]
