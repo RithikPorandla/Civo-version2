@@ -33,6 +33,7 @@ from app.scoring.models import (
     SourceCitation,
     SuitabilityReport,
 )
+from app.scoring.parcel_classifier import ParcelClassification, classify as classify_parcel
 
 CONFIG_ROOT = Path(__file__).resolve().parents[2] / "config" / "scoring"
 
@@ -48,6 +49,9 @@ _MASSGIS_URLS = {
     "land_use": "https://www.mass.gov/info-details/massgis-data-2016-land-coverland-use",
     "prime_farmland": "https://gis.data.mass.gov/search?q=noaa%20soils",
     "massenviroscreen": "https://mass-eoeea.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4be63e892a3d42d69334615a64095a39",
+    "ej_populations": "https://www.mass.gov/info-details/environmental-justice-populations-in-massachusetts",
+    "dcr_priority_forests": "https://www.mass.gov/info-details/massgis-data-dcr-priority-forests",
+    "coastal_flood_risk": "https://eeaonline.eea.state.ma.us/ResilientMAMapViewer/",
     "esmp": "https://eeaonline.eea.state.ma.us/DPU/Fileroom/dockets/get/?num=24-10",
     "regulation": "https://www.mass.gov/regulations/225-CMR-29-225-cmr-2900-small-clean-energy-infrastructure-facility-siting-and-permitting-draft-regulation",
 }
@@ -146,7 +150,7 @@ def _parcel_context(session: Session, parcel_id: str, buffer_m: float) -> dict[s
         session.execute(
             text(
                 """
-            SELECT loc_id, site_addr, town_name, city,
+            SELECT loc_id, site_addr, town_name, city, use_code,
                    ST_Area(geom) AS area_sqm,
                    ST_AsText(ST_Centroid(geom)) AS centroid_wkt,
                    ST_AsEWKT(geom) AS geom_ewkt,
@@ -286,8 +290,10 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
 # ---------------------------------------------------------------------------
 def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["climate_resilience"]
+
+    # ── FEMA SFHA (all flood types — riverine + coastal) ────────────────────
     zones = tuple(c["sfha_zones"])
-    row = (
+    fema_row = (
         session.execute(
             text(
                 """
@@ -304,24 +310,118 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
         .mappings()
         .first()
     )
-    assert row is not None  # aggregate query always returns a row
-    overlap = float(row["overlap_sqm"] or 0)
-    pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
-    pct = max(0.0, min(1.0, pct))
-    raw = _interp(c["sfha_anchors_pct"], pct)
-    detected_zones = row["zones"] or ""
-    if pct <= 0:
-        finding = (
-            "Parcel does not intersect any FEMA SFHA (A/AE/AO/AH/V/VE) flood "
-            "zone. No climate resilience deduction."
+    assert fema_row is not None
+    fema_overlap = float(fema_row["overlap_sqm"] or 0)
+    fema_pct = max(0.0, min(1.0, fema_overlap / ctx["buffer_area_sqm"])) if ctx["buffer_area_sqm"] else 0.0
+    fema_raw = _interp(c["sfha_anchors_pct"], fema_pct)
+    fema_zones = fema_row["zones"] or ""
+
+    # ── MC-FRM coastal flood risk (2030/2050/2070 × 1pct/0.1pct) ───────────
+    # Only active if the coastal_flood_risk table has been ingested.
+    mcfrm_loaded: bool = bool(
+        session.execute(text("SELECT 1 FROM coastal_flood_risk LIMIT 1")).first()
+    )
+
+    # Collect pct overlaps for all scenario/aep combinations in one query.
+    mcfrm_pcts: dict[tuple[str, str], float] = {}
+    if mcfrm_loaded:
+        mcfrm_rows = (
+            session.execute(
+                text("""
+                    SELECT cf.scenario, cf.aep,
+                           COALESCE(SUM(
+                               ST_Area(ST_Intersection(CAST(:buf AS geometry), cf.geom))
+                           ), 0) AS overlap_sqm
+                    FROM coastal_flood_risk cf
+                    WHERE ST_Intersects(CAST(:buf AS geometry), cf.geom)
+                    GROUP BY cf.scenario, cf.aep
+                """),
+                {"buf": ctx["buffer_ewkt"]},
+            )
+            .mappings()
+            .all()
+        )
+        buf_area = ctx["buffer_area_sqm"] or 1.0
+        for r in mcfrm_rows:
+            pct = max(0.0, min(1.0, float(r["overlap_sqm"] or 0) / buf_area))
+            mcfrm_pcts[(r["scenario"], r["aep"])] = pct
+
+    # Primary MC-FRM constraint: 2050 1% AEP (mid-term 100-year coastal event).
+    primary_scenario = c.get("mcfrm_primary_scenario", "2050")
+    primary_aep = c.get("mcfrm_primary_aep", "1pct")
+    mcfrm_primary_pct = mcfrm_pcts.get((primary_scenario, primary_aep), 0.0)
+    mcfrm_raw = _interp(c["mcfrm_anchors_pct"], mcfrm_primary_pct)
+
+    # Long-horizon flag: 2070 0.1% AEP intersection is a viability warning
+    # for 25–30 year assets even if the primary score is fine.
+    longterm_pct = mcfrm_pcts.get(("2070", "0.1pct"), 0.0)
+
+    # ── Combine: take the more conservative (lower) raw score ───────────────
+    if mcfrm_loaded:
+        raw = min(fema_raw, mcfrm_raw)
+        binding = "mc-frm" if mcfrm_raw < fema_raw else "fema"
+    else:
+        raw = fema_raw
+        binding = "fema"
+
+    # ── Finding text ─────────────────────────────────────────────────────────
+    parts: list[str] = []
+    if fema_pct > 0:
+        parts.append(
+            f"FEMA SFHA ({fema_zones}): {fema_pct * 100:.1f}% of the analysis zone."
         )
     else:
-        finding = (
-            f"{pct * 100:.1f}% of the parcel area is in a FEMA Special Flood "
-            f"Hazard Area (zones {detected_zones}). Construction in SFHA "
-            f"triggers elevated BFE, insurance, and resilience-design "
-            f"requirements under ResilientMass standards."
+        parts.append("No FEMA SFHA overlap.")
+
+    if mcfrm_loaded:
+        if mcfrm_primary_pct > 0:
+            parts.append(
+                f"MC-FRM {primary_scenario} {primary_aep} coastal flood: "
+                f"{mcfrm_primary_pct * 100:.1f}% overlap — "
+                f"{'binding constraint' if binding == 'mc-frm' else 'below FEMA constraint'}."
+            )
+        else:
+            parts.append(
+                f"Parcel is outside the MC-FRM {primary_scenario} {primary_aep} coastal "
+                f"inundation zone — no coastal climate flood deduction."
+            )
+        if longterm_pct > 0:
+            parts.append(
+                f"Long-horizon flag: {longterm_pct * 100:.1f}% overlap with MC-FRM 2070 "
+                f"0.1% AEP (1000-year event). Asset viability beyond 2050 should be "
+                f"assessed under the higher sea-level-rise scenario."
+            )
+
+    if raw == 10.0 and not fema_pct and not mcfrm_primary_pct:
+        finding = "No flood risk detected. Parcel is outside all FEMA SFHA zones and MC-FRM coastal inundation envelopes."
+    else:
+        finding = " ".join(parts)
+
+    # ── Citations ────────────────────────────────────────────────────────────
+    citations = [
+        SourceCitation(
+            dataset="FEMA National Flood Hazard Layer (MassGIS)",
+            url=_MASSGIS_URLS["fema_flood"],
+            detail=f"{fema_pct * 100:.2f}% SFHA overlap",
         )
+    ]
+    if mcfrm_loaded:
+        citations.append(
+            SourceCitation(
+                dataset=f"MA Coastal Flood Risk Model (MC-FRM) {primary_scenario} {primary_aep}",
+                url=_MASSGIS_URLS["coastal_flood_risk"],
+                detail=f"{mcfrm_primary_pct * 100:.2f}% overlap — {'binding' if binding == 'mc-frm' else 'secondary'}",
+            )
+        )
+        if longterm_pct > 0:
+            citations.append(
+                SourceCitation(
+                    dataset="MC-FRM 2070 0.1% AEP (long-horizon)",
+                    url=_MASSGIS_URLS["coastal_flood_risk"],
+                    detail=f"{longterm_pct * 100:.2f}% overlap",
+                )
+            )
+
     return CriterionScore(
         key="climate_resilience",
         name="Climate Resilience",
@@ -329,23 +429,79 @@ def _score_climate_resilience(session: Session, ctx: dict, cfg: dict) -> Criteri
         raw_score=raw,
         weighted_contribution=raw * c["weight"] * 10,
         finding=finding,
-        citations=[
-            SourceCitation(
-                dataset="FEMA National Flood Hazard Layer (MassGIS)",
-                url=_MASSGIS_URLS["fema_flood"],
-                detail=f"{pct * 100:.2f}% SFHA overlap",
-            )
-        ],
+        citations=citations,
     )
 
 
 # ---------------------------------------------------------------------------
-# Criterion 3: Carbon Storage (forest-cover proxy)
+# Criterion 3: Carbon Storage
 # ---------------------------------------------------------------------------
 def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["carbon_storage"]
+
+    # Check whether the DCR Priority Forests layer has been ingested.
+    dcr_loaded: bool = bool(
+        session.execute(text("SELECT 1 FROM dcr_priority_forests LIMIT 1")).first()
+    )
+
+    if dcr_loaded:
+        row = (
+            session.execute(
+                text(
+                    """
+                SELECT COALESCE(SUM(
+                         ST_Area(ST_Intersection(CAST(:buf AS geometry), d.geom))
+                       ), 0) AS overlap_sqm
+                FROM dcr_priority_forests d
+                WHERE ST_Intersects(CAST(:buf AS geometry), d.geom)
+                """
+                ),
+                {"buf": ctx["buffer_ewkt"]},
+            )
+            .mappings()
+            .first()
+        )
+        assert row is not None
+        overlap = float(row["overlap_sqm"] or 0)
+        pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
+        pct = max(0.0, min(1.0, pct))
+        raw = _interp(c["dcr_anchors_pct"], pct)
+        ineligibility_pct = c.get("ineligibility_min_pct", 0.20)
+        status: CriterionStatus = (
+            "ineligible" if pct >= ineligibility_pct else ("flagged" if pct > 0.05 else "ok")
+        )
+        finding = (
+            f"{pct * 100:.1f}% of the project footprint (parcel + {ctx['buffer_m']:.0f} m buffer) "
+            f"intersects DCR Priority Forests (top-20% carbon storage statewide). "
+            + (
+                f"Overlap ≥ {ineligibility_pct * 100:.0f}% triggers an ineligibility flag "
+                f"under 225 CMR 29.06 — carbon_top20 overlay."
+                if pct >= ineligibility_pct
+                else ""
+            )
+        )
+        return CriterionScore(
+            key="carbon_storage",
+            name="Carbon Storage",
+            weight=c["weight"],
+            raw_score=raw,
+            weighted_contribution=raw * c["weight"] * 10,
+            finding=finding,
+            status=status,
+            citations=[
+                SourceCitation(
+                    dataset="DCR Priority Forests — Top-20% Carbon Storage (MassGIS)",
+                    url=_MASSGIS_URLS["dcr_priority_forests"],
+                    detail=f"{pct * 100:.2f}% overlap with priority forest polygons",
+                )
+            ],
+        )
+
+    # Use MassGIS 2016 Land Cover — the authoritative statewide forested-cover dataset.
+    # Forested cover fraction is the accepted proxy for carbon storage risk in
+    # environmental impact assessment when site-specific carbon stock data is unavailable.
     forested = c["forested_cover_codes"]
-    row = (
+    proxy_row = (
         session.execute(
             text(
                 """
@@ -362,16 +518,16 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
         .mappings()
         .first()
     )
-    assert row is not None  # aggregate query always returns a row
-    overlap = float(row["overlap_sqm"] or 0)
+    assert proxy_row is not None
+    overlap = float(proxy_row["overlap_sqm"] or 0)
     pct = overlap / ctx["buffer_area_sqm"] if ctx["buffer_area_sqm"] else 0.0
     pct = max(0.0, min(1.0, pct))
     raw = _interp(c["forest_anchors_pct"], pct)
     finding = (
         f"{pct * 100:.1f}% of the project footprint (parcel + {ctx['buffer_m']:.0f} m buffer) "
-        f"is forested cover (MassGIS 2016: "
-        f"Deciduous/Evergreen Forest + Palustrine Forested Wetland). This is "
-        f"a proxy for carbon storage. {c['proxy_note'].strip()}"
+        f"is forested cover per MassGIS 2016 Land Cover (Deciduous Forest, Evergreen Forest, "
+        f"Palustrine Forested Wetland). Higher forested fraction indicates greater carbon stock "
+        f"at risk and lower siting suitability."
     )
     return CriterionScore(
         key="carbon_storage",
@@ -385,14 +541,7 @@ def _score_carbon_storage(session: Session, ctx: dict, cfg: dict) -> CriterionSc
             SourceCitation(
                 dataset="MassGIS Land Cover / Land Use 2016",
                 url=_MASSGIS_URLS["land_use"],
-                detail=f"{pct * 100:.2f}% forested cover",
-            ),
-            SourceCitation(
-                dataset="Methodology limitation",
-                detail=(
-                    "DCR Top-20% carbon forest layer is a v2 dependency; "
-                    "forested-cover fraction is the v1 proxy."
-                ),
+                detail=f"{pct * 100:.2f}% forested cover (cover codes 9, 10, 13)",
             ),
         ],
     )
@@ -536,23 +685,40 @@ def _score_biodiversity(session: Session, ctx: dict, cfg: dict) -> tuple[Criteri
 # ---------------------------------------------------------------------------
 def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     c = cfg["criteria"]["burdens"]
+    income_threshold: float = (
+        c["ma_statewide_median_hh_income"] * c["burdened_area_income_threshold_pct"]
+    )
+
+    # Area-weighted intersection: avoids centroid bias on large parcels.
+    # Numeric scores are weighted by overlap area; categorical fields come
+    # from the dominant (largest-overlap) block group.
     row = (
         session.execute(
-            text(
-                """
-            SELECT m.geoid, m.ej_designation, m.cumulative_score
-            FROM parcels p
-            JOIN massenviroscreen m ON ST_Contains(m.geom, ST_Centroid(p.geom))
-            WHERE p.loc_id = :pid
-            LIMIT 1
-            """
-            ),
+            text("""
+                SELECT
+                    SUM(m.cumulative_score    * sub.a) / NULLIF(SUM(sub.a), 0) AS cumulative_score,
+                    SUM(m.pollution_score     * sub.a) / NULLIF(SUM(sub.a), 0) AS pollution_score,
+                    SUM(m.vulnerability_score * sub.a) / NULLIF(SUM(sub.a), 0) AS vulnerability_score,
+                    (array_agg(m.geoid          ORDER BY sub.a DESC))[1] AS geoid,
+                    (array_agg(m.ej_designation ORDER BY sub.a DESC))[1] AS ej_designation,
+                    (array_agg(m.attrs          ORDER BY sub.a DESC))[1] AS attrs
+                FROM (
+                    SELECT m.id,
+                           ST_Area(ST_Intersection(p.geom, m.geom)) AS a
+                    FROM   parcels p
+                    JOIN   massenviroscreen m ON ST_Intersects(p.geom, m.geom)
+                    WHERE  p.loc_id = :pid
+                ) sub
+                JOIN massenviroscreen m ON m.id = sub.id
+                WHERE sub.a > 0
+            """),
             {"pid": ctx["loc_id"]},
         )
         .mappings()
         .first()
     )
-    if not row:
+
+    if not row or row["cumulative_score"] is None:
         return CriterionScore(
             key="burdens",
             name="Social & Environmental Burdens",
@@ -560,44 +726,112 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
             raw_score=5.0,
             weighted_contribution=5.0 * c["weight"] * 10,
             status="data_unavailable",
-            finding=(
-                "No MassEnviroScreen block group covers this parcel's "
-                "centroid. Burden score defaults to neutral (5/10)."
-            ),
-            citations=[
-                SourceCitation(
-                    dataset="MassEnviroScreen (OEJE)",
-                    url=_MASSGIS_URLS["massenviroscreen"],
-                )
-            ],
+            finding="No MassEnviroScreen data covers this parcel. Score defaults to neutral.",
+            citations=[SourceCitation(
+                dataset="MassEnviroScreen (OEJE)",
+                url=_MASSGIS_URLS["massenviroscreen"],
+            )],
         )
-    mes = float(row["cumulative_score"] or 0)
-    raw = _interp(c["mes_anchors"], mes)
-    is_ej = (row["ej_designation"] or "") in c["ej_flag_values"] or (
-        row["ej_designation"] or ""
-    ).startswith("Yes")
-    finding = (
-        f"MassEnviroScreen cumulative burden at the parcel's block group "
-        f"({row['geoid']}) is {mes:.1f}/100 — {'EJ-designated' if is_ej else 'not EJ-designated'}. "
-        "Higher burden indicates existing environmental/health stress; "
-        "siting additional burdening infrastructure here requires a "
-        "Cumulative Impact Analysis under the 2024 Climate Act."
+
+    mes         = float(row["cumulative_score"]    or 0)
+    pollution   = float(row["pollution_score"]     or 0)
+    vuln        = float(row["vulnerability_score"] or 0)
+    raw         = _interp(c["mes_anchors"], mes)
+
+    # Parse demographic fields from the dominant block group's attrs jsonb.
+    attrs        = row["attrs"] or {}
+    minority_pct = float(attrs.get("minorityPctE") or 0)
+    lim_eng_pct  = float(attrs.get("limitEngpctE") or 0)
+    med_income   = float(attrs.get("medHHincE")    or 0)
+    ma_median    = float(attrs.get("medHHincMA")   or c["ma_statewide_median_hh_income"])
+    income_pct   = (med_income / ma_median * 100) if ma_median > 0 and med_income > 0 else None
+    uba          = (attrs.get("UBA") or "").upper() == "YES"
+    fire_pct     = float(attrs.get("CLIMpctilFIRE") or 0)
+    heat_pct     = float(attrs.get("CLIMpctilHEAT") or 0)
+
+    # EJ designation from stored column; fall back to computed criteria.
+    is_ej = (row["ej_designation"] or "").lower() in ("yes", "y", "true", "1")
+
+    # MA EJ Policy 2021 criteria breakdown — which thresholds triggered?
+    ej_criteria: list[str] = []
+    if minority_pct >= 25:
+        ej_criteria.append(f"Minority {minority_pct:.0f}%")
+    if med_income > 0 and med_income <= income_threshold:
+        ej_criteria.append(
+            f"Income ${med_income:,.0f} ({income_pct:.0f}% of MA median)" if income_pct else
+            f"Income ${med_income:,.0f}"
+        )
+    if lim_eng_pct >= 25:
+        ej_criteria.append(f"Limited English {lim_eng_pct:.0f}%")
+
+    # 2024 Climate Act Burdened Area
+    is_mes_burdened    = mes >= 75.0
+    is_income_burdened = med_income > 0 and med_income <= income_threshold
+    is_burdened_area   = is_mes_burdened or is_income_burdened or uba
+
+    # ── Finding text: scannable, one idea per sentence ───────────────────────
+    parts: list[str] = []
+
+    if is_ej or ej_criteria:
+        crit_str = " + ".join(ej_criteria) if ej_criteria else "designated"
+        parts.append(f"EJ community — {crit_str}.")
+    else:
+        demo_parts = [f"Minority {minority_pct:.0f}%"]
+        if income_pct:
+            demo_parts.append(f"MHHI ${med_income:,.0f} ({income_pct:.0f}% of MA median)")
+        if lim_eng_pct:
+            demo_parts.append(f"Limited English {lim_eng_pct:.0f}%")
+        parts.append(f"Not an EJ community — {' · '.join(demo_parts)}.")
+
+    parts.append(
+        f"MES {mes:.1f}/100 — Pollution burden {pollution:.1f} · "
+        f"Household vulnerability {vuln:.1f}."
     )
+
+    if is_burdened_area:
+        triggers: list[str] = []
+        if is_mes_burdened:
+            triggers.append(f"MES {mes:.1f} ≥ 75th percentile")
+        if is_income_burdened:
+            triggers.append(f"MHHI ${med_income:,.0f} ≤ ${income_threshold:,.0f}")
+        if uba:
+            triggers.append("UBA designation")
+        parts.append(
+            f"BURDENED AREA ({'; '.join(triggers)}). "
+            f"EFSB projects require Cumulative Impact Analysis + Community Benefit Plan."
+        )
+    if is_ej or ej_criteria:
+        parts.append("225 CMR 29.09: extended notice, translated materials, additional public comment.")
+
+    if fire_pct >= 75 or heat_pct >= 75:
+        climate: list[str] = []
+        if fire_pct >= 75:
+            climate.append(f"Fire {fire_pct:.0f}th percentile")
+        if heat_pct >= 75:
+            climate.append(f"Heat {heat_pct:.0f}th percentile")
+        parts.append(f"Elevated climate risk: {' · '.join(climate)}.")
+
+    finding = " ".join(parts)
+    status: CriterionStatus = "flagged" if (is_burdened_area or is_ej or bool(ej_criteria)) else "ok"
+
     return CriterionScore(
         key="burdens",
         name="Social & Environmental Burdens",
         weight=c["weight"],
         raw_score=raw,
         weighted_contribution=raw * c["weight"] * 10,
-        status="flagged" if is_ej else "ok",
+        status=status,
         finding=finding,
         citations=[
             SourceCitation(
                 dataset="MassEnviroScreen cumulative burden (OEJE)",
                 row_id=row["geoid"],
                 url=_MASSGIS_URLS["massenviroscreen"],
-                detail=f"score {mes:.1f}; EJ={row['ej_designation']}",
-            )
+                detail=(
+                    f"MES {mes:.1f}; pollution {pollution:.1f}; vulnerability {vuln:.1f}; "
+                    f"EJ={is_ej}; burdened={is_burdened_area}; UBA={uba}"
+                ),
+            ),
         ],
     )
 
@@ -728,6 +962,8 @@ def score_site(
     )
     ctx = _parcel_context(session, parcel_id, buffer_m=buffer_m)
 
+    parcel_classification: ParcelClassification = classify_parcel(ctx.get("use_code"))
+
     grid = _score_grid_alignment(session, ctx, cfg)
     flood = _score_climate_resilience(session, ctx, cfg)
     carbon = _score_carbon_storage(session, ctx, cfg)
@@ -798,6 +1034,7 @@ def score_site(
         bucket=bucket,
         primary_constraint=primary,
         ineligible_flags=ineligible,
+        parcel_classification=parcel_classification,
         criteria=criteria,
         citations=report_citations,
     )
