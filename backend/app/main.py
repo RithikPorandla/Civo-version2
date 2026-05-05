@@ -50,9 +50,18 @@ def _refresh_jurisdiction_risk_on_startup() -> None:
     requests. Takes ~1s for 11 towns; safe to re-run anytime data changes.
     """
     def _run() -> None:
-        with SessionLocal() as session:
-            n = refresh_all(session)
-            print(f"[jurisdiction_risk] refreshed {n} rows")
+        import time
+        for attempt in range(3):
+            try:
+                with SessionLocal() as session:
+                    n = refresh_all(session)
+                    print(f"[jurisdiction_risk] refreshed {n} rows")
+                return
+            except Exception as e:
+                if attempt < 2:
+                    time.sleep(5)
+                else:
+                    print(f"[jurisdiction_risk] failed after 3 attempts: {e}")
 
     threading.Thread(target=_run, daemon=True).start()
 
