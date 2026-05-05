@@ -55,6 +55,7 @@ export default function App() {
               <Route path="/suitability" element={<SiteSuitability />} />
               <Route path="/discover" element={<Discover />} />
               <Route path="/data-sources" element={<DataSources />} />
+              <Route path="/portfolio" element={<Portfolio />} />
             </Routes>
           </Shell>
         }
@@ -78,14 +79,7 @@ export default function App() {
           </Shell>
         }
       />
-      <Route
-        path="/portfolio/:portfolioId"
-        element={
-          <Shell>
-            <Portfolio />
-          </Shell>
-        }
-      />
+      <Route path="/portfolio/:portfolioId" element={<Navigate to="/app/portfolio" replace />} />
     </Routes>
   );
 }

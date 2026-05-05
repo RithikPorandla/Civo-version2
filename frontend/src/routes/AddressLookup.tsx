@@ -14,7 +14,7 @@ const PROJECT_TYPES: Array<{ code: ProjectTypeCode; label: string; hint: string 
 ];
 
 export default function AddressLookup() {
-  const [address, setAddress] = useState('Kendall Square, Cambridge, MA 02142');
+  const [address, setAddress] = useState('');
   const [projectType, setProjectType] = useState<ProjectTypeCode>('solar_ground_mount');
   const [nameplateKw, setNameplateKw] = useState('');
   const [footprintAcres, setFootprintAcres] = useState('');

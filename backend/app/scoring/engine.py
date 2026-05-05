@@ -749,6 +749,29 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     fire_pct     = float(attrs.get("CLIMpctilFIRE") or 0)
     heat_pct     = float(attrs.get("CLIMpctilHEAT") or 0)
 
+    # Official MA EJ Population 2020 layer — geo area name, muni MHHI, authoritative criteria.
+    ej_pop = (
+        session.execute(
+            text("""
+                SELECT geo_area_name, ej_crit_desc, muni_mhhi, muni_mhhi_pct_ma, total_pop, total_hh
+                FROM ej_populations
+                WHERE ST_Contains(geom, ST_Centroid(
+                    (SELECT geom FROM parcels WHERE loc_id = :pid)
+                ))
+                LIMIT 1
+            """),
+            {"pid": ctx["loc_id"]},
+        )
+        .mappings()
+        .first()
+    )
+    geo_area_name  = (ej_pop or {}).get("geo_area_name")
+    ej_crit_desc   = (ej_pop or {}).get("ej_crit_desc")   # e.g. "Minority and income"
+    muni_mhhi      = (ej_pop or {}).get("muni_mhhi")
+    muni_mhhi_pct  = (ej_pop or {}).get("muni_mhhi_pct_ma")
+    total_pop      = (ej_pop or {}).get("total_pop")
+    total_hh       = (ej_pop or {}).get("total_hh")
+
     # EJ designation from stored column; fall back to computed criteria.
     is_ej = (row["ej_designation"] or "").lower() in ("yes", "y", "true", "1")
 
@@ -772,16 +795,24 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     # ── Finding text: scannable, one idea per sentence ───────────────────────
     parts: list[str] = []
 
+    if geo_area_name:
+        parts.append(geo_area_name + ".")
+
     if is_ej or ej_criteria:
-        crit_str = " + ".join(ej_criteria) if ej_criteria else "designated"
-        parts.append(f"EJ community — {crit_str}.")
+        crit_str = " + ".join(ej_criteria) if ej_criteria else (ej_crit_desc or "designated")
+        parts.append(f"EJ population — {crit_str}.")
     else:
         demo_parts = [f"Minority {minority_pct:.0f}%"]
         if income_pct:
             demo_parts.append(f"MHHI ${med_income:,.0f} ({income_pct:.0f}% of MA median)")
         if lim_eng_pct:
             demo_parts.append(f"Limited English {lim_eng_pct:.0f}%")
-        parts.append(f"Not an EJ community — {' · '.join(demo_parts)}.")
+        parts.append(f"Not an EJ population — {' · '.join(demo_parts)}.")
+
+    if muni_mhhi and muni_mhhi_pct:
+        parts.append(f"Municipality MHHI ${muni_mhhi:,.0f} ({muni_mhhi_pct:.0f}% of MA median).")
+    if total_pop and total_hh:
+        parts.append(f"Population {total_pop:,} in {total_hh:,} households.")
 
     parts.append(
         f"MES {mes:.1f}/100 — Pollution burden {pollution:.1f} · "
@@ -824,12 +855,21 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
         finding=finding,
         citations=[
             SourceCitation(
+                dataset="MA EJ Population 2020 (OEJE / MassGIS)",
+                row_id=row["geoid"],
+                url=_MASSGIS_URLS["ej_populations"],
+                detail=(
+                    f"EJ={is_ej}; criteria={ej_crit_desc or ('|'.join(ej_criteria) or 'None')}; "
+                    f"minority={minority_pct:.1f}%; lim_eng={lim_eng_pct:.1f}%"
+                ),
+            ),
+            SourceCitation(
                 dataset="MassEnviroScreen cumulative burden (OEJE)",
                 row_id=row["geoid"],
                 url=_MASSGIS_URLS["massenviroscreen"],
                 detail=(
                     f"MES {mes:.1f}; pollution {pollution:.1f}; vulnerability {vuln:.1f}; "
-                    f"EJ={is_ej}; burdened={is_burdened_area}; UBA={uba}"
+                    f"burdened={is_burdened_area}; UBA={uba}"
                 ),
             ),
         ],
