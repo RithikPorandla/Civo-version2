@@ -34,6 +34,7 @@ from app.scoring.models import (
     SuitabilityReport,
 )
 from app.scoring.parcel_classifier import ParcelClassification, classify as classify_parcel
+from app.services import interconnection_predictor
 
 CONFIG_ROOT = Path(__file__).resolve().parents[2] / "config" / "scoring"
 
@@ -263,6 +264,23 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
     if row["coordinate_confidence"] == "pending_siting":
         finding += " Score capped — ESMP project final site not yet chosen."
 
+    # ── Interconnection timeline prediction ───────────────────────────────
+    project_type = ctx.get("project_type") or "solar_ground_mount"
+    capacity_mw  = ctx.get("project_size_mw") or 5.0
+    timeline = interconnection_predictor.predict(
+        project_type=project_type,
+        capacity_mw=capacity_mw,
+        state=ctx.get("state", "MA"),
+        session=session,
+    )
+    finding += (
+        f" Estimated interconnection timeline: P50 {timeline['p50_months']} months "
+        f"(P25–P90 range: {timeline['p25_months']}–{timeline['p90_months']} months"
+        f", confidence: {timeline['confidence']})."
+    )
+    if timeline["drivers"]:
+        finding += f" Key factors: {', '.join(timeline['drivers'])}."
+
     citations = [
         SourceCitation(
             dataset=f"{utility_label} ESMP ({source_filing})",
@@ -273,6 +291,12 @@ def _score_grid_alignment(session: Session, ctx: dict, cfg: dict) -> CriterionSc
     ]
     if hca_citation:
         citations.append(hca_citation)
+    citations.append(
+        SourceCitation(
+            dataset="ISO-NE IRTT / FERC eQueue (interconnection timeline model)",
+            detail=timeline["note"],
+        )
+    )
 
     return CriterionScore(
         key="grid_alignment",
