@@ -4,15 +4,25 @@ Translates structured InterpretedQuery filters into parameterized SQL.
 All geometry is in EPSG:26986 (MA State Plane, meters); centroids are
 transformed to WGS-84 for the frontend.
 
+Supported project types
+-----------------------
+- ``solar_ground_mount``  large open parcels, ag/industrial land, ≥ 2 acres
+- ``solar_canopy``        commercial / institutional rooftops, ≥ 1 acre
+- ``bess_standalone``     industrial / brownfield preferred, ≥ 0.5 acres
+- ``bess_colocated``      same as standalone but co-sited with existing gen
+- ``substation``          proximity to transmission is paramount
+
+When ``project_type`` is omitted, a neutral proxy score and a 1-acre floor
+are applied so results are meaningful across all types.
+
 Ranking strategy
 ----------------
 Results are ordered by ``COALESCE(score_history.total_score, proxy_score)
 × risk_multiplier``.  When a parcel has been scored before, the real
 225 CMR 29 score takes precedence.  When it hasn't, the proxy score
-stands in — a fast SQL-inline approximation that uses the same signals
+stands in — a fast SQL-inline approximation tuned per project type that uses
 (grid proximity, land-use category, parcel size, constraint flags) weighted
-to mirror 225 CMR 29 criterion priorities.  This means every result is
-ranked meaningfully even for towns that have never been pre-scored.
+to mirror 225 CMR 29 criterion priorities.
 
 Hard pre-filters (always applied, not user-configurable)
 ---------------------------------------------------------
@@ -83,8 +93,18 @@ def _check_flags_precomputed(session: Session) -> bool:
 ACRES_TO_M2 = 4046.856
 DEFAULT_LIMIT = 50
 
-# Practical floor for ground-mount solar; BESS can be smaller.
-DEFAULT_MIN_AREA_M2 = 2.0 * ACRES_TO_M2
+# Per-project-type minimum parcel area (acres).  Used when the user does not
+# specify a size.  BESS is compact; solar needs more open land.
+_MIN_ACRES_BY_TYPE: dict[str, float] = {
+    "solar_ground_mount": 2.0,
+    "solar_canopy":       1.0,
+    "bess_standalone":    0.5,
+    "bess_colocated":     0.5,
+    "substation":         0.5,
+}
+_DEFAULT_MIN_ACRES = 1.0  # neutral fallback when project_type is unknown
+
+DEFAULT_MIN_AREA_M2 = _DEFAULT_MIN_ACRES * ACRES_TO_M2
 
 # Parcels beyond this distance from the nearest ESMP project have no
 # realistic interconnection path at reasonable capital cost.
@@ -127,15 +147,21 @@ ALWAYS_JOINED_LAYERS = {"biomap_core", "nhesp_priority", "flood_zone", "wetlands
 # ---------------------------------------------------------------------------
 # Proxy score
 # ---------------------------------------------------------------------------
-def _proxy_score_sql(use_precomputed: bool) -> str:
+def _proxy_score_sql(use_precomputed: bool, project_type: str | None = None) -> str:
     """SQL expression for the inline proxy suitability score (0–100 scale).
 
     Used when score_history has no entry for a parcel.  Mirrors 225 CMR 29.00
     criterion priorities using signals already available in the discovery query:
       - Grid proximity   0–40 pts  (criterion 1: Grid Alignment, weight 20%)
-      - Land-use type    0–25 pts  (industrial > commercial > institutional > ag)
-      - Parcel size      0–20 pts  (log scale; large parcels score higher)
+      - Land-use type    0–25 pts  (weights vary by project type)
+      - Parcel size      0–20 pts  (log scale; weight reduced for BESS)
       - Clean flags      0–15 pts  (no flood + no wetlands + no article97)
+
+    Land-use and size weights are tuned per project type:
+      BESS: industrial/brownfield first, compact sites ok → size weight reduced
+      Solar ground: agricultural land viable, large parcels strongly preferred
+      Solar canopy: commercial/institutional first, size less important
+      Neutral (unknown): balanced weights
 
     ``nearest_esmp.dist_m`` comes from the always-present ESMP LATERAL join.
     Flag expressions differ between fast (pre-computed columns) and slow
@@ -159,21 +185,62 @@ def _proxy_score_sql(use_precomputed: bool) -> str:
                 ELSE 4
             END"""
 
+    is_bess   = project_type in ("bess_standalone", "bess_colocated")
+    is_canopy = project_type == "solar_canopy"
+    is_solar  = project_type in ("solar_ground_mount",) or (
+        project_type is None and not is_bess and not is_canopy
+    )
+
+    if is_bess:
+        # Industrial/brownfield sites are strongly preferred; compact footprint ok.
+        # Agricultural land is a poor fit (permitting friction, no infrastructure).
+        land_use_sql = """CASE
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['40','41','42','43']) THEN 30
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['13','14','15','32','33','34','35']) THEN 25
+                WHEN p.use_code = ANY(ARRAY['903','904','910','911','325']) THEN 20
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['90','91','92','93','94','95']) THEN 14
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['01','02','03']) THEN 8
+                ELSE 5
+              END"""
+        # BESS sites don't need large parcels; cap at 12 pts instead of 20.
+        size_sql = "LEAST(12.0, LN(GREATEST(p.shape_area / 4046.856, 1.0) + 1.0) * 4.5)"
+
+    elif is_canopy:
+        # Commercial, institutional, and municipal rooftops are ideal.
+        # Size matters less (canopy density compensates).
+        land_use_sql = """CASE
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['32','33','34','35']) THEN 28
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['13','14','15'])      THEN 26
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['40','41','42','43']) THEN 22
+                WHEN p.use_code = ANY(ARRAY['903','904','910','911','325']) THEN 18
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['90','91','92','93','94','95']) THEN 12
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['01','02','03']) THEN 6
+                ELSE 4
+              END"""
+        size_sql = "LEAST(15.0, LN(GREATEST(p.shape_area / 4046.856, 1.0) + 1.0) * 5.5)"
+
+    else:
+        # Solar ground-mount (and neutral/unknown): large open parcels preferred.
+        # Agricultural land is viable and common for ground-mount projects.
+        land_use_sql = """CASE
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['40','41','42','43']) THEN 25
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['13','14','15','32','33','34','35']) THEN 20
+                WHEN p.use_code = ANY(ARRAY['903','904','910','911','325']) THEN 16
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['90','91','92','93','94','95']) THEN 12
+                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['01','02','03']) THEN 15
+                ELSE 5
+              END"""
+        # Large parcels strongly preferred for ground mount.
+        size_sql = "LEAST(20.0, LN(GREATEST(p.shape_area / 4046.856, 1.0) + 1.0) * 7.5)"
+
     return f"""
         GREATEST(0.0,
             -- Grid proximity: 40 pts at 0 m → 0 pts at 20 km
             GREATEST(0.0, 40.0 - (nearest_esmp.dist_m / 500.0))
-            -- Land-use type (MA DOR use codes)
-            + CASE
-                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['40','41','42','43']) THEN 25
-                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['13','14','15','32','33','34','35']) THEN 20
-                WHEN p.use_code = ANY(ARRAY['903','904','910','911','325']) THEN 15
-                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['90','91','92','93','94','95']) THEN 12
-                WHEN LEFT(p.use_code, 2) = ANY(ARRAY['01','02','03']) THEN 8
-                ELSE 5
-              END
-            -- Parcel size (log scale so 500-acre parcels don't dominate)
-            + LEAST(20.0, LN(GREATEST(p.shape_area / 4046.856, 1.0) + 1.0) * 7.5)
+            -- Land-use type (MA DOR use codes, tuned per project type)
+            + {land_use_sql}
+            -- Parcel size (log scale; weight varies by project type)
+            + {size_sql}
             -- Constraint cleanliness
             + {clean_flags_sql}
         )"""
@@ -210,7 +277,7 @@ class DiscoveryFilters:
                 min_acres = max(2.0, q.project_size_mw * 1.0)
 
         if min_acres is None:
-            min_acres = 2.0
+            min_acres = _MIN_ACRES_BY_TYPE.get(q.project_type or "", _DEFAULT_MIN_ACRES)
 
         return cls(
             municipalities=munis,
@@ -246,8 +313,9 @@ def run_discovery(
     params: dict[str, Any] = {
         "limit": filters.limit,
         "max_grid_dist_m": filters.max_grid_dist_m,
-        "score_project_type": filters.project_type or "bess_standalone",
     }
+    if filters.project_type:
+        params["score_project_type"] = filters.project_type
 
     # ── Municipality filter ───────────────────────────────────────────────
     if filters.municipalities:
@@ -435,8 +503,14 @@ def run_discovery(
             NULL   AS doer_status,
             1.0    AS risk_multiplier"""
 
+    # ── score_history project_type filter (omit when type unknown) ────────
+    sh_type_filter = (
+        "AND  report->>'project_type' = :score_project_type"
+        if filters.project_type else ""
+    )
+
     # ── Proxy score and effective rank ────────────────────────────────────
-    proxy_sql = _proxy_score_sql(use_precomputed)
+    proxy_sql = _proxy_score_sql(use_precomputed, filters.project_type)
     effective_score_sql = (
         f"COALESCE(sh.total_score, {proxy_sql}) * {risk_multiplier_expr}"
     )
@@ -479,7 +553,7 @@ def run_discovery(
             SELECT total_score, bucket, report
             FROM   score_history
             WHERE  parcel_loc_id = p.loc_id
-              AND  report->>'project_type' = :score_project_type
+              {sh_type_filter}
             ORDER  BY computed_at DESC
             LIMIT  1
         ) sh ON true
