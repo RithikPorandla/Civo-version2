@@ -612,6 +612,43 @@ def get_parcel_overlays(
         }
     )
 
+    # Sibling parcels — additional lot records with the same street address
+    # that are contiguous with the primary parcel. Large commercial/industrial
+    # sites are often split across several assessor records; without siblings
+    # the map shows only one sliver of the actual site boundary.
+    if parcel["site_addr"]:
+        sibling_rows = session.execute(
+            text("""
+                SELECT loc_id, site_addr, town_name, city, total_val, lot_size,
+                       ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geom_4326
+                FROM   parcels
+                WHERE  loc_id    != :pid
+                  AND  site_addr  = :addr
+                  AND  town_name  = :town
+                  AND  ST_DWithin(geom,
+                           (SELECT geom FROM parcels WHERE loc_id = :pid),
+                           5)
+                LIMIT 30
+            """),
+            {"pid": parcel_id, "addr": parcel["site_addr"], "town": parcel["town_name"]},
+        ).mappings().all()
+        for sib in sibling_rows:
+            features.append({
+                "type": "Feature",
+                "geometry": json.loads(sib["geom_4326"]),
+                "properties": {
+                    "layer": "parcel",
+                    "loc_id": sib["loc_id"],
+                    "site_addr": sib["site_addr"],
+                    "town_name": sib["town_name"],
+                    "city": sib["city"],
+                    "total_val": sib["total_val"],
+                    "lot_size": sib["lot_size"],
+                },
+            })
+        counts["parcel"] = 1 + len(sibling_rows)
+        remaining_budget -= len(sibling_rows)
+
     for layer, table, props_expr in _OVERLAY_SPECS:
         if remaining_budget <= 0:
             truncated = True

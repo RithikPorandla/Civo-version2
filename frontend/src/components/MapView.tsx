@@ -77,33 +77,35 @@ export function MapView({ parcelId, address }: Props) {
   const [overlay, setOverlay] = useState<GeoJSON.FeatureCollection | null>(null);
   const [parcelProps, setParcelProps] = useState<Record<string, unknown> | null>(null);
   const [satellite, setSatellite] = useState(true);
-  const [showParcelGrid, setShowParcelGrid] = useState(false);
+  const [showParcelGrid, setShowParcelGrid] = useState(true);
   const [showLayers, setShowLayers] = useState(false);
 
   useEffect(() => {
     api.parcelOverlays(parcelId, 2000).then(setOverlay).catch(console.error);
   }, [parcelId]);
 
-  const parcelFeat = useMemo(
-    () => overlay?.features.find((f) => f.properties?.layer === 'parcel'),
+  // All parcel features — primary + sibling lot records with same address.
+  const parcelFeats = useMemo(
+    () => overlay?.features.filter((f) => f.properties?.layer === 'parcel') ?? [],
     [overlay]
   );
+  const parcelFeat = parcelFeats[0] ?? null;
 
   useEffect(() => {
     if (parcelFeat?.properties) setParcelProps(parcelFeat.properties as any);
   }, [parcelFeat]);
 
   useEffect(() => {
-    if (!loaded || !parcelFeat || !mapRef.current) return;
+    if (!loaded || parcelFeats.length === 0 || !mapRef.current) return;
     const bounds = new maplibregl.LngLatBounds();
     const walk = (c: any): void => {
       if (typeof c[0] === 'number') bounds.extend(c as [number, number]);
       else c.forEach(walk);
     };
-    walk((parcelFeat.geometry as any).coordinates);
-    // Flat, tight framing — the parcel is the subject.
+    // Extend bounds across ALL parcel lots so the full site boundary is framed.
+    parcelFeats.forEach((f) => walk((f.geometry as any).coordinates));
     mapRef.current.fitBounds(bounds, { padding: 80, duration: 0, maxZoom: 18 });
-  }, [loaded, parcelFeat]);
+  }, [loaded, parcelFeats]);
 
   const polygons = useMemo(() => {
     const grouped: Record<string, GeoJSON.Feature[]> = {};
@@ -124,10 +126,10 @@ export function MapView({ parcelId, address }: Props) {
 
   const parcelFc = useMemo(
     () =>
-      parcelFeat
-        ? ({ type: 'FeatureCollection', features: [parcelFeat] } as GeoJSON.FeatureCollection)
+      parcelFeats.length > 0
+        ? ({ type: 'FeatureCollection', features: parcelFeats } as GeoJSON.FeatureCollection)
         : null,
-    [parcelFeat]
+    [parcelFeats]
   );
 
   // Parcel boundary styling flips between modes:
@@ -135,7 +137,7 @@ export function MapView({ parcelId, address }: Props) {
   // Map       → dark ink stroke with white halo for the paper-map look
   const parcelStroke = satellite ? '#f5a623' : '#1a1a1a';
   const parcelHalo = satellite ? 'rgba(0,0,0,0.75)' : '#ffffff';
-  const parcelFillOpacity = satellite ? 0.09 : 0;
+  const parcelFillOpacity = satellite ? 0.18 : 0.06;
 
   const addressText = (address || (parcelProps?.site_addr as string | undefined) || '').trim();
   const townText = (parcelProps?.town_name as string | undefined) || '';
@@ -214,13 +216,13 @@ export function MapView({ parcelId, address }: Props) {
             <Layer
               id="parcel-halo"
               type="line"
-              paint={{ 'line-color': parcelHalo, 'line-width': 7, 'line-opacity': 0.9 }}
+              paint={{ 'line-color': parcelHalo, 'line-width': 9, 'line-opacity': 0.9 }}
             />
             {/* Main boundary — amber on satellite, dark ink on map */}
             <Layer
               id="parcel-outline"
               type="line"
-              paint={{ 'line-color': parcelStroke, 'line-width': 2.5, 'line-opacity': 1 }}
+              paint={{ 'line-color': parcelStroke, 'line-width': 3, 'line-opacity': 1 }}
             />
           </Source>
         )}
