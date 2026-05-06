@@ -33,7 +33,7 @@ const CRITERION_NAME: Record<string, string> = {
 
 const CRITERION_DESC: Record<string, string> = {
   biodiversity: 'BioMap Core, NHESP, wetlands',
-  climate_resilience: 'FEMA flood zones, sea-level rise',
+  climate_resilience: 'FEMA flood zones, MC-FRM coastal flood 2030–2070',
   carbon_storage: 'Forest cover & carbon sequestration',
   grid_alignment: 'Proximity to ESMP substation projects',
   burdens: 'EJ / MassEnviroScreen burden score',
@@ -312,7 +312,7 @@ function ReportView({
             Criteria breakdown
           </h3>
           <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0 }}>
-            Seven weighted criteria under 225 CMR 29.00. Click any card to expand full finding and all citations.
+            Seven criteria under 225 CMR 29.00 — each card shows the finding and the data that drove it. Expand "Scoring detail" to see the underlying weights.
           </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
@@ -395,39 +395,39 @@ function ReportView({
 function ScoreGauge({ score, bucket }: { score: number; bucket: Bucket }) {
   const tone = bucketTone(bucket);
   const pct = Math.min(100, Math.max(0, score));
+  const bucketFull =
+    bucket === 'SUITABLE' ? 'Suitable' :
+    bucket === 'CONDITIONALLY SUITABLE' ? 'Conditionally suitable' :
+    'Constrained';
 
   return (
     <div className="card" style={{ padding: '20px 22px' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 58, fontWeight: 400, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--text)' }}>
-          {Math.round(score)}
+      {/* Bucket as hero */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10 }}>
+        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 32, fontWeight: 400, letterSpacing: '-0.025em', lineHeight: 1, color: tone.c }}>
+          {bucketFull}
         </span>
-        <span style={{ fontSize: 14, color: 'var(--text-dim)', marginBottom: 4 }}>/ 100</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: tone.c, background: tone.bg, padding: '4px 14px', borderRadius: 100, marginLeft: 4 }}>
-          {tone.label}
+        <span className="tnum" style={{ fontSize: 12, color: 'var(--text-dim)', background: 'var(--surface-alt)', padding: '4px 10px', borderRadius: 8, whiteSpace: 'nowrap' }}>
+          Score {Math.round(score)} / 100
         </span>
       </div>
 
       {/* Track */}
       <div style={{ position: 'relative', marginBottom: 4 }}>
-        <div style={{ height: 8, borderRadius: 8, overflow: 'hidden', background: 'var(--border-soft)', position: 'relative' }}>
-          {/* Zone fills */}
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%', background: '#a85a4a', opacity: 0.1 }} />
-          <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '25%', background: '#c9a464', opacity: 0.1 }} />
-          <div style={{ position: 'absolute', left: '75%', top: 0, bottom: 0, right: 0, background: '#6b7e5a', opacity: 0.1 }} />
-          {/* Score fill */}
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: tone.c, borderRadius: '8px 0 0 8px', transition: 'width 0.6s ease' }} />
+        <div style={{ height: 6, borderRadius: 6, overflow: 'hidden', background: 'var(--border-soft)', position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%', background: '#a85a4a', opacity: 0.08 }} />
+          <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '25%', background: '#c9a464', opacity: 0.08 }} />
+          <div style={{ position: 'absolute', left: '75%', top: 0, bottom: 0, right: 0, background: '#6b7e5a', opacity: 0.08 }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: tone.c, borderRadius: '6px 0 0 6px', transition: 'width 0.6s ease' }} />
         </div>
-        {/* Threshold ticks */}
-        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 2, background: 'var(--bg)', marginLeft: -1 }} />
-        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '75%', width: 2, background: 'var(--bg)', marginLeft: -1 }} />
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: 'var(--bg)', marginLeft: -0.5 }} />
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '75%', width: 1, background: 'var(--bg)', marginLeft: -0.5 }} />
       </div>
 
-      {/* Labels */}
-      <div style={{ position: 'relative', height: 18, marginBottom: 2 }}>
-        <span style={{ position: 'absolute', left: 0, fontSize: 10, color: 'var(--text-dim)' }}>0 — Constrained</span>
-        <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>50 — Conditional</span>
-        <span style={{ position: 'absolute', right: 0, fontSize: 10, color: 'var(--text-dim)' }}>75+ — Suitable</span>
+      <div style={{ position: 'relative', height: 16, marginBottom: 2 }}>
+        <span style={{ position: 'absolute', left: 0, fontSize: 10, color: 'var(--text-dim)' }}>Constrained</span>
+        <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>Conditional</span>
+        <span style={{ position: 'absolute', right: 0, fontSize: 10, color: 'var(--text-dim)' }}>Suitable</span>
       </div>
     </div>
   );
@@ -619,28 +619,34 @@ function IneligibilityAlert({ flags }: { flags: string[] }) {
 // -----------------------------------------------------------------------------
 function CriterionCard({ c, expanded, onToggle }: { c: CriterionScore; expanded: boolean; onToggle: () => void }) {
   const tone = statusTone(c.status);
-  const PREVIEW = 220;
-  const needsExpand = c.finding.length > PREVIEW || c.citations.length > 3;
+  const [showMethod, setShowMethod] = useState(false);
+  const PREVIEW = 320;
+  const needsExpand = c.finding.length > PREVIEW;
   const displayFinding = expanded || !needsExpand
     ? c.finding
     : c.finding.slice(0, PREVIEW).replace(/\s\S*$/, '') + '…';
-  const displayCitations = expanded ? c.citations : c.citations.slice(0, 3);
 
   const borderColor =
     c.status === 'ineligible' ? 'var(--bad, #a85a4a)' :
     c.status === 'flagged'    ? 'var(--gold, #c9a464)' :
     'var(--border-soft)';
 
+  const leftAccent =
+    c.status === 'ineligible' ? 'var(--bad, #a85a4a)' :
+    c.status === 'flagged'    ? 'var(--gold, #c9a464)' :
+    'var(--good, #4a7c4f)';
+
   return (
-    <div style={{ background: 'var(--surface)', border: `1px solid ${borderColor}`, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {/* Header */}
+    <div style={{ background: 'var(--surface)', border: `1px solid ${borderColor}`, borderRadius: 12, padding: '16px 16px 14px 20px', display: 'flex', flexDirection: 'column', gap: 10, borderLeft: `3px solid ${leftAccent}` }}>
+
+      {/* Header: name + status badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 1 }}>
             {CRITERION_NAME[c.key] ?? c.name}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-            {CRITERION_DESC[c.key] ?? ''} · {Math.round(c.weight * 100)}% weight
+            {CRITERION_DESC[c.key] ?? ''}
           </div>
         </div>
         <span style={{ fontSize: 11, fontWeight: 500, color: tone.c, background: tone.bg, padding: '3px 10px', borderRadius: 100, whiteSpace: 'nowrap', flexShrink: 0 }}>
@@ -648,37 +654,54 @@ function CriterionCard({ c, expanded, onToggle }: { c: CriterionScore; expanded:
         </span>
       </div>
 
-      {/* Score bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, height: 6, background: 'var(--border-soft)', borderRadius: 6, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${c.raw_score * 10}%`, background: tone.c, borderRadius: 6, transition: 'width 0.5s ease' }} />
-        </div>
-        <span className="tnum" style={{ fontSize: 14, fontWeight: 700, color: tone.c, minWidth: 46, textAlign: 'right' }}>
-          {c.raw_score.toFixed(1)}<span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-dim)' }}> / 10</span>
-        </span>
-      </div>
-
-      {/* Finding */}
-      <p style={{ fontSize: 12.5, lineHeight: 1.65, margin: 0, color: 'var(--text-mid)' }}>
+      {/* Finding — primary content */}
+      <p style={{ fontSize: 13, lineHeight: 1.65, margin: 0, color: 'var(--text-mid)' }}>
         {displayFinding}
       </p>
-
-      {/* Citations */}
-      {displayCitations.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          {displayCitations.map((s, i) => <CitationChip key={i} s={s} />)}
-        </div>
-      )}
-
-      {/* Expand toggle */}
       {needsExpand && (
         <button
           onClick={(e) => { e.stopPropagation(); onToggle(); }}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: 'var(--accent)', textAlign: 'left', alignSelf: 'flex-start' }}
         >
-          {expanded ? '↑ Show less' : '↓ Full finding + all sources'}
+          {expanded ? '↑ Show less' : '↓ Read more'}
         </button>
       )}
+
+      {/* Citations — always visible */}
+      {c.citations.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Sources</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {c.citations.map((s, i) => <CitationChip key={i} s={s} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Methodology toggle — hides the scoring machinery by default */}
+      <div>
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowMethod(!showMethod); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 10.5, color: 'var(--text-dim)', textAlign: 'left' }}
+        >
+          {showMethod ? '↑ Hide methodology' : '↓ Scoring detail'}
+        </button>
+        {showMethod && (
+          <div style={{ marginTop: 8, padding: '10px 12px', background: 'var(--surface-alt)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ flex: 1, height: 4, background: 'var(--border-soft)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${c.raw_score * 10}%`, background: tone.c, borderRadius: 4 }} />
+            </div>
+            <span className="tnum" style={{ fontSize: 12, fontWeight: 700, color: tone.c, whiteSpace: 'nowrap' }}>
+              {c.raw_score.toFixed(1)} / 10
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+              {Math.round(c.weight * 100)}% weight
+            </span>
+            <span className="tnum" style={{ fontSize: 11, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+              {c.weighted_contribution.toFixed(1)} pts
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -713,11 +736,9 @@ interface FindingsSummary {
 
 
 function buildSummary(report: SuitabilityReport): FindingsSummary {
-  const score = Math.round(report.total_score);
   const criteria = report.criteria.filter((c) => c.status !== 'data_unavailable');
-  const primaryCriterion = report.primary_constraint ? criteria.find((c) => c.key === report.primary_constraint) : null;
-  const primaryScore = primaryCriterion?.raw_score;
   const primary = report.primary_constraint ? CRITERION_NAME[report.primary_constraint] ?? report.primary_constraint : null;
+  const flaggedCriteria = criteria.filter((c) => c.status === 'flagged' || c.status === 'ineligible');
 
   let verdict: string;
   if (report.bucket === 'SUITABLE') verdict = 'Clears the 225 CMR 29 threshold.';
@@ -726,23 +747,18 @@ function buildSummary(report: SuitabilityReport): FindingsSummary {
 
   let narrative: string;
   if (report.bucket === 'SUITABLE') {
-    narrative = `At ${score}/100, this site meets the 225 CMR 29 suitability threshold.${
-      primary && primaryScore != null
-        ? ` ${primary} is the lowest-scoring factor at ${primaryScore.toFixed(1)}/10, but remains within the acceptable range.`
-        : ' All seven criteria are within the acceptable range.'
-    }`;
+    narrative = primary
+      ? `This site meets the 225 CMR 29 suitability threshold. ${primary} is the lowest-scoring factor but remains within the acceptable range.`
+      : 'This site meets the 225 CMR 29 suitability threshold. All seven criteria are within the acceptable range.';
   } else if (report.bucket === 'CONDITIONALLY SUITABLE') {
-    narrative = `At ${score}/100, this site is permittable subject to conditions.${
-      primary && primaryScore != null
-        ? ` ${primary} (${primaryScore.toFixed(1)}/10) is the binding factor — expect permit conditions and likely mitigation obligations.`
-        : ' Multiple criteria approach the threshold; permit conditions are probable.'
-    }`;
+    narrative = primary
+      ? `This site is permittable subject to conditions. ${primary} is the binding factor — expect permit conditions and likely mitigation obligations.`
+      : 'Multiple criteria approach the threshold. Permit conditions are probable.';
   } else {
-    narrative = `At ${score}/100, this site has constraints that preclude straightforward permitting.${
-      primary && primaryScore != null
-        ? ` ${primary} scores ${primaryScore.toFixed(1)}/10 and is the primary driver.`
-        : ' Multiple criteria fall below the acceptable range.'
-    } An alternate parcel or a substantially reduced footprint is advisable before advancing.`;
+    const flagNames = flaggedCriteria.map((c) => CRITERION_NAME[c.key] ?? c.name).join(', ');
+    narrative = flagNames
+      ? `Constraints in ${flagNames} preclude the simplified siting pathway. An alternate parcel or substantially reduced footprint is advisable before advancing.`
+      : 'Multiple criteria fall below the acceptable range. An alternate parcel or substantially reduced footprint is advisable before advancing.';
   }
 
   const hasIneligible = report.criteria.some((c) => c.status === 'ineligible');
@@ -750,7 +766,7 @@ function buildSummary(report: SuitabilityReport): FindingsSummary {
   if (hasIneligible) {
     recommendation = `Begin with ${primary ?? 'the flagged criterion'} — the Avoid tier in the mitigation hierarchy is the first lever. Consider an alternatives analysis under 225 CMR 29.06 if the footprint cannot be relocated.`;
   } else if (report.bucket === 'CONDITIONALLY SUITABLE' && primary) {
-    recommendation = `Expand the ${primary} card below for the full finding and data sources, then review town precedents and the permitting panel.`;
+    recommendation = `Review the ${primary} card below for the full finding and data sources, then check town precedents and the permitting panel.`;
   } else if (report.bucket === 'SUITABLE') {
     recommendation = 'Proceed to the municipal permitting panel to confirm the by-right or special-permit pathway and estimated timeline.';
   }
