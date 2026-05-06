@@ -140,8 +140,14 @@ criteria:
                      "Yes - Income, Minority", "Yes - Income, English Isolation",
                      "Yes - Minority, English Isolation",
                      "Yes - Income, Minority, English Isolation"]
-    # 2024 Climate Act Burdened Area income criterion (independent of MES score):
-    # block-group median HH income ≤ 65% of MA statewide median.
+    # MA EJ Policy 2020 official thresholds (225 CMR 29.09 / 310 CMR 7.72):
+    #   Minority  ≥ 40%  non-white / Hispanic (ej_minority_threshold_pct)
+    #   Income    ≤ 65%  of MA MHHI           (burdened_area_income_threshold_pct)
+    #   Language  ≥ 25%  limited-English HH   (ej_language_threshold_pct)
+    # Source: OEJE EJ Policy 2021; U.S. Census ACS 2020.
+    ej_minority_threshold_pct: 0.40
+    ej_language_threshold_pct: 0.25
+    # 2024 Climate Act Burdened Area income criterion (same threshold as EJ income):
     # Source: U.S. Census Bureau ACS 2024 1-year estimate (table B19013).
     ma_statewide_median_hh_income: 104828
     burdened_area_income_threshold_pct: 0.65

@@ -749,28 +749,80 @@ def _score_burdens(session: Session, ctx: dict, cfg: dict) -> CriterionScore:
     fire_pct     = float(attrs.get("CLIMpctilFIRE") or 0)
     heat_pct     = float(attrs.get("CLIMpctilHEAT") or 0)
 
-    # ej_populations table not yet ingested — derive everything from attrs.
-    geo_area_name = attrs.get("NAME")
-    ej_crit_desc  = None
-    muni_mhhi     = float(attrs.get("medHHincMUNIE") or 0) or None
-    muni_mhhi_pct = float(attrs.get("medHHincMUNIPCT") or 0) or None
-    total_pop     = int(attrs.get("TotalPopE") or 0) or None
-    total_hh      = int(attrs.get("TotalHHE") or 0) or None
-
-    # EJ designation from stored column; fall back to computed criteria.
-    is_ej = (row["ej_designation"] or "").lower() in ("yes", "y", "true", "1")
-
-    # MA EJ Policy 2021 criteria breakdown — which thresholds triggered?
-    ej_criteria: list[str] = []
-    if minority_pct >= 25:
-        ej_criteria.append(f"Minority {minority_pct:.0f}%")
-    if med_income > 0 and med_income <= income_threshold:
-        ej_criteria.append(
-            f"Income ${med_income:,.0f} ({income_pct:.0f}% of MA median)" if income_pct else
-            f"Income ${med_income:,.0f}"
+    # Official MA EJ Population 2020 layer — authoritative EJ designation and criteria.
+    # Uses centroid containment (single block group is fine for the EJ label;
+    # area-weighted scores above handle numeric values for large parcels).
+    ej_pop = (
+        session.execute(
+            text("""
+                SELECT geo_area_name, ej, ej_criteria, ej_crit_desc,
+                       pct_minority, bg_mhhi, bg_mhhi_pct_ma, lim_eng_pct,
+                       muni_mhhi, muni_mhhi_pct_ma, total_pop, total_hh
+                FROM   ej_populations
+                WHERE  ST_Contains(geom, ST_Centroid(
+                           (SELECT geom FROM parcels WHERE loc_id = :pid)
+                       ))
+                LIMIT 1
+            """),
+            {"pid": ctx["loc_id"]},
         )
-    if lim_eng_pct >= 25:
-        ej_criteria.append(f"Limited English {lim_eng_pct:.0f}%")
+        .mappings()
+        .first()
+    )
+
+    if ej_pop:
+        # Use official 2020 ACS values from the EJ layer directly.
+        is_ej         = bool(ej_pop["ej"])
+        ej_crit_code  = ej_pop["ej_criteria"] or ""   # 'M', 'I', 'E', 'IM', etc.
+        ej_crit_desc  = ej_pop["ej_crit_desc"]        # 'Minority and income', etc.
+        geo_area_name = ej_pop["geo_area_name"]
+        minority_pct  = float(ej_pop["pct_minority"] or minority_pct)
+        lim_eng_pct   = float(ej_pop["lim_eng_pct"]  or lim_eng_pct)
+        muni_mhhi     = float(ej_pop["muni_mhhi"]    or 0) or None
+        muni_mhhi_pct = float(ej_pop["muni_mhhi_pct_ma"] or 0) or None
+        total_pop     = int(ej_pop["total_pop"] or 0) or None
+        total_hh      = int(ej_pop["total_hh"]  or 0) or None
+    else:
+        # Fallback: derive from MassEnviroScreen attrs when ej_populations has no match.
+        is_ej         = (row["ej_designation"] or "").lower() in ("yes", "y", "true", "1")
+        ej_crit_code  = ""
+        ej_crit_desc  = None
+        geo_area_name = attrs.get("NAME")
+        muni_mhhi     = float(attrs.get("medHHincMUNIE")   or 0) or None
+        muni_mhhi_pct = float(attrs.get("medHHincMUNIPCT") or 0) or None
+        total_pop     = int(attrs.get("TotalPopE") or 0) or None
+        total_hh      = int(attrs.get("TotalHHE")  or 0) or None
+
+    # MA EJ Policy 2020 official thresholds:
+    #   Minority  ≥ 40%   (non-white / Hispanic)
+    #   Income    ≤ 65%   of MA MHHI
+    #   Language  ≥ 25%   of households with limited English
+    # When the official EJ layer matched, use its ej_crit_code to build display
+    # strings. Otherwise compute from demographics against the same thresholds.
+    ej_criteria: list[str] = []
+    if ej_pop and ej_crit_code:
+        if "M" in ej_crit_code:
+            ej_criteria.append(f"Minority {minority_pct:.0f}%")
+        if "I" in ej_crit_code:
+            ej_criteria.append(
+                f"Income ${med_income:,.0f} ({income_pct:.0f}% of MA median)" if income_pct else
+                f"Income ${med_income:,.0f}"
+            )
+        if "E" in ej_crit_code:
+            ej_criteria.append(f"Limited English {lim_eng_pct:.0f}%")
+    else:
+        # Derived fallback — official MA EJ Policy 2020 thresholds.
+        min_thr = c.get("ej_minority_threshold_pct", 0.40) * 100
+        lang_thr = c.get("ej_language_threshold_pct", 0.25) * 100
+        if minority_pct >= min_thr:
+            ej_criteria.append(f"Minority {minority_pct:.0f}%")
+        if med_income > 0 and med_income <= income_threshold:
+            ej_criteria.append(
+                f"Income ${med_income:,.0f} ({income_pct:.0f}% of MA median)" if income_pct else
+                f"Income ${med_income:,.0f}"
+            )
+        if lim_eng_pct >= lang_thr:
+            ej_criteria.append(f"Limited English {lim_eng_pct:.0f}%")
 
     # 2024 Climate Act Burdened Area
     is_mes_burdened    = mes >= 75.0
